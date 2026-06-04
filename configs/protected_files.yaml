@@ -1,0 +1,30 @@
+# Enforced by src/orchestration/git_guard.py. Patterns are glob, repo-relative.
+# Strict: never modifiable by any agent. Conditional: only via formal proposal + human
+# review. Freely modifiable: editable under an approved RunSpec's allowed_files.
+protected_files:
+  strict:
+    - data/raw/**
+    - data/splits/**
+    - src/seq2yield/data/cleaning.py
+    - src/seq2yield/training/metrics.py
+    - configs/objective.yaml
+    - configs/splits.yaml
+
+  conditional:                       # proposal.human_review_required must be true
+    - src/seq2yield/statistics/**
+    - src/seq2yield/experiments/compare.py
+    - configs/metrics.yaml
+    - configs/statistical_tests.yaml
+
+  freely_modifiable:
+    - src/seq2yield/models/**
+    - src/seq2yield/features/**
+    - src/seq2yield/data/sampling.py
+    - src/seq2yield/doe/**
+    - src/seq2yield/training/train.py
+    - src/seq2yield/reporting/**
+    - configs/model/**
+    - configs/experiments/**
+
+# Anything not listed in freely_modifiable defaults to requiring review (deny-by-default).
+default_policy: require_review

@@ -1,0 +1,27 @@
+# PROTECTED (strict). Defines the fixed scientific objective. Never agent-modified.
+objective:
+  task: sequence_to_expression_regression
+  input:
+    type: dna_sequence
+    length_nt: 96            # E. coli primary dataset (REPRODUCTION.md §1)
+    alphabet: [A, C, G, T]
+  output:
+    name: sfgfp_fluorescence
+    type: continuous
+    normalized: true
+  primary_metric: r2
+  metric_protocol:
+    repeats: 5               # 5-repeat Monte Carlo CV; report mean (DECISIONS.md #7)
+    aggregation: mean
+  test_policy: fixed_held_out
+
+paper:
+  citation: "Nat Commun 13, 7755 (2022), s41467-022-34902-5"
+  data_doi: "10.5281/zenodo.7273952"
+
+notebook_policy:
+  execution_allowed: false
+  use_as_seed_material: true
+  agent_may_modify: false
+  agent_may_execute: false
+  archive_folder: archive_notebooks_readonly/

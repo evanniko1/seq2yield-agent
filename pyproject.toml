@@ -1,0 +1,37 @@
+[project]
+name = "seq2yield-agent"
+version = "0.0.0"
+description = "Bounded, auditable agentic ML-research workflow reproducing and extending Cambray et al. / Nat Comms 2022 (s41467-022-34902-5) protein-expression prediction."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+# Dependency groups are intentionally minimal for the Tier 0/1 subset.
+# Tier 2/3 deps (DNA/protein foundation models, JAX, quantum sim) are NOT added
+# until those tiers are reached. See docs/ARCHITECTURE.md.
+dependencies = [
+  "numpy",
+  "pandas",
+  "scikit-learn",
+  "scipy",
+  "pyyaml",
+  "pydantic>=2",
+]
+
+[project.optional-dependencies]
+deep = ["torch"]                       # CNN / MLP / Transformer (Tier 0/1)
+agents = ["anthropic", "httpx"]        # provider clients (MVP: Anthropic + local)
+dev = ["pytest", "ruff", "mypy"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/seq2yield", "src/agents", "src/orchestration"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100

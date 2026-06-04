@@ -1,0 +1,41 @@
+# Dataset locations & expected schema. Column names are EXPECTED until the Stage 0 audit
+# confirms them against the Zenodo deposit (see data/manifests/reproducibility_gaps.md).
+data:
+  archive:
+    doi: "10.5281/zenodo.7273952"
+    zip: data/raw/seq2yield.zip       # ~2.0 GB; gitignored
+    raw_dir: data/raw/
+    extracted_dir: data/extracted/    # unzips to extracted/seq2yield/
+    processed_dir: data/processed/
+    manifests_dir: data/manifests/
+    # Confirmed layout (deposit README.txt):
+    raw_csvs:
+      ecoli: extracted/seq2yield/to_import/Ecoli_data.csv
+      yeast: extracted/seq2yield/to_import/yeast_data.csv
+    provided_splits_dir: extracted/seq2yield/_saved/saved_sets/   # reuse these (DECISIONS #9)
+    notebooks_dir: archive_notebooks_readonly/   # notebooks moved here as seed material
+
+  primary_dataset:
+    organism: e_coli
+    reporter: sfGFP
+    file: extracted/seq2yield/to_import/Ecoli_data.csv
+    expected_n_sequences: 228000      # ~228k (verify exact count in audit)
+    expected_n_series: 56             # 56 mutational series, ~4000 each
+    sequence_length_nt: 96
+    expected_columns:                 # EXPECTED — reconcile against the real CSV header
+      sequence: ["sequence", "seq", "dna"]
+      target: ["expression", "fluorescence", "sfgfp"]
+      series: ["series", "mutational_series", "series_id"]
+
+  secondary_dataset:                  # deferred (Tier 2 cross-series / transfer)
+    organism: s_cerevisiae
+    reporter: YFP
+    expected_n_sequences: 3929
+    sequence_length_nt: 80
+    source: "CodeOcean capsule 8020974"
+    enabled: false
+
+  diversity_metric:
+    definition: "1 / sum(top_100_5mer_counts)"
+    kmer: 5
+    top_k: 100

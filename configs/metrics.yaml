@@ -1,0 +1,24 @@
+# Conditionally protected. The primary metric is FROZEN; secondary metrics may be ADDED
+# (never used to replace the primary) only via formal proposal + human review.
+metrics:
+  primary:
+    name: r2
+    definition: "1 - sum((y - f)^2) / sum((y - ybar)^2)"
+    higher_is_better: true
+    computed_on: fixed_held_out_test
+    aggregate_over_repeats: mean
+    n_repeats: 5
+  secondary:
+    - { name: rmse,     higher_is_better: false }
+    - { name: mse,      higher_is_better: false }
+    - { name: pearson,  higher_is_better: true }
+    - { name: spearman, higher_is_better: true }
+    - { name: calibration_slope, higher_is_better: null }
+    - { name: data_efficiency_auc, higher_is_better: true }
+    - { name: generalization_gap, higher_is_better: false }
+
+forbidden_without_human_review:
+  - replace_primary_metric
+  - change_target_normalization_post_hoc
+  - change_test_filtering
+  - select_only_favourable_train_sizes

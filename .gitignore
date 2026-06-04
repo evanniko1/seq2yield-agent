@@ -1,0 +1,40 @@
+# Data: only manifests/configs are tracked; raw/derived data stay local.
+data/raw/*
+data/extracted/*
+data/processed/*
+data/splits/*
+!data/**/.gitkeep
+!data/manifests/*.json
+!data/manifests/*.csv
+!data/manifests/*.md
+
+# Original Colab notebooks are forensic seed material, never tracked as source.
+archive_notebooks_readonly/*
+!archive_notebooks_readonly/.gitkeep
+
+# Experiment artifacts (large / regenerated). Run-cards are the durable record;
+# decide per-policy later which to commit. For now keep the tree, ignore contents.
+experiments/runs/*
+experiments/accepted/*
+experiments/rejected/*
+experiments/council_reviews/*
+experiments/postmortems/*
+experiments/claims/*
+!experiments/**/.gitkeep
+reports/static/*
+reports/dashboard_exports/*
+!reports/**/.gitkeep
+
+# Secrets — provider API keys never enter the repo.
+.env
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/

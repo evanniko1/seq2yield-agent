@@ -1,0 +1,55 @@
+# Role -> allowed providers. MVP enables FOUR providers (DECISIONS.md #5):
+#   authority  = anthropic + openai   (both direct; schema-critical roles)
+#   diversity  = ollama + openrouter  (brainstorming / proposal generation / summarization)
+# `provider_class` in agent_roles.yaml maps to these via provider_class_map below.
+defaults:
+  temperature: 0.2
+  max_retries: 2
+  require_structured_output: true
+  log_raw_output: true
+
+providers:
+  # --- authority providers (direct; structured outputs required) ---
+  anthropic:
+    enabled: true
+    api_key_env: ANTHROPIC_API_KEY
+    models:
+      authority: "claude-opus-4-8"   # chair, methodology, patch reviewer, ml engineer
+      reviewer:  "claude-sonnet-4-6"
+  openai:
+    enabled: true
+    api_key_env: OPENAI_API_KEY
+    models:
+      authority: "gpt-5.1"           # set to the configured OpenAI frontier model
+      reviewer:  "gpt-5.1-mini"
+
+  # --- diversity providers ---
+  ollama:                            # local, already installed on the dev machine
+    enabled: true
+    base_url: "http://localhost:11434"
+    models:
+      diversity: "qwen2.5:14b"       # confirm installed tag at Milestone 4
+  openrouter:                        # hosted catalogue for model diversity
+    enabled: true
+    api_key_env: OPENROUTER_API_KEY
+    models:
+      diversity:
+        - "configured-openrouter-model-a"
+        - "configured-openrouter-model-b"
+
+  # --- disabled stubs (Tier 2/3); selecting these raises NotImplemented ---
+  gemini:  { enabled: false, api_key_env: GEMINI_API_KEY, models: {} }
+  mistral: { enabled: false, api_key_env: MISTRAL_API_KEY, models: {} }
+
+# provider_class (from agent_roles.yaml) -> ordered allowed providers (failover order).
+provider_class_map:
+  authority: ["anthropic", "openai"]
+  diversity: ["ollama", "openrouter"]
+
+# Authority roles must use a DIRECT provider (anthropic or openai), never a router, for
+# schema reliability and auditability.
+role_policy:
+  chair:                 { require_direct_provider: true, allowed_providers: ["anthropic", "openai"] }
+  runspec_compiler:      { require_direct_provider: true, allowed_providers: ["anthropic", "openai"] }
+  methodology_reviewer:  { require_direct_provider: true, allowed_providers: ["anthropic", "openai"] }
+  patch_reviewer:        { require_direct_provider: true, allowed_providers: ["anthropic", "openai"] }

@@ -1,0 +1,37 @@
+# Authoritative tier gating. Validators reject proposals above `unlocked_tier`.
+maturity_tiers:
+  unlocked_tier: tier_0          # raised to tier_1 only after Milestone 2 (repro) passes
+
+  tier_0:
+    label: required_reproduction
+    items: [archive_audit, notebook_to_script, fixed_split_reconstruction,
+            baseline_reproduction, rf_mlp_cnn_comparison, data_size_curves,
+            sequence_diversity_reproduction, run_card_schema, protected_file_guard]
+  tier_1:
+    label: core_poc
+    requires: [tier_0_complete]
+    items: [transformer_from_scratch, cnn_transformer_hybrid, doe_sampling,
+            diversity_aware_sampling, formal_statistical_tests, repeated_seed_robustness,
+            jax_acceleration, improved_reporting]
+  tier_2:
+    label: advanced
+    requires: [harness_validated]
+    items: [frozen_dna_embeddings, finetuned_dna_models, protein_lm_embeddings,
+            mechanistic_embedding_hybrids, cross_series_generalization,
+            active_learning_simulation, bayesian_acquisition]
+    scaffolded: false
+  tier_3:
+    label: exploratory
+    requires: [reproduction_complete, harness_validated]
+    items: [frontier_api_embeddings, quantum_inspired_adapters, quantum_kernels,
+            qpu_runs, meta_agentic_proposal_evolution]
+    scaffolded: false
+    may_displace_core_poc: false
+
+quantum_policy:
+  allowed_in_mvp: false
+  citation_status: unverified        # arXiv:2605.05914 malformed; re-source before use
+  requires: [classical_baseline, transformer_baseline, parameter_count_match,
+             runtime_cost_report, simulator_or_hardware_declared]
+  forbidden_claims: [quantum_advantage, biological_discovery,
+                     superior_embeddings_without_direct_test]

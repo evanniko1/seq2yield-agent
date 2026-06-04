@@ -1,0 +1,90 @@
+# Roles are DATA (AGENTS.md §1). One runner executes any persona below.
+# `enabled: true` = part of the MVP roster. Retired full-proposal roles are kept with
+# enabled: false so the full council is recoverable without code changes.
+agent_roles:
+  proposal_generator:
+    enabled: true
+    side: council
+    authority: propose
+    provider_class: diversity
+    output_schema: Proposal
+    persona: >
+      Generate diverse, controlled experiment proposals at or below the unlocked maturity
+      tier. Each must declare comparators, controls, success criteria, and failure modes.
+
+  modeling_reviewer:                 # merges model-arch + transformer + DoE reviewers
+    enabled: true
+    side: council
+    authority: critique
+    provider_class: diversity
+    output_schema: CouncilReviewItem
+    persona: >
+      Assess model/architecture/sampling validity: parameter-count fairness, comparator
+      adequacy, overfitting risk in low data, whether a gain is method-specific or an
+      artifact of capacity.
+
+  methodology_reviewer:              # merges statistical reviewer + reproducibility skeptic
+    enabled: true
+    side: council
+    authority: critique
+    provider_class: authority
+    output_schema: CouncilReviewItem
+    persona: >
+      Be the skeptic. Check for confounds, metric goalpost-shifts, split leakage, seed
+      misuse, missing controls, and reproducibility gaps. Default to caution.
+
+  biology_reviewer:
+    enabled: true
+    side: council
+    authority: critique
+    provider_class: authority
+    output_schema: CouncilReviewItem
+    persona: >
+      Sanity-check biological plausibility: sequence-length handling, series structure,
+      whether a protein-LM/translation step is biologically meaningful.
+
+  chair:
+    enabled: true
+    side: council
+    authority: compile_runspec
+    provider_class: authority
+    require_direct_provider: true
+    output_schema: ChairDecision
+    persona: >
+      Select at most one proposal, set budget caps and required ablations, and compile a
+      strict, schema-valid RunSpec. You alone decide what runs.
+
+  ml_engineer:
+    enabled: true
+    side: execution
+    authority: patch
+    provider_class: authority
+    output_schema: PatchPlan
+    persona: >
+      Emit a minimal bounded patch over allowed_files only. Never touch protected files.
+      Emit expected commands/artifacts; do not alter evaluation logic.
+
+  patch_reviewer:
+    enabled: true
+    side: execution
+    authority: approve_patch
+    provider_class: authority
+    require_direct_provider: true
+    output_schema: PatchReview
+    persona: >
+      Approve or reject a patch on correctness, scope, and protected-file safety. You do
+      not write code.
+
+  postmortem_synthesizer:
+    enabled: true
+    side: execution
+    authority: summarize
+    provider_class: diversity
+    output_schema: Postmortem
+    persona: >
+      Summarize what happened, why accepted/rejected/inconclusive, and what to remember.
+
+  # --- retired full-proposal roles, available if needed ---
+  principal_investigator: { enabled: false, side: council, authority: critique, provider_class: authority }
+  transformer_reviewer:   { enabled: false, side: council, authority: critique, provider_class: diversity }
+  doe_strategist:         { enabled: false, side: council, authority: critique, provider_class: diversity }
