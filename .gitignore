@@ -29,6 +29,7 @@ reports/dashboard_exports/*
 !reports/static/*_curve.png
 !reports/static/*_curve.csv
 reports/static/_run.log
+reports/model_calls.jsonl
 
 # Secrets — provider API keys never enter the repo.
 .env

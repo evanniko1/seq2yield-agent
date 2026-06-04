@@ -95,6 +95,19 @@ ignore, so the repo is a self-contained baseline reference. **Result.** Full reg
 train_size=2000: CNN 0.740 > RF 0.717 > MLP 0.638 (std ≤0.010 over 5 repeats); monotonic
 data-efficiency curves — a faithful reproduction of Nikolados et al.
 
+## #13 — Provider layer: HTTP for OpenAI/OpenRouter; structured outputs per provider
+**Context.** Milestone 4. Installed `openai` SDK is the legacy 0.28 line (no json_schema
+response format), and no API keys are set on the dev host; Ollama is local with two models.
+**Decision.** Implement OpenAI/OpenRouter via direct HTTP (httpx) using
+`response_format: json_schema` (avoids SDK-version coupling; OpenRouter reuses the OpenAI
+client). Anthropic uses **forced tool-use** (tool input_schema = the pydantic schema) as its
+structured-output path. Ollama uses native `/api/chat` with `format=<json schema>`. The base
+client owns validate→retry→`ModelCallRecord` logging; `ProviderUnavailable` (missing key /
+service down) surfaces cleanly as SKIP, not failure. **Result.** Exit criterion met live via
+two Ollama models (qwen2.5-coder:14b, llama3.2); Anthropic/OpenAI/OpenRouter are code-complete
+and activate when their API keys are set. Authority roles are restricted to direct providers
+in the router.
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

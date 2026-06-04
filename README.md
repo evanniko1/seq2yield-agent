@@ -28,6 +28,10 @@ comparators, and predeclared acceptance criteria.
 - ✅ **Milestone 3** — execution harness (`scripts/run_experiment.py`): validates a RunSpec,
   runs the protected-file guard + tests, executes, compares vs a baseline (paired bootstrap),
   and emits accepted/rejected/inconclusive with a full audit trail.
+- ✅ **Milestone 4** — provider layer (`scripts/check_providers.py`): provider-agnostic
+  `ModelClient` (Ollama, Anthropic, OpenAI, OpenRouter) with JSON-schema structured outputs,
+  retry, and `ModelCallRecord` logging; a role→provider router (authority = direct only).
+  Same prompt+schema validated live across 2 local Ollama models.
 
 ## Read these first
 

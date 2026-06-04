@@ -28,7 +28,9 @@ providers:
     enabled: true
     base_url: "http://localhost:11434"
     models:
-      diversity: "qwen2.5:14b"       # confirm installed tag at Milestone 4
+      diversity:                     # both confirmed installed (Milestone 4)
+        - "qwen2.5-coder:14b"
+        - "llama3.2:latest"
   openrouter:                        # hosted catalogue for model diversity
     enabled: true
     api_key_env: OPENROUTER_API_KEY
