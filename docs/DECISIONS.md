@@ -82,6 +82,19 @@ logged in `data/manifests/reproducibility_gaps.md`. **Consequences.** The 5-repe
 (DECISIONS #7) maps directly onto the 5 provided iterations — no resampling needed for
 baseline reproduction. Supersedes the `saved_sets/` path in DECISIONS #9.
 
+## #12 — Complete baseline registry committed; long runs go in resumable chunks
+**Context.** The full registry (56 series × 5 MC-CV repeats × 4 sizes × {rf,mlp,cnn} = 3360
+rows) is the canonical baseline agentic experiments compare against. Long background runs on
+this host get killed after ~20–50 min (detached `Start-Process` even sooner, via job/console
+cleanup — empty stderr = external kill, not a crash). **Decision.** (1) Driver checkpoints
+`metrics.csv` per series-iteration and resumes (skips done); a `--max-minutes` budget exits
+cleanly for chunked execution. Run long jobs as **short tracked background chunks** (~8–18
+min), never detached. (2) Commit the registry artifacts (`run_card.json` per model,
+`data_size_curve.csv`, `metrics.csv`) via `git add -f` despite the `experiments/runs/`
+ignore, so the repo is a self-contained baseline reference. **Result.** Full registry @
+train_size=2000: CNN 0.740 > RF 0.717 > MLP 0.638 (std ≤0.010 over 5 repeats); monotonic
+data-efficiency curves — a faithful reproduction of Nikolados et al.
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

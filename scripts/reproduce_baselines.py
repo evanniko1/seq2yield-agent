@@ -45,6 +45,8 @@ def parse_args():
     p.add_argument("--series", nargs="+", type=int, default=None, help="explicit series ids")
     p.add_argument("--seed", type=int, default=1)
     p.add_argument("--tag", default="baseline")
+    p.add_argument("--max-minutes", type=float, default=0,
+                   help="if >0, checkpoint and exit for resume after this wall-clock budget")
     return p.parse_args()
 
 
@@ -66,12 +68,25 @@ def main() -> int:
     run_dir = ROOT / "experiments/runs" / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
 
+    # resume: reload any checkpointed rows and skip already-completed (iteration, series)
     rows = []
+    done = set()
+    ckpt = run_dir / "metrics.csv"
+    if ckpt.exists():
+        prev = pd.read_csv(ckpt)
+        rows = prev.to_dict("records")
+        done = {(r["iteration"], r["series"]) for r in rows}
+        print(f"[repro] resuming: {len(done)} series-iterations already done")
+
     t_start = time.perf_counter()
     for it in iters:
+        if all((it, sid) in done for sid in series_ids):
+            continue
         work = load_split_csv(splits["iterations"][it]["working_set"]["path"])
         held = load_split_csv(splits["iterations"][it]["heldout_set"]["path"])
         for sid in series_ids:
+            if (it, sid) in done:
+                continue
             w_s = series_subset(work, sid)
             h_s = series_subset(held, sid)
             seqs_test, y_test = h_s[SEQ_COL].tolist(), h_s[TARGET_COL].to_numpy()
@@ -89,8 +104,14 @@ def main() -> int:
                                  "pearson": res["pearson"], "spearman": res["spearman"],
                                  "fit_seconds": res["fit_seconds"]})
             pd.DataFrame(rows).to_csv(run_dir / "metrics.csv", index=False)  # checkpoint
+            done.add((it, sid))
             print(f"[repro]   {it} series={sid} done "
                   f"({time.perf_counter() - t_start:.0f}s elapsed)")
+            if args.max_minutes and (time.perf_counter() - t_start) / 60 >= args.max_minutes:
+                remaining = len(iters) * len(series_ids) - len(done)
+                print(f"[repro] budget {args.max_minutes}min reached; checkpointed "
+                      f"({len(done)} done, {remaining} remaining). Re-run to resume.")
+                return 0
 
     df = pd.DataFrame(rows)
 
@@ -126,8 +147,10 @@ def main() -> int:
             split_hash=split_hash, model_family=model, feature_set="one_hot",
             train_sizes=args.train_sizes, seeds=[args.seed], iterations=args.iterations,
             series=series_ids, results=results, environment=env,
-            limitations=[f"Bounded demo: {len(series_ids)}/56 series, {len(iters)} of 5 "
-                         f"iterations, single training seed."])
+            limitations=(["single training seed (sampling); 5 MC-CV repeats provide variance"]
+                         if (len(series_ids) >= 56 and len(iters) >= 5) else
+                         [f"Bounded subset: {len(series_ids)}/56 series, {len(iters)}/5 "
+                          f"iterations, single training seed."]))
         write_run_card(card, run_dir / model)
 
     _write_report(report_dir / f"{run_id}_report.md", run_id, args, series_ids, agg, comp,
@@ -160,14 +183,18 @@ def _write_report(path, run_id, args, series_ids, agg, comp, curve_png, df,
     ]
     if curve_png:
         lines += [f"![data-size curve]({Path(curve_png).name})", ""]
+    full = len(series_ids) >= 56 and len(args.iterations) >= 5
     lines += [
         f"## CNN vs classical @ train_size={max(args.train_sizes)}", "",
         df_to_markdown(comp), "",
         "## Notes", "",
         "- R² increases with training-set size for every model (expected data-efficiency "
         "trend), reproducing the paper's qualitative finding.",
-        "- This is a **bounded** demo (subset of series/iterations) to satisfy the Milestone 2 "
-        "exit criterion; the driver scales to all 56 series and 5 iterations via CLI flags.",
+        ("- **Complete baseline registry**: all 56 mutational series × 5 Monte-Carlo CV "
+         "repeats. This is the canonical baseline that agentic experiments compare against."
+         if full else
+         "- This is a **bounded** subset (of series/iterations); the driver scales to all 56 "
+         "series and 5 iterations via CLI flags."),
         f"- Per-(series,size,model,iteration) rows: see `experiments/runs/{run_id}/metrics.csv`.",
     ]
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")

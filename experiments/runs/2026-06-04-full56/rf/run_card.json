@@ -1,0 +1,58 @@
+{
+  "run_id": "2026-06-04-full56-rf",
+  "kind": "reproduction",
+  "dataset_hash": "e15d854d7a6482734e260297545f50d7543c5c6755910ec95dac5b86532f90ba",
+  "split_hash": "c20f19717f3b0f38aef378ada087231d3ed0517b3936ee22eb2586738020d557",
+  "model_family": "rf",
+  "feature_set": "one_hot",
+  "train_sizes": [
+    250,
+    500,
+    1000,
+    2000
+  ],
+  "seeds": [
+    1
+  ],
+  "iterations": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "n_series": 56,
+  "primary_metric": "r2",
+  "results": {
+    "250": {
+      "r2_mean": 0.4259,
+      "r2_std": 0.0064
+    },
+    "500": {
+      "r2_mean": 0.5217,
+      "r2_std": 0.004
+    },
+    "1000": {
+      "r2_mean": 0.6193,
+      "r2_std": 0.0051
+    },
+    "2000": {
+      "r2_mean": 0.7174,
+      "r2_std": 0.0046
+    }
+  },
+  "status": "reproduction",
+  "limitations": [
+    "single training seed (sampling); 5 MC-CV repeats provide variance"
+  ],
+  "environment": {
+    "python": "3.12.8",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "packages": {
+      "numpy": "1.26.4",
+      "scikit-learn": "1.6.1",
+      "torch": "2.5.1+cu121"
+    },
+    "cuda": true
+  }
+}
