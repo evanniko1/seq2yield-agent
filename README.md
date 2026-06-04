@@ -22,9 +22,12 @@ comparators, and predeclared acceptance criteria.
 - ✅ **Session 0** — constitution: specs, contracts, configs, skill definitions.
 - ✅ **Milestone 1** — Stage 0 archive audit (`scripts/audit_archive.py`); manifests in
   `data/manifests/`; confirmed schema (227,024 rows, 96 nt, 56 series, 8 biophysical feats).
-- 🔄 **Milestone 2** — scripted reproduction (`build_dataset` → `build_splits` →
+- ✅ **Milestone 2** — scripted reproduction (`build_dataset` → `build_splits` →
   `reproduce_baselines`): RF/MLP/CNN on one-hot, R² on the provided per-series held-out sets.
-  Reports in `reports/static/`.
+  Data-size curve + CNN>RF>MLP reproduced; reports in `reports/static/`.
+- ✅ **Milestone 3** — execution harness (`scripts/run_experiment.py`): validates a RunSpec,
+  runs the protected-file guard + tests, executes, compares vs a baseline (paired bootstrap),
+  and emits accepted/rejected/inconclusive with a full audit trail.
 
 ## Read these first
 

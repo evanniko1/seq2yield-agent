@@ -62,6 +62,10 @@ def main() -> int:
     print(f"[repro] models={args.models} sizes={args.train_sizes} iters={args.iterations} "
           f"series={series_ids}")
 
+    run_id = f"{datetime.now(timezone.utc):%Y-%m-%d}-{args.tag}"
+    run_dir = ROOT / "experiments/runs" / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+
     rows = []
     t_start = time.perf_counter()
     for it in iters:
@@ -84,6 +88,7 @@ def main() -> int:
                                  "r2": res["r2"], "rmse": res["rmse"],
                                  "pearson": res["pearson"], "spearman": res["spearman"],
                                  "fit_seconds": res["fit_seconds"]})
+            pd.DataFrame(rows).to_csv(run_dir / "metrics.csv", index=False)  # checkpoint
             print(f"[repro]   {it} series={sid} done "
                   f"({time.perf_counter() - t_start:.0f}s elapsed)")
 
@@ -97,9 +102,6 @@ def main() -> int:
     agg["r2_std"] = agg["r2_std"].round(4)
 
     # --- write artifacts -------------------------------------------------------------
-    run_id = f"{datetime.now(timezone.utc):%Y-%m-%d}-{args.tag}"
-    run_dir = ROOT / "experiments/runs" / run_id
-    run_dir.mkdir(parents=True, exist_ok=True)
     df.to_csv(run_dir / "metrics.csv", index=False)
     agg.to_csv(run_dir / "data_size_curve.csv", index=False)
 

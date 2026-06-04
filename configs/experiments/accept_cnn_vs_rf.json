@@ -1,0 +1,22 @@
+{
+  "run_id": "2026-06-04-m3-cnn-vs-rf",
+  "proposal_id": "DEMO_ACCEPT",
+  "maturity_tier": "tier_0",
+  "model_family": "cnn",
+  "feature_set": "one_hot",
+  "train_sizes": [2000],
+  "iterations": [1, 2, 3],
+  "series": [1, 2, 15, 20, 25, 26],
+  "seed": 1,
+  "primary_metric": "r2",
+  "allowed_files": [],
+  "acceptance_policy": {
+    "track": "performance",
+    "baseline_run_id": "2026-06-04-baseline",
+    "baseline_model": "rf",
+    "comparison_train_size": 2000,
+    "min_delta_r2": 0.02,
+    "requires_repeated_seed": true,
+    "bootstrap_ci_must_exclude_zero": true
+  }
+}
