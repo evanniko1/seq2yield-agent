@@ -10,22 +10,35 @@ data:
     manifests_dir: data/manifests/
     # Confirmed layout (deposit README.txt):
     raw_csvs:
-      ecoli: extracted/seq2yield/to_import/Ecoli_data.csv
-      yeast: extracted/seq2yield/to_import/yeast_data.csv
-    provided_splits_dir: extracted/seq2yield/_saved/saved_sets/   # reuse these (DECISIONS #9)
-    notebooks_dir: archive_notebooks_readonly/   # notebooks moved here as seed material
+      ecoli: data/extracted/seq2yield/to_import/Ecoli_data.csv
+      yeast: data/extracted/seq2yield/to_import/yeast_data.csv
+    # CONFIRMED by Stage 0 audit: splits are per-iteration, NOT in saved_sets/ (DECISIONS #11).
+    provided_splits_glob: data/extracted/seq2yield/to_import/_saved/iteration_*/{_working_set,_heldout_set}.csv
+    notebooks_dir: archive_notebooks_readonly/   # 8 project notebooks (read-only seed)
 
   primary_dataset:
     organism: e_coli
     reporter: sfGFP
-    file: extracted/seq2yield/to_import/Ecoli_data.csv
-    expected_n_sequences: 228000      # ~228k (verify exact count in audit)
-    expected_n_series: 56             # 56 mutational series, ~4000 each
-    sequence_length_nt: 96
-    expected_columns:                 # EXPECTED — reconcile against the real CSV header
-      sequence: ["sequence", "seq", "dna"]
-      target: ["expression", "fluorescence", "sfgfp"]
-      series: ["series", "mutational_series", "series_id"]
+    file: data/extracted/seq2yield/to_import/Ecoli_data.csv
+    expected_n_sequences: 228000      # confirmed actual: 227024
+    expected_n_series: 56             # 56 mutational series (mut_series)
+    sequence_length_nt: 96            # confirmed: Sequence min=max=modal=96
+    columns:                          # CONFIRMED canonical mapping (audit 2026-06-04)
+      sequence: "Sequence"
+      target: "Protein"
+      series: "mut_series"
+      replicate: "rep"
+      combi: "Combi"
+      biophysical:                    # the 8 mechanistic features (paper §6), in-CSV
+        - cdsCAI
+        - utrCdsStructureMFE
+        - fivepCdsStructureMFE
+        - threepCdsStructureMFE
+        - cdsBottleneckPosition
+        - cdsBottleneckRelativeStrength
+        - cdsNucleotideContentAT
+        - cdsHydropathyIndex
+      drop: ["Unnamed: 0"]
 
   secondary_dataset:                  # deferred (Tier 2 cross-series / transfer)
     organism: s_cerevisiae

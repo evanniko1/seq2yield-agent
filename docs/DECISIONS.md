@@ -72,6 +72,16 @@ artifacts; `data/splits/` is strict-protected once written.
 Anthropic; diversity must include both Ollama and OpenRouter. **Decision.** See #5 (updated
 in place). **Consequences.** Four adapters at Milestone 4; authority failover Anthropic↔OpenAI.
 
+## #11 — Split layout correction (per-iteration, not saved_sets/)
+**Context.** README implied provided splits live in `_saved/saved_sets/`. The Stage 0 audit
+(2026-06-04) found them at `_saved/iteration_{1..5}/{_working_set,_heldout_set}.csv` — 5
+Monte-Carlo CV repeats, each with its own held-out set (~10% of its working set).
+**Decision.** Treat each `iteration_N` as one repeat; `_working_set` = dev (train+hyperopt),
+`_heldout_set` = fixed test. Configs updated (`configs/splits.yaml`, `configs/data.yaml`);
+logged in `data/manifests/reproducibility_gaps.md`. **Consequences.** The 5-repeat MC-CV
+(DECISIONS #7) maps directly onto the 5 provided iterations — no resampling needed for
+baseline reproduction. Supersedes the `saved_sets/` path in DECISIONS #9.
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

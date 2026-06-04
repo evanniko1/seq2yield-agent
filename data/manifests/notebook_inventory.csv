@@ -1,0 +1,9 @@
+path,n_cells,n_code_cells,colab_specific,imports,reads_files,writes_files
+seq2yield/1_kmers.ipynb,19,8,True,google.colab;itertools;matplotlib.pyplot;numpy;os;pandas;pickle;random;re;seaborn;sklearn.decomposition;sklearn.feature_extraction.text;sklearn.manifold;sys;time;umap.plot;utils,,
+seq2yield/6_Yeast.ipynb,41,17,True,google.colab;itertools;matplotlib.pyplot;numpy;os;pandas;pickle;random;re;seaborn;sklearn.ensemble;sklearn.feature_extraction.text;sklearn.metrics;sklearn.model_selection;sklearn.neural_network;sys;time;umap.plot;utils,,
+seq2yield/5_Plot_Results.ipynb,28,13,True,google.colab;itertools;matplotlib.pyplot;numpy;os;pandas;pickle;plot_results;re;seaborn;sys,,
+seq2yield/3_Train_Convolutional_Networks.ipynb,16,7,True,google.colab;keras.callbacks;numpy;os;pandas;pickle;random;scipy;scipy.stats;sklearn.metrics;sys;tensorflow;utils,test_params_1.pkl,
+seq2yield/4_ExplainableAI.ipynb,9,4,True,google.colab;keras.models;matplotlib.pyplot;numpy;os;pandas;seaborn;sys;tensorflow;utils,,
+seq2yield/2_Train_Non_Deep_Regressors.ipynb,14,6,True,google.colab;models_misc;numpy;os;pandas;random;re;scipy;scipy.stats;sklearn.preprocessing;sys;utils,,
+seq2yield/hyperOpt/hyper_opt_DL.ipynb,13,6,True,google.colab;hyperopt;hyperopt.fmin;keras.callbacks;numpy;os;pandas;pickle;random;scipy;scipy.stats;sklearn.metrics;sys;tensorflow;utils,,
+seq2yield/hyperOpt/hyper_opt_ML.ipynb,11,5,True,google.colab;numpy;os;pandas;pickle;random;scipy;scipy.stats;sklearn.ensemble;sklearn.model_selection;sklearn.neural_network;sklearn.svm;sys;utils,,

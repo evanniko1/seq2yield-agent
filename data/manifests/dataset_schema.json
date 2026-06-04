@@ -1,0 +1,154 @@
+{
+  "datasets": [
+    {
+      "path": "seq2yield/to_import/yeast_data.csv",
+      "n_rows": 3929,
+      "n_columns": 6,
+      "columns": [
+        "Unnamed: 0",
+        "native_gene",
+        "cluster_ID",
+        "group_ID",
+        "sequence",
+        "protein"
+      ],
+      "dtypes": {
+        "Unnamed: 0": "int64",
+        "native_gene": "object",
+        "cluster_ID": "int64",
+        "group_ID": "int64",
+        "sequence": "object",
+        "protein": "float64"
+      },
+      "sequence_columns": [
+        "sequence"
+      ],
+      "target_columns": [
+        "protein"
+      ],
+      "series_columns": [],
+      "sequence_length": {
+        "column": "sequence",
+        "min": 80,
+        "max": 80,
+        "modal": 80
+      },
+      "missingness_summary": {}
+    },
+    {
+      "path": "seq2yield/to_import/Ecoli_data.csv",
+      "n_rows": 227024,
+      "n_columns": 14,
+      "columns": [
+        "Unnamed: 0",
+        "mut_series",
+        "Combi",
+        "rep",
+        "Sequence",
+        "Protein",
+        "cdsCAI",
+        "utrCdsStructureMFE",
+        "fivepCdsStructureMFE",
+        "threepCdsStructureMFE",
+        "cdsBottleneckPosition",
+        "cdsBottleneckRelativeStrength",
+        "cdsNucleotideContentAT",
+        "cdsHydropathyIndex"
+      ],
+      "dtypes": {
+        "Unnamed: 0": "int64",
+        "mut_series": "int64",
+        "Combi": "int64",
+        "rep": "int64",
+        "Sequence": "object",
+        "Protein": "float64",
+        "cdsCAI": "float64",
+        "utrCdsStructureMFE": "float64",
+        "fivepCdsStructureMFE": "float64",
+        "threepCdsStructureMFE": "float64",
+        "cdsBottleneckPosition": "int64",
+        "cdsBottleneckRelativeStrength": "float64",
+        "cdsNucleotideContentAT": "float64",
+        "cdsHydropathyIndex": "float64"
+      },
+      "sequence_columns": [
+        "Sequence"
+      ],
+      "target_columns": [
+        "Protein"
+      ],
+      "series_columns": [
+        "mut_series"
+      ],
+      "sequence_length": {
+        "column": "Sequence",
+        "min": 96,
+        "max": 96,
+        "modal": 96
+      },
+      "missingness_summary": {}
+    }
+  ],
+  "provided_splits": {
+    "iteration_1": {
+      "working_set": {
+        "path": "seq2yield/to_import/_saved/iteration_1/_working_set.csv",
+        "size_bytes": 55349605,
+        "sha256": "6aabc43b2d253ac4eaf05ca563a8f69c172f205042db8b6f865c1a02e8455411"
+      },
+      "heldout_set": {
+        "path": "seq2yield/to_import/_saved/iteration_1/_heldout_set.csv",
+        "size_bytes": 6137083,
+        "sha256": "46690716d87f13ccd5838aa66f3fe20248b9d0660a38dc96289614d3c4584227"
+      }
+    },
+    "iteration_5": {
+      "working_set": {
+        "path": "seq2yield/to_import/_saved/iteration_5/_working_set.csv",
+        "size_bytes": 55347418,
+        "sha256": "4e7668108258ff536158768c788bd9d72d8c0ceb45a07c2be91683b082193c8e"
+      },
+      "heldout_set": {
+        "path": "seq2yield/to_import/_saved/iteration_5/_heldout_set.csv",
+        "size_bytes": 6139270,
+        "sha256": "b2c885ecd9e64072465ff5d15115ae8b7299eff4cd45d178fab433368ef950b5"
+      }
+    },
+    "iteration_2": {
+      "working_set": {
+        "path": "seq2yield/to_import/_saved/iteration_2/_working_set.csv",
+        "size_bytes": 55348880,
+        "sha256": "e1ba5b68fb603cdf49ee1332c4f7316d51f378e8497084f20b4c90b3f4992e34"
+      },
+      "heldout_set": {
+        "path": "seq2yield/to_import/_saved/iteration_2/_heldout_set.csv",
+        "size_bytes": 6137808,
+        "sha256": "c7ce455d281a18559c30c74a7f4947bc20ba6b78cea4a7ab7fcbc4e6725ad0bb"
+      }
+    },
+    "iteration_3": {
+      "working_set": {
+        "path": "seq2yield/to_import/_saved/iteration_3/_working_set.csv",
+        "size_bytes": 55350582,
+        "sha256": "4b4a5f07b858125bd622fbcd9083248b055ad68916ddac9a09a02588e152b8a2"
+      },
+      "heldout_set": {
+        "path": "seq2yield/to_import/_saved/iteration_3/_heldout_set.csv",
+        "size_bytes": 6136106,
+        "sha256": "fb549223cf466acb80a93f46693cd62c1306adb1598d91211a5b41b05fa3e4f7"
+      }
+    },
+    "iteration_4": {
+      "working_set": {
+        "path": "seq2yield/to_import/_saved/iteration_4/_working_set.csv",
+        "size_bytes": 55347776,
+        "sha256": "d61969c2cbc35bce48c9b67dd1b9e65474ece2e3c3d57c678b6ab2419ad435ad"
+      },
+      "heldout_set": {
+        "path": "seq2yield/to_import/_saved/iteration_4/_heldout_set.csv",
+        "size_bytes": 6138912,
+        "sha256": "85747d06e06b811665d5f0a63c86b2ce96ac4397cbe77039a28a732dea6878a0"
+      }
+    }
+  }
+}

@@ -1,0 +1,2589 @@
+{
+  "archive_name": "seq2yield.zip",
+  "archive_sha256": "ae1b981d3bd9561ae648ece05aee9175eacbdadcb2c82596de06be8cc895c93d",
+  "audited_at": "2026-06-04T18:42:18.159348+00:00",
+  "n_members": 698,
+  "n_junk_skipped": 349,
+  "n_real_files": 279,
+  "files": [
+    {
+      "path": "seq2yield/1_kmers.ipynb",
+      "extension": ".ipynb",
+      "size_bytes": 9172,
+      "crc32": "b2c6a0dd",
+      "sha256": "abac78e8a08c3d6be665ee99a41cf32df9af085ef6e137e785faa4814fa79ac8",
+      "role_guess": "notebook"
+    },
+    {
+      "path": "seq2yield/6_Yeast.ipynb",
+      "extension": ".ipynb",
+      "size_bytes": 22471,
+      "crc32": "96178aaf",
+      "sha256": "77b85532a8f9add524d7a14eb6bbbb1a406db47c449d7567a68d67fe4bc7c047",
+      "role_guess": "notebook"
+    },
+    {
+      "path": "seq2yield/5_Plot_Results.ipynb",
+      "extension": ".ipynb",
+      "size_bytes": 16157,
+      "crc32": "7a2e6109",
+      "sha256": "559e9d59560d69f5af99bdcf358f2e4e7c957492c6c77a36fa71d907701e1dd5",
+      "role_guess": "notebook"
+    },
+    {
+      "path": "seq2yield/3_Train_Convolutional_Networks.ipynb",
+      "extension": ".ipynb",
+      "size_bytes": 11930,
+      "crc32": "a0d3415c",
+      "sha256": "c36d72748dd1eab1ece1972a36183b9feaa061d2073fe14aae6e4a04a2eade90",
+      "role_guess": "notebook"
+    },
+    {
+      "path": "seq2yield/4_ExplainableAI.ipynb",
+      "extension": ".ipynb",
+      "size_bytes": 5962,
+      "crc32": "2dd352e3",
+      "sha256": "ba9024866eb13f6e9ee413f46cdd02a9a559636fa714f3fdc691036906b9c725",
+      "role_guess": "notebook"
+    },
+    {
+      "path": "seq2yield/2_Train_Non_Deep_Regressors.ipynb",
+      "extension": ".ipynb",
+      "size_bytes": 10938,
+      "crc32": "e51edd14",
+      "sha256": "cfbdd57454338f2afd6df9a15bd8b22ceccc9c8e4c35aeac2945503dbfeb44fb",
+      "role_guess": "notebook"
+    },
+    {
+      "path": "seq2yield/to_import/kMers.py",
+      "extension": ".py",
+      "size_bytes": 4875,
+      "crc32": "a094af3f",
+      "sha256": "6d2e31588cea71a7d5f114d01b19036955ddd799c6b535fa41a3c16c0cac6739",
+      "role_guess": "script"
+    },
+    {
+      "path": "seq2yield/to_import/xai_helper.py",
+      "extension": ".py",
+      "size_bytes": 5600,
+      "crc32": "ecb666d1",
+      "sha256": "306c4b68baaa6bfcac9ee6fff378b7512642e1ea0ea18e0afd91ccdc5562e2d3",
+      "role_guess": "script"
+    },
+    {
+      "path": "seq2yield/to_import/custom_verstack.py",
+      "extension": ".py",
+      "size_bytes": 7228,
+      "crc32": "6b159543",
+      "sha256": "79b4ecec938a6792efa790b6b0ff9e555c0cba97289a125d139aeb6ebf49cb97",
+      "role_guess": "script"
+    },
+    {
+      "path": "seq2yield/to_import/yeast_data.csv",
+      "extension": ".csv",
+      "size_bytes": 441624,
+      "crc32": "e99b2f07",
+      "sha256": "fcae8fea1b4148451db2d2b8d30da2637276bf400c3dc5db84cc2c82414aec61",
+      "role_guess": "data"
+    },
+    {
+      "path": "seq2yield/to_import/yeast_mod.py",
+      "extension": ".py",
+      "size_bytes": 3501,
+      "crc32": "df8954ef",
+      "sha256": "d512dc93bef734d4c1aff6805a17c162b21ae2943a002d0c86711c54133773db",
+      "role_guess": "script"
+    },
+    {
+      "path": "seq2yield/to_import/models_misc.py",
+      "extension": ".py",
+      "size_bytes": 4982,
+      "crc32": "4cd9c2fd",
+      "sha256": "8a58dfbec8d9d8eca2c6cea1a2eb77563c1c7d105d1f56f6ca80ab7a265aa965",
+      "role_guess": "script"
+    },
+    {
+      "path": "seq2yield/to_import/utils.py",
+      "extension": ".py",
+      "size_bytes": 8935,
+      "crc32": "7df091d5",
+      "sha256": "75e65953fbf474fadd88a8235aea9224fb431af1b4a88796b01dbf67dbd365ea",
+      "role_guess": "script"
+    },
+    {
+      "path": "seq2yield/to_import/cnn_conv2d.py",
+      "extension": ".py",
+      "size_bytes": 6149,
+      "crc32": "d81d2338",
+      "sha256": "daac3cab9b4e94fc68969bf6f45d4aa2ed42e988bd493e1e50047f7c92e5adbe",
+      "role_guess": "script"
+    },
+    {
+      "path": "seq2yield/to_import/plot_results.py",
+      "extension": ".py",
+      "size_bytes": 10823,
+      "crc32": "654d1a87",
+      "sha256": "7f37c545338469b82664e3052af7592baa481a1b354dec7bf7fea1fc468530f0",
+      "role_guess": "script"
+    },
+    {
+      "path": "seq2yield/to_import/Ecoli_data.csv",
+      "extension": ".csv",
+      "size_bytes": 42620682,
+      "crc32": "18295125",
+      "sha256": "164e61239458516934cf16d7666720a1e420590af23535a6b9c5aff15c37a352",
+      "role_guess": "data"
+    },
+    {
+      "path": "seq2yield/to_import/training_schemes.py",
+      "extension": ".py",
+      "size_bytes": 12769,
+      "crc32": "91480312",
+      "sha256": "a8512f12c6c027290bee5a243a2936ae77ddd291a75514117c117c8cd7e61d2c",
+      "role_guess": "script"
+    },
+    {
+      "path": "seq2yield/hyperOpt/hyper_opt_DL.ipynb",
+      "extension": ".ipynb",
+      "size_bytes": 9944,
+      "crc32": "62bc5b5b",
+      "sha256": "e82b61bc335998e37636932529f3793dcb122b28c1975f3d281b2407b87fa05d",
+      "role_guess": "notebook"
+    },
+    {
+      "path": "seq2yield/hyperOpt/test_params_1.pkl",
+      "extension": ".pkl",
+      "size_bytes": 158,
+      "crc32": "21f51b3a",
+      "sha256": "96e0fceaadcc6fb0c4b55c38886666fb10e0286afbf61fb44cbcb4b294392146",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/hyperOpt/hyper_opt_ML.ipynb",
+      "extension": ".ipynb",
+      "size_bytes": 7111,
+      "crc32": "0709d6e7",
+      "sha256": "02512d3ba91f3f49c0306e647849b538865d49b50585291294c36ced76b41291",
+      "role_guess": "notebook"
+    },
+    {
+      "path": "seq2yield/to_import/__pycache__/kMers.cpython-37.pyc",
+      "extension": ".pyc",
+      "size_bytes": 5906,
+      "crc32": "70aeae43",
+      "sha256": "ba6b8dedccc04ef5519790cdc151f9dc3fe2649763939ea9647523d136672208",
+      "role_guess": "unknown"
+    },
+    {
+      "path": "seq2yield/to_import/__pycache__/kmers.cpython-37(1).pyc",
+      "extension": ".pyc",
+      "size_bytes": 5583,
+      "crc32": "1966dc4f",
+      "sha256": "c59cd08616682f2e6f5b3000b43e2909bd0fb15169b6d33ca6b5997cf49ad35b",
+      "role_guess": "unknown"
+    },
+    {
+      "path": "seq2yield/to_import/__pycache__/yeast_mod.cpython-37.pyc",
+      "extension": ".pyc",
+      "size_bytes": 3891,
+      "crc32": "74041a87",
+      "sha256": "dfb0562d96a0118828771b71ea89a8a171b7d70dea55a2052b898a357285a8fe",
+      "role_guess": "unknown"
+    },
+    {
+      "path": "seq2yield/to_import/__pycache__/plot_results.cpython-37.pyc",
+      "extension": ".pyc",
+      "size_bytes": 10115,
+      "crc32": "657b959c",
+      "sha256": "50b9be5404124e39891a117bb056a98074bca8d5c9cf871445ace4424379bd91",
+      "role_guess": "unknown"
+    },
+    {
+      "path": "seq2yield/to_import/__pycache__/models_misc.cpython-37.pyc",
+      "extension": ".pyc",
+      "size_bytes": 4982,
+      "crc32": "a3af823a",
+      "sha256": "891c195074620319511a6f8b7bc859ade9bd2e9f23cfb9fcad22a97c45bb628e",
+      "role_guess": "unknown"
+    },
+    {
+      "path": "seq2yield/to_import/__pycache__/utils.cpython-37.pyc",
+      "extension": ".pyc",
+      "size_bytes": 9663,
+      "crc32": "3ddaa6d9",
+      "sha256": "3e31aae8dbe398aef227db5fc4cc259f35e6cd0820cce45dc203698744fb8b14",
+      "role_guess": "unknown"
+    },
+    {
+      "path": "seq2yield/to_import/__pycache__/cnn_conv2d.cpython-37.pyc",
+      "extension": ".pyc",
+      "size_bytes": 4698,
+      "crc32": "fbdc75c9",
+      "sha256": "7ef3302523e61f88afe224f403af841868274d93215b418974ce018fe6d59398",
+      "role_guess": "unknown"
+    },
+    {
+      "path": "seq2yield/to_import/__pycache__/training_schemes.cpython-37.pyc",
+      "extension": ".pyc",
+      "size_bytes": 10293,
+      "crc32": "0cf093d4",
+      "sha256": "198eb8d0483e48c3719d1cce1a8811835bd449a38c3684123aca1372ba71ace2",
+      "role_guess": "unknown"
+    },
+    {
+      "path": "seq2yield/to_import/__pycache__/xai_helper.cpython-37.pyc",
+      "extension": ".pyc",
+      "size_bytes": 4396,
+      "crc32": "c983a0ac",
+      "sha256": "df9b59f176cb97fb8769f341dc0f1f53e43a1e87e95926380b3a823193fd1eb7",
+      "role_guess": "unknown"
+    },
+    {
+      "path": "seq2yield/to_import/__pycache__/custom_verstack.cpython-37.pyc",
+      "extension": ".pyc",
+      "size_bytes": 5639,
+      "crc32": "4682d1c2",
+      "sha256": "3e01f25a698a8625f999ca659536f710b94cbe8055e4c0923e94236471c36406",
+      "role_guess": "unknown"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/LICENSE",
+      "extension": "",
+      "size_bytes": 1068,
+      "crc32": "39fc6940",
+      "sha256": "44d99845e6c8d0423dc49856a74e74a244de8064156ad4ebd922b6ee9668ea42",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/README.md",
+      "extension": ".md",
+      "size_bytes": 31643,
+      "crc32": "3feac14c",
+      "sha256": "c2fd6d489a1aefd6996849bbca38ef31939e7d33f7a04bc60ac5f7dd729ff9d3",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/setup.py",
+      "extension": ".py",
+      "size_bytes": 1067,
+      "crc32": "d0a31b04",
+      "sha256": "a490752d03467d195dc886f1f6d2f54cf0cc32aeebcd3f91d6ad64b9325ef16d",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.gitignore",
+      "extension": "",
+      "size_bytes": 154,
+      "crc32": "5599f71c",
+      "sha256": "603df8ca0ab4722e253810195389949b95bd7e3251d2fada8c1981d0f2022496",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.travis.yml",
+      "extension": ".yml",
+      "size_bytes": 1338,
+      "crc32": "e5a21f23",
+      "sha256": "55b80ce0f5740b385af1ae2ba8df6dfc1bf92f5d51b041243bfc9547a2c2f826",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/_working_set.csv",
+      "extension": ".csv",
+      "size_bytes": 55349605,
+      "crc32": "925993ca",
+      "sha256": "6aabc43b2d253ac4eaf05ca563a8f69c172f205042db8b6f865c1a02e8455411",
+      "role_guess": "split"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/_heldout_set.csv",
+      "extension": ".csv",
+      "size_bytes": 6137083,
+      "crc32": "90afe0f6",
+      "sha256": "46690716d87f13ccd5838aa66f3fe20248b9d0660a38dc96289614d3c4584227",
+      "role_guess": "split"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_5/_working_set.csv",
+      "extension": ".csv",
+      "size_bytes": 55347418,
+      "crc32": "008b8d88",
+      "sha256": "4e7668108258ff536158768c788bd9d72d8c0ceb45a07c2be91683b082193c8e",
+      "role_guess": "split"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_5/_heldout_set.csv",
+      "extension": ".csv",
+      "size_bytes": 6139270,
+      "crc32": "76230aa4",
+      "sha256": "b2c885ecd9e64072465ff5d15115ae8b7299eff4cd45d178fab433368ef950b5",
+      "role_guess": "split"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_2/_working_set.csv",
+      "extension": ".csv",
+      "size_bytes": 55348880,
+      "crc32": "df2b24cc",
+      "sha256": "e1ba5b68fb603cdf49ee1332c4f7316d51f378e8497084f20b4c90b3f4992e34",
+      "role_guess": "split"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_2/_heldout_set.csv",
+      "extension": ".csv",
+      "size_bytes": 6137808,
+      "crc32": "96cbce11",
+      "sha256": "c7ce455d281a18559c30c74a7f4947bc20ba6b78cea4a7ab7fcbc4e6725ad0bb",
+      "role_guess": "split"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_3/_working_set.csv",
+      "extension": ".csv",
+      "size_bytes": 55350582,
+      "crc32": "17555ec1",
+      "sha256": "4b4a5f07b858125bd622fbcd9083248b055ad68916ddac9a09a02588e152b8a2",
+      "role_guess": "split"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_3/_heldout_set.csv",
+      "extension": ".csv",
+      "size_bytes": 6136106,
+      "crc32": "b99b2cee",
+      "sha256": "fb549223cf466acb80a93f46693cd62c1306adb1598d91211a5b41b05fa3e4f7",
+      "role_guess": "split"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_4/_working_set.csv",
+      "extension": ".csv",
+      "size_bytes": 55347776,
+      "crc32": "536f7aa2",
+      "sha256": "d61969c2cbc35bce48c9b67dd1b9e65474ece2e3c3d57c678b6ab2419ad435ad",
+      "role_guess": "split"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_4/_heldout_set.csv",
+      "extension": ".csv",
+      "size_bytes": 6138912,
+      "crc32": "fff5f140",
+      "sha256": "85747d06e06b811665d5f0a63c86b2ce96ac4397cbe77039a28a732dea6878a0",
+      "role_guess": "split"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/models.py",
+      "extension": ".py",
+      "size_bytes": 11187,
+      "crc32": "b80319a5",
+      "sha256": "92f86d2035229876c14ef19572647a9673dd6931c4d8657005e54f26d98f7813",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/util.py",
+      "extension": ".py",
+      "size_bytes": 18591,
+      "crc32": "8d67851b",
+      "sha256": "19ee89bb3edb7b047ad368ac138732b2d93ca9a39c85b0da9c315d7862446cc1",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/__init__.py",
+      "extension": ".py",
+      "size_bytes": 25,
+      "crc32": "98affbf9",
+      "sha256": "df72512d14a233f9a53d67afd2ccfb60aec18d36d0f9f456ad1a0ea277ce15b0",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/dinuc_shuffle.py",
+      "extension": ".py",
+      "size_bytes": 8449,
+      "crc32": "2dc0358a",
+      "sha256": "d3cd8c094d2e91fabcb99ac22f700b828003e8cdba0cf47c8df07fcb799a8023",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/models_o.py",
+      "extension": ".py",
+      "size_bytes": 11142,
+      "crc32": "5089a434",
+      "sha256": "66895d81d899183da5b9a87be7f47e07b171bbfa4bc727d7f7b72635396e54c4",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift.egg-info/PKG-INFO",
+      "extension": "",
+      "size_bytes": 664,
+      "crc32": "b48a461d",
+      "sha256": "26729195171df5babfe967aa23adaac266f0e4b0584ee0a5aa74b11048d1e9eb",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift.egg-info/SOURCES.txt",
+      "extension": ".txt",
+      "size_bytes": 1734,
+      "crc32": "72c1d9e2",
+      "sha256": "47b3cea5aedf785d499be96410eb07dc31728c2fe13b8e007b6adb4f147f1d09",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift.egg-info/requires.txt",
+      "extension": ".txt",
+      "size_bytes": 84,
+      "crc32": "0343a184",
+      "sha256": "9fe5fed6d9ad981153c13c1d223a9b0ae0cfe47baf6e5bcc64ac6eea8fb2443e",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift.egg-info/top_level.txt",
+      "extension": ".txt",
+      "size_bytes": 9,
+      "crc32": "5011c4e1",
+      "sha256": "c486823258f3948530bb3311973baaa82b4ffc0818c81ec07c78a03fa6a3beef",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift.egg-info/dependency_links.txt",
+      "extension": ".txt",
+      "size_bytes": 1,
+      "crc32": "32d70693",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/config",
+      "extension": "",
+      "size_bytes": 267,
+      "crc32": "05ecb5be",
+      "sha256": "c782c1ae0ba18e2490103e759a1106e5b6656a89d4d3071042e089874bbaa611",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/HEAD",
+      "extension": "",
+      "size_bytes": 23,
+      "crc32": "a773692b",
+      "sha256": "f6f2b945f6c411b02ba3da9c7ace88dcf71b6af65ba2e0d89aa82900042b5a10",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/description",
+      "extension": "",
+      "size_bytes": 73,
+      "crc32": "1f078b37",
+      "sha256": "85ab6c163d43a17ea9cf7788308bca1466f1b0a8d1cc92e26e9bf63da4062aee",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/index",
+      "extension": "",
+      "size_bytes": 5570,
+      "crc32": "847fe2e7",
+      "sha256": "407099e5c6c192b0d7327ef19d92ba1224c6afafa6fac3dcee7ddc60bf955980",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/packed-refs",
+      "extension": "",
+      "size_bytes": 2157,
+      "crc32": "a990db3f",
+      "sha256": "7f101e06df11027cb7cd42240c3bb4e8641a9230944f91d3d0f00690f5a0b3ec",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[18]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "0b402ae7",
+      "sha256": "37e4dbe69d73e3fb43b94bc5090146659ed5c13b1533c91e0c833beac9025586",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[7]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "51ff57c7",
+      "sha256": "c9c7b2cfa4d6b7231e25f9ae7b72f8161f2894b86b18c33e8dfac049ffaa12e1",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[18]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "b9ce9293",
+      "sha256": "a144bbe0157b5bc8053ff80b9187c4407bee923a54290733c702e9de9a594e3d",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[7]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "8b90c013",
+      "sha256": "03cb30fd25057d15b295170d73f7454f76dc3c62d3fd3fe09aa170031bd62306",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[29]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "eed3168f",
+      "sha256": "d1a99e266ae37f51511aeff4b6aeedb0dcb256a1abf80eb9b147cbf9464bb814",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[29]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "351c0087",
+      "sha256": "8ae0f82101546cdca7303ddbd806bce1d4cf205f00d35292507932f1ee7f6e9c",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[19]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "c524a6f7",
+      "sha256": "56940e04f23a02054fcad7280c7250e25bdee34686a5d900de160f63ba5f31f3",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[6]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "5e003b67",
+      "sha256": "ad9130c8b45a35f2632d3f7a0e977229bd5d5818b7ed84d46d135945c04d0bca",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[1]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "01a86885",
+      "sha256": "851ac472ddad1177e80c98d133398999c6eed49710520f5464c4c9711f8113f0",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[1]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32546464,
+      "crc32": "548f2071",
+      "sha256": "e542a411f1d118fec08d39be944323f19094050a908fd1fc7fc34078a6801a22",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[19]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "555ecb2c",
+      "sha256": "fbb9f7fae4c1c9e6f250007dd0c017d7825f996cf190d321ec85d6f4d9179af5",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[6]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "41efee73",
+      "sha256": "3c7cd476c7992273895e2b58ad270af0d2f08e4e703c14f1a661348ce7005593",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[28]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "a63f885c",
+      "sha256": "3dbfd68e156a447856b0bcd347a5357f49b69040c10e95bde7dc007eb25c1dde",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[28]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "3cc3626b",
+      "sha256": "58929637b78c8a8330507ac7af32b276b5e1d78c57138346da676de97eb4b236",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[25]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "024e7c51",
+      "sha256": "fd5d99fe733a045a77c304d290785913469430dbf61d6133be0725982b99e4f5",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[22]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "eff9e90e",
+      "sha256": "a6b99692c1e8d728b35cf8c18916b3bcfa64d0d68e86a58debce63c783bd1a8c",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[30]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "e48bba19",
+      "sha256": "abd9ef43637300ae41b2384fdcab07eee6244d3b6dbdffa2fbf3783a53611ad0",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[37]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "857114e8",
+      "sha256": "638cab2e91393b30557313059578973266d13ab0d93b506f57aa702d6b01b826",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[37]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "cbe7f6df",
+      "sha256": "7fa7af175c182e2e8416bee9cc6f9835f9fb256f0cf3ec53d929c02dbd4444a9",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[30]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501144,
+      "crc32": "5d4e1818",
+      "sha256": "30a8fa9b950de5ff4e1bd7cab1e997c61b4503922cce34ebc13a82d4c2d84743",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[22]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "5f6aa3f0",
+      "sha256": "0babdb1af22d4263eace0754cdbb87b7a423da927a19623722758ec6d5725d45",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[25]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "37e0a0ea",
+      "sha256": "79027c8ec1fc89e1accc8f5bc3d1373e1d72d90331b9ad212e17be456194724c",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[53]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "29e3cca2",
+      "sha256": "a719c035048bae943dcb782a6fed287ea4f2ac15e979ceaa174834c837a88a93",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[54]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "f6eb63f5",
+      "sha256": "3f20d4b0b4bb13b596585cbb8417070c23dc583753476bf79682761bb2e00995",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[46]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "9f73a3a9",
+      "sha256": "776d2ee6434fcf74455ffe8a98416238c4f938c5310a89e1a48645710074f5c8",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[13]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "28f7a75a",
+      "sha256": "6b62802e8463fa9a990772cf6eb5ce34c42574dd43dbad7e5e09b43ed23f29ae",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[41]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "67c583d3",
+      "sha256": "a54a83c3645ec74708c9835d84612e4857a2903638b04e368dd3b586a08754aa",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[14]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "dc81216c",
+      "sha256": "0fc3c326a5d9da05bff642aa87fdaeb66e0cd9f1dd888197d5db137031f6a064",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[41]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "438b9c7f",
+      "sha256": "7116ea13687dd358e9ec246b6ad7fbd7af7efd8da73628b3a96208dd33eedc01",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[13]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "b628ded9",
+      "sha256": "b9d19d523b5551dd692e7fd0561be8c3d256a2d1fdcb385ae3aba47dd7d365ce",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[46]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "1b91f051",
+      "sha256": "beb4a73234e628acbeea644b65b2bc812b8964961ebe86946a79aa43c991addb",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[54]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "72babb7c",
+      "sha256": "f730b63b5288edf502fc0f39dabcf43aa69993091ee71b927833ee81b42aecef",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[53]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "4898cf7d",
+      "sha256": "1896199e2cd2e35d457dc4ffb53b716c516829dd6c781c8cd9af83c41eeb7039",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[31]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "282e55b1",
+      "sha256": "2f3d147b0525b48c57792702d5ec2f65dcd2d67d26c985e0cb5b6f7e82511fd3",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[36]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "97868c90",
+      "sha256": "c1e8abb74ac846d536d3985dee29d5bb9a9942c1ce432d3121631ac7ba44d14f",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[24]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "0c473674",
+      "sha256": "e728c7aab0aab58b712e8e1be5b8456db320946585f0cbc3e1262d2b86765609",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[23]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "4d3e192e",
+      "sha256": "33ce7bb91125e200a5934884e7b4b26f86a23f1732164697ed14e6aecc69c358",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[23]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "54bf8714",
+      "sha256": "3be34d36441ba5e8bd39fb700d69f7bcbe59dd8f4602d3a98f18b62c23af3b91",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[24]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "a6dc2ded",
+      "sha256": "6f8894427d7bf3c665613a36b9639976d4166cc751959fee4833da8b8b73c103",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[36]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "4aa20026",
+      "sha256": "972f50698e1dfe493cb3bca49c51d6a8c674d7c3156da214143e29857a97741a",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[31]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "a8e25c33",
+      "sha256": "dccc02ab9a446a026c8a8d549a69dfade2f4ee3d93f7507f2f183c10e20b0ccd",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[47]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "974a7c8d",
+      "sha256": "d949dbdbc6ef0cc45fa62acd14e6b73e57887478793aacebc8bcd7b19f2b7e1e",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[12]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "103d2ea1",
+      "sha256": "6b12a3e6d0331655c3850c97faa6c94e852c85f044813e02465bd4c06d322262",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[40]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "58c5a29e",
+      "sha256": "92cec79c91ced286cfc7fc9df3478b95c27b7ad426f954680c75df0d053aa099",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[15]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501144,
+      "crc32": "3cf48472",
+      "sha256": "402999620df1dfe8f364e60bebc166a6d7e16eb35ca4379af5a5f1261309cf85",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[52]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "aff0caf5",
+      "sha256": "06692a4c713daa258f979deabf8ea116c11cb8ab0d098063e43c1efd15622f47",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[55]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "adb963d7",
+      "sha256": "7377bbd25a5c66359bac4cf5939e0f59030a746098fd2b998b879734e6d95627",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[55]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "82005a7b",
+      "sha256": "1b2bfa368f8c04479ac6a3f13be97ec5a8ad2b7a82ce9d808ec336d3abd5c95d",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[52]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "e9f3f43f",
+      "sha256": "2c48d6b15aca40c7ee6726762adfa1b19d407c0b731a7d6421b0b5ed3d04176a",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[15]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "e57cb489",
+      "sha256": "6cce600302cddb02d704dec8f1cbc6e1244d30191e06ef8b0d92b935bc78fd95",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[40]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "1ceac946",
+      "sha256": "02661629fa15b357c42a8913832c98d59266f328cdbb80f836752a452f26b789",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[12]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "3cfd3465",
+      "sha256": "cfdc7034bda341cf30a2ea6607372f69a14e249aaf4e7ca1db28ceaa4fc3d78d",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[47]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "4dcd956e",
+      "sha256": "97c878fb51b6353d022173fe16c7b4637189276e43dd2d4c31eb66c21185d20e",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[21]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "6ec90a0c",
+      "sha256": "d561d5ea37088b61abcac31a68792cadd3970ca08dd6e3a0f24c406f9332050c",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[26]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "9701488f",
+      "sha256": "d0af2b059988042396634c7dd8b54b6dd571a383567c8b3ba5b46941dbd91ea1",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[34]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "817497ac",
+      "sha256": "ea99f95942bcd7e596fe752508121d3a64a25f7cf892ab4302b66222afc9ed6d",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[33]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "6f8d4e93",
+      "sha256": "ccca0aa9d95b953e8804d0d1b3a4fbacc31ac824a75d3cf442e38e1c9b21313c",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[33]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "70630a30",
+      "sha256": "24b66c7b2d9356ada1468ddfdbc9df773a868f0a4bd81398b7a1ec95c06cb81d",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[34]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "96192e73",
+      "sha256": "7e004917fd88af14b613489332528f972e8950a4d65c35a0cc9d719d3e6cdf59",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[26]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "0e3d0c41",
+      "sha256": "0875efda1301bd0c225437dbdcdda2dfb02749664bf7d76bedccaad63ca74054",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[21]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "7566a23d",
+      "sha256": "e33d896acd296f9eb2e8960fd77f1eeba86a3aa6d283482d912550a5c13e8cd6",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[50]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "115a2c9c",
+      "sha256": "601f59312360e010deabb132d1b589ee4e0cd77dd8aa1e8e2baaa474db9f3dde",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[8]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "8adbcca7",
+      "sha256": "ff1f6f9cc99faac8d022bc84985bb69c0718dcd970aa5de2bcf326a02ca15bc3",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[17]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501168,
+      "crc32": "98bcb836",
+      "sha256": "4668ad7a0b289b8408075fed38350b654a58653fb61026dea75e3feabf9009b0",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[42]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "8aa9fae8",
+      "sha256": "e5316a4cc62328fbcdb519874e6084aa1d7471441d70f900817ae23a94871186",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[10]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "c3acdcac",
+      "sha256": "8d48a25912aae1086c7d2daad3a97f2174f82a83ac690f58b4314fc4dbce79c7",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[45]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "ab926de1",
+      "sha256": "22ee0eab4779295fbb32b38ec1d43ca0c91323e11d9cff5237759202bf680286",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[45]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "19c71b25",
+      "sha256": "fa1b0ae651c0a65d40bea8297f335d202dbdd898d27b2b09202a6526093d2099",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[10]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "ca51c773",
+      "sha256": "1810d150ccf75d61b7769be81540eadd0c8a8edecc3d72aaa8040530f903be1f",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[8]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "5d90a221",
+      "sha256": "f9a7ec8dd53edc7d3edb48b8296ff3f63168de8a0045587864e2955bac5ee674",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[42]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "e7760c3c",
+      "sha256": "67edc03c4754b320f091d77d1d1a6e7272676fffbb3dfc1149a82ebce7470c53",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[17]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "c875a367",
+      "sha256": "6500043b644fd58606f8823320b4339da43ba22192f0e3e1177740fe9cf41529",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[50]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "505c5fe7",
+      "sha256": "0a738d0d84854dcb9cf2ca1864fe0db1f9b6abc0ff736de1a352980d19084d7b",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[35]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "1f7e52e5",
+      "sha256": "84e76c2b7a51223bfd0882bfda5af887393df9e645ab5f64a991415a9c2960cd",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[32]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "83a36f33",
+      "sha256": "1ecc5cfc7c0e56617ead3950ac4a938142b0f2c632a2e84c84118ff75422b240",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[20]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "92e9c6ef",
+      "sha256": "f4a7b6c7c54076439798be0a7b53b085456d71e24dc9d687f7f242dc2b8a7bc5",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[27]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "4fdca661",
+      "sha256": "2237bc1f8877a4501fcb30e098d5480231a90568b617dd9eb67b6fee214d2673",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[27]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "d8a06480",
+      "sha256": "55beeb0a96d933aa63d19c801efb3790b06c0daee6fd9e575afccbf3548b632d",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[20]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "2efb9822",
+      "sha256": "51bdd6d0b7574ce73bfc4dd9a7ed4e5d41d96c00192395c6dc1182958498543d",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[32]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "13ff6652",
+      "sha256": "7e4a3f7c2649275f5759812a481a903f76917d1aa454117747c1c6933470abcd",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[35]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "6d5a168b",
+      "sha256": "982145914283cefe73c3cf6c1d9eb258661ee135b46bedb49a2ae116ccf6c245",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[9]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "406ff6b8",
+      "sha256": "fd8a1ae10fc7d51a8fbe6fba72e7d2528fd268cb66b1668aa650df9e83a3e853",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[16]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "c1addf28",
+      "sha256": "e97acf6d95c4f9491b4fa8c2bb84a68d1243401f2bee9c2962c8ceed4933f3e4",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[43]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "45148287",
+      "sha256": "6154cf1a99ceefeb2e93f9a87a512a1671bbb9599ca7b42d3e665d40d7fa11a1",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[11]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "01e415c2",
+      "sha256": "49c078974a4f4443d9813fe382c3529cd8fbaca84bde56cab125794370070301",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[44]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "51afcec3",
+      "sha256": "bbc755c3f4dccfc348ca5e5ce1f23c94f30db485bbf5e5838e7f7ba4b812b75d",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[56]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "1cfb9431",
+      "sha256": "5702439b788d666ff6a5ab68825f2250ff88abf578201982fc3024675ac2c16b",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[51]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "4a8db85a",
+      "sha256": "f30573d2cd0429a2dbee6428c75065d0398d22a2153fb89a6456e42f3a90bc93",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[51]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "f7a83c06",
+      "sha256": "b3f8bf5027265cd0400f921f0ac1d23f12e10b1eb1365b7ff77b403faa8f3f28",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[56]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "c2024089",
+      "sha256": "a72929b5fd5d2887dc2029447a94c086daebb3447653d78587e1ab8ece01f51f",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[44]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "2e5b655a",
+      "sha256": "c1dd5ac04ca7399a57d4c0db35fe7144a276140a81a82d4354b2576861ece3ad",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[11]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "8705ba1d",
+      "sha256": "a934b3ed590a472006f65cd2dcd31169f00114ce5b1b4aeb34ddd10fb8c30857",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[9]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "31de45e7",
+      "sha256": "0bb863707aa9374e7e0b93011eb9e91b0a29f78477632e01295f75b165d0e88a",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[43]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "660d4fe4",
+      "sha256": "1d8db3d7af02fd02280359282b38dff25f6377edfed17424d59c14a759b2243f",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[16]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "dd8c6a16",
+      "sha256": "708244b6e4f09e34ba89e23133346d17e39bfa898df0946b3c298e7125477fe8",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[49]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "b876bd71",
+      "sha256": "498f23ed1db16937be602236e88bfa0541b926e308c8396237f2fd081fcf7b2f",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[3]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "a39f446f",
+      "sha256": "e99ac509717332e1fed120d161ad6f998f08b067cf0ed4aca71bb569907e766a",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[4]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "af63c24e",
+      "sha256": "ac386fbcbb669c064a1effabe9bd9448388ff823283350d86d329472cb0b31b0",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[49]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "20a0e558",
+      "sha256": "ea14754c53e241ac00f64be3ad849642b40db2644e783795d86025618c765d22",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[38]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "ed8d5753",
+      "sha256": "92966bb455d67ed54784d77b206ad8659c52ebfeb636076fd672716e8874b36d",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[38]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "9e365cfc",
+      "sha256": "8aafa218ed04cf54f16aa7d85b007630584956c36b20b23a8b2a96c766fd2e85",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[48]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "a481ac14",
+      "sha256": "5796c2e70796912ef426ee1e50736ff72488d8d5e57b65dbf0f7e035c331bd89",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[5]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "301c42f7",
+      "sha256": "805ec34fa62c334d47a22465ed25a1fbc620c468f4a9281500020ebea3019b6f",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[5]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "3db4267f",
+      "sha256": "3eca57da5406465b754ce5470472e34f64fe78aeaaaa5296f1b68332111b09db",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[48]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "ec78678c",
+      "sha256": "e501bad4c205898481e37085b54a66803d8b7206b9e92924031d1418a2afea07",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[2]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "a3241b27",
+      "sha256": "b62d4c2127d8db7eb61a197cf603dd7cf51f04865e022caa0f04f00e6692fec4",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[39]_0.75_MLP.h5",
+      "extension": ".h5",
+      "size_bytes": 745416,
+      "crc32": "7126c765",
+      "sha256": "19631ea8b80c5252ee399096a4c194f8fee18c82d77686c2b479c9732f8a2a8a",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/models/model_[39]_0.75_CNN.h5",
+      "extension": ".h5",
+      "size_bytes": 32501112,
+      "crc32": "4dc86990",
+      "sha256": "a0f0a4042f0f687a61aef15e5afc0ad6feb4344fb8ab7a6e8c7c0b16a26eec5c",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/tests/layers/test_conv1d.py",
+      "extension": ".py",
+      "size_bytes": 8294,
+      "crc32": "1c379e42",
+      "sha256": "670d0456fe84a16c5f73d7c370c36c401d42e377e88684b87e1b2d0c5a5d61af",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/tests/layers/test_pool2d.py",
+      "extension": ".py",
+      "size_bytes": 8723,
+      "crc32": "221fc93c",
+      "sha256": "0fc2af78884d184f4a5745d59f7ebb1e0758e4437aa782163117244c3bbe6c5a",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/tests/layers/test_conv2d.py",
+      "extension": ".py",
+      "size_bytes": 8390,
+      "crc32": "6b9eb84e",
+      "sha256": "d91fe8b552bedc4dc844d2d750aa0b299c9641eddf711ac29d0c1b22dc5924d4",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/tests/layers/test_pool1d.py",
+      "extension": ".py",
+      "size_bytes": 6080,
+      "crc32": "1547faca",
+      "sha256": "e050aee4185b5eb3e50300363acab787db86b5b05f0349df123c1faa3ab5da1e",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/tests/layers/test_activation.py",
+      "extension": ".py",
+      "size_bytes": 4574,
+      "crc32": "b612758b",
+      "sha256": "4fba5f7b788c439262f58aa9c2c152ae6e8dc429d20115239d11757a08c58581",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/tests/layers/test_deeplift_genomics_default_mode.py",
+      "extension": ".py",
+      "size_bytes": 7158,
+      "crc32": "f6538cad",
+      "sha256": "409c5d2012750ea7082ed63bda6cc91665dbaab4045bead4ab0e37c4196c90d8",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/tests/layers/test_concat.py",
+      "extension": ".py",
+      "size_bytes": 2671,
+      "crc32": "0d7715d0",
+      "sha256": "263fdf91572eb0ed5fbe62645e3d8192d3b06f80d12b91f2cc188852fc06c908",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/tests/layers/test_dense.py",
+      "extension": ".py",
+      "size_bytes": 3373,
+      "crc32": "eb38136f",
+      "sha256": "2f7086e4ffba41d1bb41a757550e73bb900d7c2e76417cc22ce88a27df6469a5",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/tests/shuffling/test_dinuc_shuffle.py",
+      "extension": ".py",
+      "size_bytes": 1059,
+      "crc32": "557b209a",
+      "sha256": "d2d7b6b616170d608996e3e83cf7afda60dd615c1fd9debbd60935771efbff6f",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/visualization/__init__.py",
+      "extension": ".py",
+      "size_bytes": 0,
+      "crc32": "00000000",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/visualization/viz_sequence.py",
+      "extension": ".py",
+      "size_bytes": 6244,
+      "crc32": "8fb4a39a",
+      "sha256": "262ed379035e8bbd30d11744a78ce19a79a15f9057533461e82f02b0e97dbb2e",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/visualization/matplotlib_helpers.py",
+      "extension": ".py",
+      "size_bytes": 257,
+      "crc32": "8e50d44e",
+      "sha256": "5f298806e3555b3b88641fbb9498b42be363b39685f28a7ec4ba85d35f5b1b3f",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/layers/helper_functions.py",
+      "extension": ".py",
+      "size_bytes": 2102,
+      "crc32": "6f8fe3c5",
+      "sha256": "185f07441de8e6abbe0c9b79d9093192245cf1731af1babd04e9931e5a1549b1",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/layers/convolutional.py",
+      "extension": ".py",
+      "size_bytes": 15166,
+      "crc32": "f189e3e8",
+      "sha256": "d10932939bd19e5b7d6ea3d193dd04c8065e2da17c5c3cad5d76105d34fd6ca5",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/layers/activations.py",
+      "extension": ".py",
+      "size_bytes": 11727,
+      "crc32": "9d4c58de",
+      "sha256": "19efda7efa374e120d8113a3f716de740d75a124b0be0ab2026c1fa211a7471e",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/layers/pooling.py",
+      "extension": ".py",
+      "size_bytes": 15466,
+      "crc32": "1492b702",
+      "sha256": "f0daf9c28e5b3982f55af5b12a499e02ed6d619fe64ecae4afdd351d0d73d6ca",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/layers/__init__.py",
+      "extension": ".py",
+      "size_bytes": 237,
+      "crc32": "5b4da6c2",
+      "sha256": "13951e457af9144bcff81be938e85045b4aa86af6a13e055f04026a6ae4559a4",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/layers/core.py",
+      "extension": ".py",
+      "size_bytes": 26479,
+      "crc32": "f715c7e3",
+      "sha256": "3150e656e746e9a4953cdd28c42b87494cebdfa50be55b122fac5aeeed2f0cb0",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/layers/normalization.py",
+      "extension": ".py",
+      "size_bytes": 4229,
+      "crc32": "d854df6c",
+      "sha256": "0e79c9650df92288f427a80a8c94d738435c25cc58c4b0a83aabb6e779762362",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/__pycache__/util.cpython-37.pyc",
+      "extension": ".pyc",
+      "size_bytes": 12744,
+      "crc32": "613b1515",
+      "sha256": "589d35cf2d685afb4049d9947148d1e3d15453361edd5e1f51624e41e9894a98",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/__pycache__/models.cpython-37.pyc",
+      "extension": ".pyc",
+      "size_bytes": 9770,
+      "crc32": "8d41831f",
+      "sha256": "17dd7361845c1a23bee18033fdc8d0e341857010b0172ea873d2dc4c1f2363cc",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/__pycache__/__init__.cpython-37.pyc",
+      "extension": ".pyc",
+      "size_bytes": 192,
+      "crc32": "460f45b4",
+      "sha256": "e5e27b9e5c6c2fc2efc2aba0cc60330ba984c828573c44dd15f73618f87026bd",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/conversion/__init__.py",
+      "extension": ".py",
+      "size_bytes": 0,
+      "crc32": "00000000",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/conversion/kerasapi_conversion.py",
+      "extension": ".py",
+      "size_bytes": 36813,
+      "crc32": "c23a73aa",
+      "sha256": "b38f9f3ae225439da4845867550208425f702051a44b597975a4542eb4af4806",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/examples/mnist/MNIST_replicate_figures.ipynb",
+      "extension": ".ipynb",
+      "size_bytes": 192519,
+      "crc32": "781400b1",
+      "sha256": "6c2a65aee2e4b5ea4a538a5df34bdcb0130dc973d41e359e581e0c418feedf30",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/examples/mnist/grab_model.sh",
+      "extension": ".sh",
+      "size_bytes": 279,
+      "crc32": "8888604d",
+      "sha256": "7367a628afaca75e56f6c3a46ff98124f10ddc22af6f9511bd77d073368402f0",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/examples/genomics/genomics_simulation.ipynb",
+      "extension": ".ipynb",
+      "size_bytes": 400782,
+      "crc32": "96d67606",
+      "sha256": "2b41bb71f55872d908a603b981dbdcb24f3983bd3e5c5294352b29802a795770",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/examples/genomics/grab_model_and_data.sh",
+      "extension": ".sh",
+      "size_bytes": 1145,
+      "crc32": "846dffff",
+      "sha256": "e69f7e20559c6aed189b41e7ef1e060236272c3f56c55381f173413ab1e0531d",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/examples/genomics/.gitignore",
+      "extension": "",
+      "size_bytes": 33,
+      "crc32": "f5b4a3a7",
+      "sha256": "65c388c244250a4c8af115d5f0299c1f25e0ed6934b7b52c816de9b98dce6551",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/info/exclude",
+      "extension": "",
+      "size_bytes": 240,
+      "crc32": "21cd3d77",
+      "sha256": "6671fe83b7a07c8932ee89164d1f2793b2318058eb8b98dc5c06ee0a5a3b0ec1",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/logs/HEAD",
+      "extension": "",
+      "size_bytes": 186,
+      "crc32": "e016287e",
+      "sha256": "7507428f99e43f507349153f6b6123fcd57bbd59c1d7932cb599f4fa49d19a60",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/hooks/commit-msg.sample",
+      "extension": ".sample",
+      "size_bytes": 896,
+      "crc32": "10caf8e9",
+      "sha256": "1f74d5e9292979b573ebd59741d46cb93ff391acdd083d340b94370753d92437",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/hooks/pre-rebase.sample",
+      "extension": ".sample",
+      "size_bytes": 4898,
+      "crc32": "5158ec84",
+      "sha256": "4febce867790052338076f4e66cc47efb14879d18097d1d61c8261859eaaa7b3",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/hooks/pre-commit.sample",
+      "extension": ".sample",
+      "size_bytes": 1642,
+      "crc32": "5ca83025",
+      "sha256": "12c723235131f1c5576c652ac2a0a007f261a93c0ddc445b1dcee6cd98e30788",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/hooks/applypatch-msg.sample",
+      "extension": ".sample",
+      "size_bytes": 478,
+      "crc32": "09f84f85",
+      "sha256": "0223497a0b8b033aa58a3a521b8629869386cf7ab0e2f101963d328aa62193f7",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/hooks/fsmonitor-watchman.sample",
+      "extension": ".sample",
+      "size_bytes": 3327,
+      "crc32": "cfb66216",
+      "sha256": "7f9cacf1f7c8f791abfaa76171b951a55a9a2a11f1390b43cbc83995b4a91b33",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/hooks/pre-receive.sample",
+      "extension": ".sample",
+      "size_bytes": 544,
+      "crc32": "96f8c492",
+      "sha256": "a4c3d2b9c7bb3fd8d1441c31bd4ee71a595d66b44fcf49ddb310252320169989",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/hooks/prepare-commit-msg.sample",
+      "extension": ".sample",
+      "size_bytes": 1492,
+      "crc32": "303613ed",
+      "sha256": "e9ddcaa4189fddd25ed97fc8c789eca7b6ca16390b2392ae3276f0c8e1aa4619",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/hooks/post-update.sample",
+      "extension": ".sample",
+      "size_bytes": 189,
+      "crc32": "c0f70c9a",
+      "sha256": "81765af2daef323061dcbc5e61fc16481cb74b3bac9ad8a174b186523586f6c5",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/hooks/pre-applypatch.sample",
+      "extension": ".sample",
+      "size_bytes": 424,
+      "crc32": "024cc0cf",
+      "sha256": "e15c5b469ea3e0a695bea6f2c82bcf8e62821074939ddd85b77e0007ff165475",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/hooks/pre-push.sample",
+      "extension": ".sample",
+      "size_bytes": 1348,
+      "crc32": "b18fd804",
+      "sha256": "4b1119e1e13a212571976f4aee77847cdbd40978546d6273a557e238981a40d1",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/hooks/update.sample",
+      "extension": ".sample",
+      "size_bytes": 3610,
+      "crc32": "2544211a",
+      "sha256": "751c037320024ec2ee2757f3ffae0b10ad2c946367684e7059d4dc97eac7e431",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/results/non_deep/iter_1.csv",
+      "extension": ".csv",
+      "size_bytes": 130910,
+      "crc32": "f0003924",
+      "sha256": "81642b8149ded2d34ea81cb6fd1da1430ccbdeb0bebf0b86133ee859f0e9e5c6",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/results/deep/cnn_res_iter_1.csv",
+      "extension": ".csv",
+      "size_bytes": 3945,
+      "crc32": "7669db09",
+      "sha256": "fc397e7c5179e0d40bff3b99dd260e370a755cb7554973b30ba5b13e98c1787c",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/results/diversity/DbT_cnn_oh_rpt1.csv",
+      "extension": ".csv",
+      "size_bytes": 30469,
+      "crc32": "6b7e7757",
+      "sha256": "44d95901f5b0f83e4674c587df45f6c5e4f9ac59e4da179640e82b85737af419",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/results/diversity/div_itr_1.npy",
+      "extension": ".npy",
+      "size_bytes": 560,
+      "crc32": "f4e4013b",
+      "sha256": "2cf65f95b9893c77ce0d15f3e3802112f4fdce95c6dd3eb3713d82bcdf8a7920",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/results/diversity/exp_dict.pkl",
+      "extension": ".pkl",
+      "size_bytes": 110116348,
+      "crc32": "07fce91d",
+      "sha256": "8383023accdb629832c54e1575b1ad625ffc08f64f31c5e8c537ed92969ecaac",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/results/SI/CNN_0.50_1toN.csv",
+      "extension": ".csv",
+      "size_bytes": 1395,
+      "crc32": "f59d4773",
+      "sha256": "c206223ef5e4a5a4645e2481566d48be02853181a61ca8b97d9e3f626552ec97",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/results/SI/iteration_1_sr2sr.csv",
+      "extension": ".csv",
+      "size_bytes": 64353,
+      "crc32": "c688e229",
+      "sha256": "cb8cae2f9c12c09228f7f694bed62ab3809ba62c746aba6f96b22453665b5880",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/results/SI/CNN_0.75_1toN.csv",
+      "extension": ".csv",
+      "size_bytes": 1399,
+      "crc32": "adea7711",
+      "sha256": "637a0d7bbc36b05da4c604c933eb8293c17c1272ad59a3042a68ea87f59e95a8",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_1/results/SI/CNN_0.25_1toN.csv",
+      "extension": ".csv",
+      "size_bytes": 1398,
+      "crc32": "7b7118bb",
+      "sha256": "fcbf556003adaaa8b97b73f964b76cac3b354b9c4851facdf4a46ed655fd473c",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_5/results/non_deep/iter_5.csv",
+      "extension": ".csv",
+      "size_bytes": 131063,
+      "crc32": "4010a7bc",
+      "sha256": "57ee0889d1f4692315fb30a677055f3112f80a08961b49571646422ad22bc7a0",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_5/results/deep/cnn_res_iter_5.csv",
+      "extension": ".csv",
+      "size_bytes": 3933,
+      "crc32": "4261d769",
+      "sha256": "fa398c083cebe3d63c469f69647fdc715a0b5610bd5430e8fd273da54667084a",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_5/results/diversity/DbT_cnn_oh_rpt5.csv",
+      "extension": ".csv",
+      "size_bytes": 30462,
+      "crc32": "35fd4b6c",
+      "sha256": "78ff4a3053dfeba5ce404e40d4d211ad80e86afbde3a6f97fed6d0d6f5cacc21",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_5/results/diversity/div_itr_5.npy",
+      "extension": ".npy",
+      "size_bytes": 560,
+      "crc32": "4906adba",
+      "sha256": "77347b50aaaefdd009b7b8fcf1d8755b0ca9368603a620248cc1961a6bc7acbd",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_5/results/diversity/exp_dict.pkl",
+      "extension": ".pkl",
+      "size_bytes": 236709141,
+      "crc32": "3f85197b",
+      "sha256": "5787f96db1e8838ea06b073cdfe2c5b3834a672479b307848b1ab520269c0f2a",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_5/results/SI/CNN_0.50_1toN.csv",
+      "extension": ".csv",
+      "size_bytes": 1396,
+      "crc32": "9e5a6575",
+      "sha256": "e79f0f5956bbbf1d3e7e0034f1e2ef5ba801feeb1bb1a96cda92291d5292705a",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_5/results/SI/CNN_0.75_1toN.csv",
+      "extension": ".csv",
+      "size_bytes": 1394,
+      "crc32": "097be66c",
+      "sha256": "1abf96f0e2c9ee73cc325809c5b475307b5ee15c7de4ad68c60d636b77bcaada",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_5/results/SI/CNN_0.25_1toN.csv",
+      "extension": ".csv",
+      "size_bytes": 1398,
+      "crc32": "18ec53fc",
+      "sha256": "40cb632fec1031acd1f0e7cbe25676d81a43d2422e372329a7134be78e1cdc98",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_5/results/SI/iteration_5_sr2sr.csv",
+      "extension": ".csv",
+      "size_bytes": 64396,
+      "crc32": "e506500a",
+      "sha256": "9d067ea4085e933a5fea9512ff32d273071263516f36883dce6c95bdc7ca3fc1",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_2/results/non_deep/iter_2.csv",
+      "extension": ".csv",
+      "size_bytes": 130955,
+      "crc32": "d00a6a22",
+      "sha256": "6cf5fadd450c53a5ec2b8de59fe4d4c7eaec9d2c1331424d174a1142900c8ebd",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_2/results/deep/cnn_res_iter_2.csv",
+      "extension": ".csv",
+      "size_bytes": 3935,
+      "crc32": "edf0cd50",
+      "sha256": "13e02b40da0ed6ededa4e4ec1a6df958d62b6f88be8162326771441fa6f3e1ed",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_2/results/diversity/DbT_cnn_oh_rpt2.csv",
+      "extension": ".csv",
+      "size_bytes": 30496,
+      "crc32": "dcb327e9",
+      "sha256": "7b05d43ab3401b4266004344bba7f212e941f3574a50fc39ab83c4b6a546beb3",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_2/results/diversity/div_itr_2.npy",
+      "extension": ".npy",
+      "size_bytes": 560,
+      "crc32": "62712ff3",
+      "sha256": "05268966890e065406427010eb4a29bc2afe9ce75f71d1da1a7b764b8301a102",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_2/results/diversity/exp_dict.pkl",
+      "extension": ".pkl",
+      "size_bytes": 237749322,
+      "crc32": "bb700c44",
+      "sha256": "4bf323fda7dbcb0a00fa0144a5e6196ec4b3cd8a5267a6d9748ba76d6cc55eed",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_2/results/SI/CNN_0.50_1toN.csv",
+      "extension": ".csv",
+      "size_bytes": 1392,
+      "crc32": "8858c2a8",
+      "sha256": "5044c6d6204d0af3bc56c11fc5dca37ee16d8a6a6e2654b06c7ccac2fdb2b3d2",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_2/results/SI/CNN_0.75_1toN.csv",
+      "extension": ".csv",
+      "size_bytes": 1399,
+      "crc32": "c354dd1e",
+      "sha256": "0c862ff28a096aac1e0ac320000439997ebc6038691e4004b6ee49099ccd06a8",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_2/results/SI/iteration_2_sr2sr.csv",
+      "extension": ".csv",
+      "size_bytes": 64404,
+      "crc32": "59719f60",
+      "sha256": "0fd3c8274becbcb544420d9da55b66445c62285fc7f380836171b3f4c0707af1",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_2/results/SI/CNN_0.25_1toN.csv",
+      "extension": ".csv",
+      "size_bytes": 1393,
+      "crc32": "0a6ffee0",
+      "sha256": "8878a60749fec08fd60c93b492b8e32872807f4e02b784cdd8c715b5d88f2e24",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_3/results/non_deep/iter_3.csv",
+      "extension": ".csv",
+      "size_bytes": 130931,
+      "crc32": "df68e580",
+      "sha256": "0ad2fb7bd1040085bfa86f555e8cc18a8c91eaa80deb87f8a001e43be6c32bd8",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_3/results/deep/cnn_res_iter_3.csv",
+      "extension": ".csv",
+      "size_bytes": 3944,
+      "crc32": "ac0725f0",
+      "sha256": "3975b9b2930480c63469905bb3a0fba08384fe45c61f46150fafe40af1f5300c",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_3/results/diversity/DbT_cnn_oh_rpt3.csv",
+      "extension": ".csv",
+      "size_bytes": 30501,
+      "crc32": "98679713",
+      "sha256": "b6b3cd73049dbe6d8326425e85e10e242faf4b539564089db18abb65e4a31335",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_3/results/diversity/div_itr_3.npy",
+      "extension": ".npy",
+      "size_bytes": 560,
+      "crc32": "b999a368",
+      "sha256": "0032f616f2ca824c359f089df391411c99127f67a6b4d9e4d6d81d7660bafc52",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_3/results/diversity/exp_dict.pkl",
+      "extension": ".pkl",
+      "size_bytes": 237048489,
+      "crc32": "33714a92",
+      "sha256": "5c34e5c9fa3ae65d0afd42ec1369a563d06cc3d4ffd6d214b074f4c1f4bb93ec",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_3/results/SI/CNN_0.50_1toN.csv",
+      "extension": ".csv",
+      "size_bytes": 1394,
+      "crc32": "2cc9e5f3",
+      "sha256": "ab57ca71a4c85f67815f05bdf771ae17dc65b733fca306d29655795487a54b61",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_3/results/SI/CNN_0.75_1toN.csv",
+      "extension": ".csv",
+      "size_bytes": 1391,
+      "crc32": "39ad2b32",
+      "sha256": "8741a2d599c1429bfabb59f3cb7c45e49a3cbad883944b6a94b07fffded19a61",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_3/results/SI/CNN_0.25_1toN.csv",
+      "extension": ".csv",
+      "size_bytes": 1394,
+      "crc32": "f26b06e4",
+      "sha256": "76abc9a35aeeb1a97dc7ff8cf0071d51ef3cc3cff7f5c8f497989170ad7ee764",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_3/results/SI/iteration_3_sr2sr.csv",
+      "extension": ".csv",
+      "size_bytes": 64384,
+      "crc32": "69600139",
+      "sha256": "ddc69acd79c0d9b58ea471da4420c4858640e8ae00021048fc584866c795e628",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_4/results/non_deep/iter_4.csv",
+      "extension": ".csv",
+      "size_bytes": 130986,
+      "crc32": "a125fae4",
+      "sha256": "153fab014cfd006d73c38ca1b3691159c4358b6a32a4392ec4a9a81be26c51af",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_4/results/deep/cnn_res_iter_4.csv",
+      "extension": ".csv",
+      "size_bytes": 3940,
+      "crc32": "6339894a",
+      "sha256": "42c513b6d51351336e3c9bb62cc91773b0353594812e3f1a25adc5da46cdd768",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_4/results/diversity/DbT_cnn_oh_rpt4.csv",
+      "extension": ".csv",
+      "size_bytes": 30470,
+      "crc32": "1816d6d0",
+      "sha256": "9b4d7320abebacbb825ecdaaaa713954fd5a99bf0417d7124c8363614d454a31",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_4/results/diversity/div_itr_4.npy",
+      "extension": ".npy",
+      "size_bytes": 560,
+      "crc32": "12306cb6",
+      "sha256": "326d1c5e37782377a01c23e25f0648b4db335f36b7a556996978645a5c40d071",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_4/results/diversity/exp_dict.pkl",
+      "extension": ".pkl",
+      "size_bytes": 235424341,
+      "crc32": "e59b65ee",
+      "sha256": "0d1e8aec4dfd27d3360a8dc44b5acb6e70d3b3e72ec4abc749a88e494c8853e1",
+      "role_guess": "model"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_4/results/SI/CNN_0.50_1toN.csv",
+      "extension": ".csv",
+      "size_bytes": 1396,
+      "crc32": "d06fbec2",
+      "sha256": "76e6cc3be675dd36ca0905104aa54515996e5889e4a1ec9efb36e70f78209cdc",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_4/results/SI/CNN_0.75_1toN.csv",
+      "extension": ".csv",
+      "size_bytes": 1392,
+      "crc32": "76662d27",
+      "sha256": "99ff26fd29d7e546f7fd6642f804bb45bbf20485a87601ce873459aa3907a158",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_4/results/SI/iteration_4_sr2sr.csv",
+      "extension": ".csv",
+      "size_bytes": 64461,
+      "crc32": "fe185eda",
+      "sha256": "d904135321aa9bfe3f47c8963f10cc8c95841827c2db277c14b0e8efa66932aa",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/_saved/iteration_4/results/SI/CNN_0.25_1toN.csv",
+      "extension": ".csv",
+      "size_bytes": 1397,
+      "crc32": "fbfa1b0f",
+      "sha256": "d31c4ce4a70b700426073ceda7b0f107b2f57984a51673652773d84764c563cd",
+      "role_guess": "result"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/tests/conversion/sequential/test_conv2d_model_valid_padding.py",
+      "extension": ".py",
+      "size_bytes": 3795,
+      "crc32": "c232d11d",
+      "sha256": "53ffd89a8560e4a3dbb642980c82b35e74ec5d8fb999c74888da2efef5b729dd",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/tests/conversion/sequential/test_conv1d_model_valid_padding.py",
+      "extension": ".py",
+      "size_bytes": 3833,
+      "crc32": "2288b3ed",
+      "sha256": "e820d8949ade5ea136f154822b48ed5940c25c4c59ca9594a422d0c68d7a4d50",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/tests/conversion/sequential/test_conv2d_model_channels_first.py",
+      "extension": ".py",
+      "size_bytes": 3777,
+      "crc32": "be862a48",
+      "sha256": "ce926b5fba3b7fd0d37cd0796f4f9ebb6dee73d55f539e74f737463415dd7944",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/tests/conversion/sequential/test_load_batchnorm.py",
+      "extension": ".py",
+      "size_bytes": 7679,
+      "crc32": "8383b0a4",
+      "sha256": "d3e95124288dab6a3cfb6f6eae1da37c722bcaf96d27a192f9ef9bf8a6ff9e69",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/tests/conversion/sequential/test_conv2d_model_same_padding.py",
+      "extension": ".py",
+      "size_bytes": 4215,
+      "crc32": "1c661807",
+      "sha256": "c9449d52a70d35e006977a8beba50e07048a45e399bf861de821b62009109baa",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/tests/conversion/sequential/test_sigmoid_tanh_activations.py",
+      "extension": ".py",
+      "size_bytes": 3943,
+      "crc32": "fae2e0d2",
+      "sha256": "e1b75f181b51c0063256189267f2389107c67f4cbd067f2d78181ebef7b1f3ee",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/tests/conversion/sequential/test_conv1d_model_same_padding.py",
+      "extension": ".py",
+      "size_bytes": 4294,
+      "crc32": "75bdc78b",
+      "sha256": "6b6bc7f2ff28f19c25ad9770a1ed498b976126a20fbe00abbb4deff9091c9f1a",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/tests/conversion/functional/test_functional_concatenate_model.py",
+      "extension": ".py",
+      "size_bytes": 5526,
+      "crc32": "dc5e6425",
+      "sha256": "c148ad7ae2aa134bb40c697c0e5df4a0558f8d5ff9fefb2cc22129a27a087edc",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/layers/__pycache__/helper_functions.cpython-37.pyc",
+      "extension": ".pyc",
+      "size_bytes": 2199,
+      "crc32": "0234ff06",
+      "sha256": "9539bbff47897ef774e46e54ef520701803aecaf6a71dfbaa28baaf846771052",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/layers/__pycache__/convolutional.cpython-37.pyc",
+      "extension": ".pyc",
+      "size_bytes": 8205,
+      "crc32": "448fe5f9",
+      "sha256": "d05e4cc2a69428aa48bd86f77da185b3022bf3562b5ce6724f940b9a33ad36c6",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/layers/__pycache__/pooling.cpython-37.pyc",
+      "extension": ".pyc",
+      "size_bytes": 13205,
+      "crc32": "12c95a37",
+      "sha256": "44dbf4b8580a8d39bcaeaf99db306cd9f705c67f078b2ca9b8d118a9cc142584",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/layers/__pycache__/activations.cpython-37.pyc",
+      "extension": ".pyc",
+      "size_bytes": 7999,
+      "crc32": "8b332d77",
+      "sha256": "f11c124ebb111a0381ca150e61040cae3f8cbca902134da0a7326b96cb1b594c",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/layers/__pycache__/core.cpython-37.pyc",
+      "extension": ".pyc",
+      "size_bytes": 26197,
+      "crc32": "686bd8bd",
+      "sha256": "f845c06873e203a885c3aba9f3d9becc30efbdab9ccbc98b8c834cff6df5c6a4",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/layers/__pycache__/__init__.cpython-37.pyc",
+      "extension": ".pyc",
+      "size_bytes": 411,
+      "crc32": "1e8e51d4",
+      "sha256": "bcbc0ec54fda7f8335af91a11e6eb4b72dc4dfbb871590b4fe88ae9a1398191e",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/layers/__pycache__/normalization.cpython-37.pyc",
+      "extension": ".pyc",
+      "size_bytes": 3713,
+      "crc32": "d41ae693",
+      "sha256": "c2ff060233b7d8e10838e677d991e6059f76b24db25cfa6d74c829af6e1ea3d3",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/conversion/__pycache__/kerasapi_conversion.cpython-37.pyc",
+      "extension": ".pyc",
+      "size_bytes": 16767,
+      "crc32": "aff14129",
+      "sha256": "0a031e8a68ffb82ed3d0716f209a0f122971a355e5ea89f8e8bf1dcfc278f2e9",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/deeplift/conversion/__pycache__/__init__.cpython-37.pyc",
+      "extension": ".pyc",
+      "size_bytes": 179,
+      "crc32": "99c53b6a",
+      "sha256": "bc8e7e208436fee298d78270d7585b7585db8c0743f5ba923c6471a724dfc362",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/examples/convert_models/keras1.2to2/MNIST.ipynb",
+      "extension": ".ipynb",
+      "size_bytes": 13491,
+      "crc32": "917debfc",
+      "sha256": "74903767b0f374cb01562676e20aa7fa2758d7e2a7a1c0bd980dc099b9d72c14",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/objects/pack/pack-859baa74488140027ca4ca8a22e2b51941bd93cc.pack",
+      "extension": ".pack",
+      "size_bytes": 10882761,
+      "crc32": "9c9ef3b8",
+      "sha256": "887ea7d93d6a71df7af099a61b6429d70985f5374d064f0957bf54ac59455076",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/objects/pack/pack-859baa74488140027ca4ca8a22e2b51941bd93cc.idx",
+      "extension": ".idx",
+      "size_bytes": 129760,
+      "crc32": "96bbaf5f",
+      "sha256": "346b86f62c94452901f8c42d005448fa618b0294790e598bceac2879d72ea550",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/refs/heads/master",
+      "extension": "",
+      "size_bytes": 41,
+      "crc32": "9d3fe39e",
+      "sha256": "6723b71755ec7ee6046b25cc5403f0a293a3968351581dab69cea4c0a57ebd2f",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/logs/refs/heads/master",
+      "extension": "",
+      "size_bytes": 186,
+      "crc32": "e016287e",
+      "sha256": "7507428f99e43f507349153f6b6123fcd57bbd59c1d7932cb599f4fa49d19a60",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/refs/remotes/origin/HEAD",
+      "extension": "",
+      "size_bytes": 32,
+      "crc32": "a0d425d6",
+      "sha256": "cdc65e67690c4c6475174e5ec662b70655246a2f3924354778835ab3be70aa76",
+      "role_guess": "vendored"
+    },
+    {
+      "path": "seq2yield/to_import/deeplift/.git/logs/refs/remotes/origin/HEAD",
+      "extension": "",
+      "size_bytes": 186,
+      "crc32": "e016287e",
+      "sha256": "7507428f99e43f507349153f6b6123fcd57bbd59c1d7932cb599f4fa49d19a60",
+      "role_guess": "vendored"
+    }
+  ],
+  "datasets": [
+    {
+      "path": "seq2yield/to_import/yeast_data.csv",
+      "n_rows": 3929,
+      "n_columns": 6,
+      "columns": [
+        "Unnamed: 0",
+        "native_gene",
+        "cluster_ID",
+        "group_ID",
+        "sequence",
+        "protein"
+      ],
+      "dtypes": {
+        "Unnamed: 0": "int64",
+        "native_gene": "object",
+        "cluster_ID": "int64",
+        "group_ID": "int64",
+        "sequence": "object",
+        "protein": "float64"
+      },
+      "sequence_columns": [
+        "sequence"
+      ],
+      "target_columns": [
+        "protein"
+      ],
+      "series_columns": [],
+      "sequence_length": {
+        "column": "sequence",
+        "min": 80,
+        "max": 80,
+        "modal": 80
+      },
+      "missingness_summary": {}
+    },
+    {
+      "path": "seq2yield/to_import/Ecoli_data.csv",
+      "n_rows": 227024,
+      "n_columns": 14,
+      "columns": [
+        "Unnamed: 0",
+        "mut_series",
+        "Combi",
+        "rep",
+        "Sequence",
+        "Protein",
+        "cdsCAI",
+        "utrCdsStructureMFE",
+        "fivepCdsStructureMFE",
+        "threepCdsStructureMFE",
+        "cdsBottleneckPosition",
+        "cdsBottleneckRelativeStrength",
+        "cdsNucleotideContentAT",
+        "cdsHydropathyIndex"
+      ],
+      "dtypes": {
+        "Unnamed: 0": "int64",
+        "mut_series": "int64",
+        "Combi": "int64",
+        "rep": "int64",
+        "Sequence": "object",
+        "Protein": "float64",
+        "cdsCAI": "float64",
+        "utrCdsStructureMFE": "float64",
+        "fivepCdsStructureMFE": "float64",
+        "threepCdsStructureMFE": "float64",
+        "cdsBottleneckPosition": "int64",
+        "cdsBottleneckRelativeStrength": "float64",
+        "cdsNucleotideContentAT": "float64",
+        "cdsHydropathyIndex": "float64"
+      },
+      "sequence_columns": [
+        "Sequence"
+      ],
+      "target_columns": [
+        "Protein"
+      ],
+      "series_columns": [
+        "mut_series"
+      ],
+      "sequence_length": {
+        "column": "Sequence",
+        "min": 96,
+        "max": 96,
+        "modal": 96
+      },
+      "missingness_summary": {}
+    }
+  ],
+  "notebooks": [
+    {
+      "path": "seq2yield/1_kmers.ipynb",
+      "n_cells": 19,
+      "n_code_cells": 8,
+      "imports": [
+        "google.colab",
+        "itertools",
+        "matplotlib.pyplot",
+        "numpy",
+        "os",
+        "pandas",
+        "pickle",
+        "random",
+        "re",
+        "seaborn",
+        "sklearn.decomposition",
+        "sklearn.feature_extraction.text",
+        "sklearn.manifold",
+        "sys",
+        "time",
+        "umap.plot",
+        "utils"
+      ],
+      "reads_files": [],
+      "writes_files": [],
+      "colab_specific": true
+    },
+    {
+      "path": "seq2yield/6_Yeast.ipynb",
+      "n_cells": 41,
+      "n_code_cells": 17,
+      "imports": [
+        "google.colab",
+        "itertools",
+        "matplotlib.pyplot",
+        "numpy",
+        "os",
+        "pandas",
+        "pickle",
+        "random",
+        "re",
+        "seaborn",
+        "sklearn.ensemble",
+        "sklearn.feature_extraction.text",
+        "sklearn.metrics",
+        "sklearn.model_selection",
+        "sklearn.neural_network",
+        "sys",
+        "time",
+        "umap.plot",
+        "utils"
+      ],
+      "reads_files": [],
+      "writes_files": [],
+      "colab_specific": true
+    },
+    {
+      "path": "seq2yield/5_Plot_Results.ipynb",
+      "n_cells": 28,
+      "n_code_cells": 13,
+      "imports": [
+        "google.colab",
+        "itertools",
+        "matplotlib.pyplot",
+        "numpy",
+        "os",
+        "pandas",
+        "pickle",
+        "plot_results",
+        "re",
+        "seaborn",
+        "sys"
+      ],
+      "reads_files": [],
+      "writes_files": [],
+      "colab_specific": true
+    },
+    {
+      "path": "seq2yield/3_Train_Convolutional_Networks.ipynb",
+      "n_cells": 16,
+      "n_code_cells": 7,
+      "imports": [
+        "google.colab",
+        "keras.callbacks",
+        "numpy",
+        "os",
+        "pandas",
+        "pickle",
+        "random",
+        "scipy",
+        "scipy.stats",
+        "sklearn.metrics",
+        "sys",
+        "tensorflow",
+        "utils"
+      ],
+      "reads_files": [
+        "test_params_1.pkl"
+      ],
+      "writes_files": [],
+      "colab_specific": true
+    },
+    {
+      "path": "seq2yield/4_ExplainableAI.ipynb",
+      "n_cells": 9,
+      "n_code_cells": 4,
+      "imports": [
+        "google.colab",
+        "keras.models",
+        "matplotlib.pyplot",
+        "numpy",
+        "os",
+        "pandas",
+        "seaborn",
+        "sys",
+        "tensorflow",
+        "utils"
+      ],
+      "reads_files": [],
+      "writes_files": [],
+      "colab_specific": true
+    },
+    {
+      "path": "seq2yield/2_Train_Non_Deep_Regressors.ipynb",
+      "n_cells": 14,
+      "n_code_cells": 6,
+      "imports": [
+        "google.colab",
+        "models_misc",
+        "numpy",
+        "os",
+        "pandas",
+        "random",
+        "re",
+        "scipy",
+        "scipy.stats",
+        "sklearn.preprocessing",
+        "sys",
+        "utils"
+      ],
+      "reads_files": [],
+      "writes_files": [],
+      "colab_specific": true
+    },
+    {
+      "path": "seq2yield/hyperOpt/hyper_opt_DL.ipynb",
+      "n_cells": 13,
+      "n_code_cells": 6,
+      "imports": [
+        "google.colab",
+        "hyperopt",
+        "hyperopt.fmin",
+        "keras.callbacks",
+        "numpy",
+        "os",
+        "pandas",
+        "pickle",
+        "random",
+        "scipy",
+        "scipy.stats",
+        "sklearn.metrics",
+        "sys",
+        "tensorflow",
+        "utils"
+      ],
+      "reads_files": [],
+      "writes_files": [],
+      "colab_specific": true
+    },
+    {
+      "path": "seq2yield/hyperOpt/hyper_opt_ML.ipynb",
+      "n_cells": 11,
+      "n_code_cells": 5,
+      "imports": [
+        "google.colab",
+        "numpy",
+        "os",
+        "pandas",
+        "pickle",
+        "random",
+        "scipy",
+        "scipy.stats",
+        "sklearn.ensemble",
+        "sklearn.model_selection",
+        "sklearn.neural_network",
+        "sklearn.svm",
+        "sys",
+        "utils"
+      ],
+      "reads_files": [],
+      "writes_files": [],
+      "colab_specific": true
+    }
+  ],
+  "provided_splits": {
+    "iteration_1": {
+      "working_set": {
+        "path": "seq2yield/to_import/_saved/iteration_1/_working_set.csv",
+        "size_bytes": 55349605,
+        "sha256": "6aabc43b2d253ac4eaf05ca563a8f69c172f205042db8b6f865c1a02e8455411"
+      },
+      "heldout_set": {
+        "path": "seq2yield/to_import/_saved/iteration_1/_heldout_set.csv",
+        "size_bytes": 6137083,
+        "sha256": "46690716d87f13ccd5838aa66f3fe20248b9d0660a38dc96289614d3c4584227"
+      }
+    },
+    "iteration_5": {
+      "working_set": {
+        "path": "seq2yield/to_import/_saved/iteration_5/_working_set.csv",
+        "size_bytes": 55347418,
+        "sha256": "4e7668108258ff536158768c788bd9d72d8c0ceb45a07c2be91683b082193c8e"
+      },
+      "heldout_set": {
+        "path": "seq2yield/to_import/_saved/iteration_5/_heldout_set.csv",
+        "size_bytes": 6139270,
+        "sha256": "b2c885ecd9e64072465ff5d15115ae8b7299eff4cd45d178fab433368ef950b5"
+      }
+    },
+    "iteration_2": {
+      "working_set": {
+        "path": "seq2yield/to_import/_saved/iteration_2/_working_set.csv",
+        "size_bytes": 55348880,
+        "sha256": "e1ba5b68fb603cdf49ee1332c4f7316d51f378e8497084f20b4c90b3f4992e34"
+      },
+      "heldout_set": {
+        "path": "seq2yield/to_import/_saved/iteration_2/_heldout_set.csv",
+        "size_bytes": 6137808,
+        "sha256": "c7ce455d281a18559c30c74a7f4947bc20ba6b78cea4a7ab7fcbc4e6725ad0bb"
+      }
+    },
+    "iteration_3": {
+      "working_set": {
+        "path": "seq2yield/to_import/_saved/iteration_3/_working_set.csv",
+        "size_bytes": 55350582,
+        "sha256": "4b4a5f07b858125bd622fbcd9083248b055ad68916ddac9a09a02588e152b8a2"
+      },
+      "heldout_set": {
+        "path": "seq2yield/to_import/_saved/iteration_3/_heldout_set.csv",
+        "size_bytes": 6136106,
+        "sha256": "fb549223cf466acb80a93f46693cd62c1306adb1598d91211a5b41b05fa3e4f7"
+      }
+    },
+    "iteration_4": {
+      "working_set": {
+        "path": "seq2yield/to_import/_saved/iteration_4/_working_set.csv",
+        "size_bytes": 55347776,
+        "sha256": "d61969c2cbc35bce48c9b67dd1b9e65474ece2e3c3d57c678b6ab2419ad435ad"
+      },
+      "heldout_set": {
+        "path": "seq2yield/to_import/_saved/iteration_4/_heldout_set.csv",
+        "size_bytes": 6138912,
+        "sha256": "85747d06e06b811665d5f0a63c86b2ce96ac4397cbe77039a28a732dea6878a0"
+      }
+    }
+  }
+}

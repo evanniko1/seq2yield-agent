@@ -8,28 +8,50 @@ the harness validates runs against it.
 Paper authors: **Nikolados et al.**, Nat Commun 2022 (data derived from the Cambray et al.
 screen).
 
-> ⚠️ **To verify against the real release.** The facts here are extracted from the article
-> text + the deposit `README.txt`. Exact column names / row counts MUST still be reconciled
-> against the extracted CSVs during the Stage 0 audit (Milestone 1); discrepancies go in
-> `data/manifests/reproducibility_gaps.md`. The archive structure in §10 is **confirmed**
-> from the deposit README.
+> ✅ **Confirmed by the Stage 0 audit (2026-06-04).** Column names, row counts, sequence
+> lengths, feature columns, and split layout below are now confirmed against the real CSVs in
+> `data/raw/seq2yield.zip` (sha256 `ae1b981d…`). See `data/manifests/` and §10–§11.
 
-## 10. Confirmed archive structure (deposit README.txt)
+## 10. Confirmed archive structure (Stage 0 audit)
 
-Local archive: `data/raw/seq2yield.zip` (~2.0 GB) + `README.txt` + `setup.ipynb`
-(Colab loader). Unzips to `/seq2yield/`:
+Local archive: `data/raw/seq2yield.zip` (~2.0 GB; **sha256 `ae1b981d3bd9561a…`**) + `README.txt`
++ `setup.ipynb` (Colab loader). 698 zip members → **279 real files** (349 `__MACOSX/` junk
+skipped). Unzips to `/seq2yield/`:
 
-- **Raw data (`/seq2yield/to_import/`):** `Ecoli_data.csv`, `yeast_data.csv`.
-- **Pre-computed splits (`/seq2yield/_saved/saved_sets/`):** stratified train/test splits —
-  **we reuse these, not reconstruct them** (DECISIONS.md #9).
-- **Results (`/seq2yield/_saved/`):** ML/DL regressor results for all iterations & series;
-  56 trained CNN/MLP `.h5` models for `iteration_1` (for DeepLIFT).
-- **Notebooks (seed material → `archive_notebooks_readonly/`):** `1_kmers`,
-  `2_Train_Non_Deep_Regressors`, `3_Train_Convolutional_Neural_Networks`, `4_ExplainableAI`,
-  `5_Plot_Results`, `6_Yeast`; `hyperOpt/{hyper_opt_DL, hyper_opt_ML}` + `test_params_1.pkl`.
-- **Modules (`/seq2yield/to_import/`):** `cnn_conv2d`, `custom_verstack`, `kMers`,
-  `models_misc` (RidgeCV/MLP/SVR/RF wrappers), `plot_results`, `training_schemes`
-  (one CNN per series per run), `utils`, `xai_helper`, `yeast_mod`.
+- **Raw data (`to_import/`):** `Ecoli_data.csv`, `yeast_data.csv` → extracted to
+  `data/extracted/seq2yield/to_import/`.
+- **Provided splits:** `to_import/_saved/iteration_{1..5}/{_working_set,_heldout_set}.csv`
+  — **5 Monte-Carlo CV repeats**, each a working set (~52 MB) + its own held-out set
+  (~5 MB ≈ 10%). ⚠️ **Correction:** the README implied `_saved/saved_sets/`; the real path
+  is `_saved/iteration_N/` (DECISIONS.md #9, #11). Extracted to `data/extracted/...`.
+- **Results (`_saved/iteration_N/results/{non_deep,deep,diversity,SI}/`):** original metric
+  CSVs (kept in-zip; reference only). 216 trained `.h5` models across iterations.
+- **Notebooks (seed material → `archive_notebooks_readonly/`, read-only):** `1_kmers`,
+  `2_Train_Non_Deep_Regressors`, `3_Train_Convolutional_Networks`, `4_ExplainableAI`,
+  `5_Plot_Results`, `6_Yeast`, `hyperOpt/{hyper_opt_DL, hyper_opt_ML}`. (3 vendored DeepLIFT
+  example notebooks are excluded.)
+- **Modules (`to_import/`):** `cnn_conv2d`, `custom_verstack`, `kMers`, `models_misc`
+  (RidgeCV/MLP/SVR/RF), `plot_results`, `training_schemes`, `utils`, `xai_helper`, `yeast_mod`;
+  vendored `deeplift` library.
+
+## 11. Confirmed dataset schema
+
+**`Ecoli_data.csv` — 227,024 rows × 14 columns, no missing values:**
+
+| Column | Role |
+|---|---|
+| `Sequence` | DNA input, **confirmed 96 nt** (min=max=96) |
+| `Protein` | expression target (sfGFP), float |
+| `mut_series` | mutational-series id (int) — the 56 series |
+| `Combi`, `rep` | combinatorial id, replicate |
+| `cdsCAI`, `utrCdsStructureMFE`, `fivepCdsStructureMFE`, `threepCdsStructureMFE`, `cdsBottleneckPosition`, `cdsBottleneckRelativeStrength`, `cdsNucleotideContentAT`, `cdsHydropathyIndex` | **the 8 biophysical/mechanistic features** (paper §6) — already in the CSV |
+| `Unnamed: 0` | row index (drop) |
+
+**`yeast_data.csv` — 3,929 rows × 6 columns:** `sequence` (80 nt), `protein` (target),
+`native_gene`, `cluster_ID`, `group_ID`, `Unnamed: 0`. (Secondary task; deferred.)
+
+Canonical column mapping for the harness: `sequence_col = "Sequence"`,
+`target_col = "Protein"`, `series_col = "mut_series"`.
 
 ## 1. Task
 
@@ -42,7 +64,7 @@ Local archive: `data/raw/seq2yield.zip` (~2.0 GB) + `README.txt` + `setup.ipynb`
 
 ## 2. Data
 
-- Primary E. coli dataset: **~228,000 sequences**.
+- Primary E. coli dataset: **227,024 sequences** (confirmed; paper rounds to ~228k).
 - Organized into **56 mutational series**, **~4,000 sequences each**.
 - Origin: Cambray et al. high-throughput phenotypic screen (raw via OpenScience Framework).
 - **Cleaned data + code release: Zenodo [10.5281/zenodo.7273952](https://doi.org/10.5281/zenodo.7273952).**
@@ -64,10 +86,10 @@ Implications for the harness:
 - Splits are computed **per series**, not globally. Split identity = (series_id, split fraction, seed).
 - The held-out test set is **immutable**. `test_policy = "fixed_held_out"` always.
 - `configs/splits.yaml` records the exact protocol; `data/splits/` is strictly protected.
-- **The deposit ships the original stratified splits** in `_saved/saved_sets/`. To match the
-  paper exactly we **import these** as the canonical splits (hashing them on ingest) rather
-  than regenerating. Regenerating from `splits.py` is a fallback/verification path only.
-  See DECISIONS.md #9.
+- **The deposit ships the original splits** as `_saved/iteration_{1..5}/{_working_set,
+  _heldout_set}.csv` — 5 MC-CV repeats, each with its own held-out set. We **import these**
+  as the canonical splits (hashing on ingest) rather than regenerating. Regenerating from
+  `splits.py` is a fallback/verification path only. See DECISIONS.md #9, #11 and §10.
 
 ## 4. Metrics
 

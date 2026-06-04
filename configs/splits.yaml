@@ -1,9 +1,15 @@
 # PROTECTED (strict). The split protocol IS the experiment's integrity. Per REPRODUCTION.md
 # §3 splits are computed PER mutational series. Once data/splits/ is written it is immutable.
 splits:
-  # Canonical source: the deposit's provided stratified splits (DECISIONS.md #9).
+  # Canonical source: the deposit's provided splits (DECISIONS.md #9, #11).
+  # CONFIRMED layout (Stage 0 audit): 5 iterations (MC-CV repeats), each with a working set
+  # (dev: train + hyperopt) and its own held-out test set.
   source: provided                   # provided | regenerated
-  provided_dir: data/extracted/seq2yield/_saved/saved_sets/
+  provided_root: data/extracted/seq2yield/to_import/_saved/
+  iterations: [iteration_1, iteration_2, iteration_3, iteration_4, iteration_5]
+  files_per_iteration:
+    working_set: "_working_set.csv"   # dev (train + hyperopt)
+    heldout_set: "_heldout_set.csv"   # fixed held-out test (~10%)
   hash_on_ingest: true
   scheme: per_series
   test:

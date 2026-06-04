@@ -8,9 +8,9 @@ data/splits/*
 !data/manifests/*.csv
 !data/manifests/*.md
 
-# Original Colab notebooks are forensic seed material, never tracked as source.
-archive_notebooks_readonly/*
-!archive_notebooks_readonly/.gitkeep
+# Original Colab notebooks are forensic seed material (read-only). They are small and the
+# repo owner is the paper author, so they ARE tracked for a self-contained seed reference.
+# They are never executed in the pipeline (tests/test_notebooks_not_executed.py).
 
 # Experiment artifacts (large / regenerated). Run-cards are the durable record;
 # decide per-policy later which to commit. For now keep the tree, ignore contents.
