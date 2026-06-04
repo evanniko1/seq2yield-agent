@@ -19,8 +19,12 @@ comparators, and predeclared acceptance criteria.
 
 ## Status
 
-**Session 0 — pre-implementation scaffolding.** No execution code yet. This commit
-establishes the constitution: specs, contracts, configs, and skill definitions.
+- ✅ **Session 0** — constitution: specs, contracts, configs, skill definitions.
+- ✅ **Milestone 1** — Stage 0 archive audit (`scripts/audit_archive.py`); manifests in
+  `data/manifests/`; confirmed schema (227,024 rows, 96 nt, 56 series, 8 biophysical feats).
+- 🔄 **Milestone 2** — scripted reproduction (`build_dataset` → `build_splits` →
+  `reproduce_baselines`): RF/MLP/CNN on one-hot, R² on the provided per-series held-out sets.
+  Reports in `reports/static/`.
 
 ## Read these first
 
