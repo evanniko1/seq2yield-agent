@@ -1,0 +1,36 @@
+{
+  "run_id": "2026-06-05-transformer-vs-cnn",
+  "status": "rejected",
+  "stage": "complete",
+  "comparison": {
+    "status": "rejected",
+    "baseline_mean": 0.5691056542971282,
+    "candidate_mean": 0.32973545725189174,
+    "mean_delta": -0.2393701970452365,
+    "paired_bootstrap_ci": [
+      -0.27160936709463707,
+      -0.20654392993828455
+    ],
+    "ci_excludes_zero": true,
+    "n_series": 10,
+    "reasons": [
+      "mean \u0394R\u00b2=-0.2394 < min_delta_r2=0.02"
+    ],
+    "comparison_train_size": 500,
+    "baseline_model": "cnn",
+    "candidate_model": "transformer"
+  },
+  "environment": {
+    "python": "3.12.8",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "packages": {
+      "numpy": "1.26.4",
+      "scikit-learn": "1.6.1",
+      "torch": "2.5.1+cu121"
+    },
+    "cuda": true
+  },
+  "warnings": [
+    "only 3 repeats (<5); primary R\u00b2 less stable than the paper's 5-repeat protocol"
+  ]
+}

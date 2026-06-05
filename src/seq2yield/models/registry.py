@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from . import classical, mlp
 from .cnn import CNNRegressor
+from .transformer import TransformerRegressor
 
 _MODELS = {
     "ridge": (classical.ridge, "flat"),
@@ -16,6 +17,7 @@ _MODELS = {
     "rf": (classical.random_forest, "flat"),
     "mlp": (mlp.mlp, "flat"),
     "cnn": (lambda seed=0, length=96: CNNRegressor(length=length, seed=seed), "image"),
+    "transformer": (lambda seed=0, length=96: TransformerRegressor(length=length, seed=seed), "image"),
 }
 
 

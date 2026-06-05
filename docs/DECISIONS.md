@@ -178,6 +178,19 @@ surfaced in the run result (`novelty`) and the CLI. **Result.** Live: with (cnn,
 ridge-vs-cnn, svr-vs-mlp (dropped=0) — and the chair approved rf-vs-mlp. The loop now
 explores the model space (incl. ridge/svr candidates) instead of repeating settled questions.
 
+## #19 — Tier-1 intervention: small Transformer from scratch (Demo 1A)
+**Context.** Expand the council's intervention space beyond the 5 baselines. **Decision.**
+Added `models/transformer.py` — a compact from-scratch encoder (4→64 proj, learned positional
+embedding, 2 attention layers, mean-pool, regression head; ~CNN parameter budget for fairness),
+registered as `model_family="transformer"` (image features) and added to `ModelFamily`, so the
+council can propose it (comparator stays in the registry: cnn/rf/mlp). **Result.** Harness run
+transformer-vs-cnn (10 series × 3 repeats @ N=500): **REJECTED** — transformer R²=0.330 vs CNN
+0.569, ΔR²=−0.239 (CI [−0.27,−0.21] excludes 0, significantly worse). This is the spec's
+predicted Demo-1A outcome: a from-scratch Transformer does not beat the CNN under low-data
+constraints — a scientifically useful negative result, and a clean demonstration that the
+harness rejects significantly-worse candidates. (Transformers are data-hungry; the CNN's
+locality bias wins at small N.)
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

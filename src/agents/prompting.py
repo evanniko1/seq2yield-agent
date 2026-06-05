@@ -10,7 +10,9 @@ _CONTEXT = (
     "protein expression (sfGFP) from 96nt DNA. Primary metric: R² on fixed per-series "
     "held-out sets, mean of 5 MC-CV repeats. Baseline registry (mean R² @train=2000): "
     "CNN 0.740, RF 0.717, MLP 0.638. Only Tier-0/1 model-comparison interventions are in "
-    "scope; feature_set=one_hot, sampling=random are the implemented options."
+    "scope; feature_set=one_hot, sampling=random are the implemented options. Candidate "
+    "model_family options: cnn, rf, mlp, ridge, svr, and a small from-scratch "
+    "**transformer** (Tier-1, trained from scratch on the one-hot sequence)."
 )
 
 
@@ -21,7 +23,7 @@ def generator_prompt(n: int, prior: str = "") -> tuple[str, str]:
         prior_block = ("\n\nALREADY-TESTED comparisons (from research memory) — do NOT "
                        "re-propose these; explore NOVEL model pairs/hypotheses instead:\n"
                        f"{prior}\n"
-                       "candidate model_family may be any of cnn/rf/mlp/ridge/svr; "
+                       "candidate model_family may be any of cnn/rf/mlp/ridge/svr/transformer; "
                        "comparator_model must be one of cnn/rf/mlp (the baseline registry).")
     user = (f"Propose exactly {n} DISTINCT, controlled experiments, each comparing one "
             "model_family against a DIFFERENT comparator_model on the same fixed splits. "

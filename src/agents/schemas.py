@@ -34,7 +34,7 @@ class Proposal(BaseModel):
     human_review_required: bool = False
 
 
-ModelFamily = Literal["cnn", "rf", "mlp", "ridge", "svr"]
+ModelFamily = Literal["cnn", "rf", "mlp", "ridge", "svr", "transformer"]
 RegistryModel = Literal["cnn", "rf", "mlp"]   # models present in the baseline registry
 
 
