@@ -40,6 +40,14 @@ comparators, and predeclared acceptance criteria.
   `PatchPlan` → protected-file guard → patch reviewer → pytest-before-training → keep/revert.
   Ran live: agent created an approved config patch (kept after tests passed); a patch
   targeting protected `metrics.py` was blocked by the guard.
+- ✅ **Milestone 7** — full agentic loop (`scripts/run_agent_loop.py`): council → validated
+  RunSpec → ML Engineer patch → reviewer → guard → tests → train candidate vs baseline
+  registry (paired bootstrap) → accept/reject/inconclusive → postmortem → memory. Ran live
+  end-to-end: **ACCEPTED** cnn-vs-rf (ΔR²=0.032, 95% CI [0.008, 0.055], n=10 series); patch
+  kept, claim recorded, run trail + postmortem persisted.
+
+**The bounded agentic POC is complete (Tier 0/1).** All eight pieces — audit, reproduction,
+harness, providers, council, patch loop, full loop — run end-to-end with a real verdict.
 
 ## Read these first
 

@@ -1,0 +1,34 @@
+{
+  "run_id": "2026-06-05-council-cnn-vs-rf",
+  "status": "accepted",
+  "stage": "complete",
+  "comparison": {
+    "status": "accepted",
+    "baseline_mean": 0.5381174208461957,
+    "candidate_mean": 0.5699572306493412,
+    "mean_delta": 0.03183980980314548,
+    "paired_bootstrap_ci": [
+      0.0084911981257545,
+      0.054747324578243786
+    ],
+    "ci_excludes_zero": true,
+    "n_series": 10,
+    "reasons": [],
+    "comparison_train_size": 500,
+    "baseline_model": "rf",
+    "candidate_model": "cnn"
+  },
+  "environment": {
+    "python": "3.12.8",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "packages": {
+      "numpy": "1.26.4",
+      "scikit-learn": "1.6.1",
+      "torch": "2.5.1+cu121"
+    },
+    "cuda": true
+  },
+  "warnings": [
+    "only 3 repeats (<5); primary R\u00b2 less stable than the paper's 5-repeat protocol"
+  ]
+}

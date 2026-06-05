@@ -1,0 +1,20 @@
+{
+  "proposal_id": "exp001",
+  "title": "Comparing CNN with Gradient Boosting Machines (GBM) for Protein Expression Prediction",
+  "maturity_tier": "tier_0",
+  "intervention_type": "model_architecture",
+  "scientific_hypothesis": "GBM will perform better than CNN in predicting sfGFP expression from 96nt DNA sequences.",
+  "model_family": "cnn",
+  "comparator_model": "rf",
+  "feature_set": "one_hot",
+  "sampling_policy": "random",
+  "required_controls": [
+    "fixed per-series held-out sets for evaluation",
+    "mean of 5 MC-CV repeats for primary metric (R\u00b2)",
+    "one_hot feature_set",
+    "random sampling"
+  ],
+  "expected_failure_modes": [
+    "GBM may not outperform CNN due to the specific structure of DNA sequences and the complexity required for capturing spatial hierarchies."
+  ]
+}

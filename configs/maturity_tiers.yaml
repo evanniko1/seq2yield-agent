@@ -1,6 +1,6 @@
 # Authoritative tier gating. Validators reject proposals above `unlocked_tier`.
 maturity_tiers:
-  unlocked_tier: tier_0          # raised to tier_1 only after Milestone 2 (repro) passes
+  unlocked_tier: tier_1          # tier_1 unlocked: reproduction (M2) + harness (M3) complete
 
   tier_0:
     label: required_reproduction

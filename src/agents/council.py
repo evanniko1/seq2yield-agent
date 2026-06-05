@@ -20,8 +20,10 @@ ROOT = Path(__file__).resolve().parents[2]
 
 # intervention_type -> freely-modifiable files an approved patch may touch (CONTRACTS §/configs)
 _ALLOWED = {
-    "model_architecture": ["src/seq2yield/models/", "src/seq2yield/training/train.py"],
-    "training_procedure": ["src/seq2yield/training/train.py", "src/seq2yield/models/"],
+    "model_architecture": ["configs/model/", "src/seq2yield/models/",
+                           "src/seq2yield/training/train.py"],
+    "training_procedure": ["configs/model/", "src/seq2yield/training/train.py",
+                           "src/seq2yield/models/"],
 }
 BASELINE_RUN_ID = "2026-06-04-full56"
 

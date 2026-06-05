@@ -1,0 +1,5 @@
+{
+  "approved": true,
+  "rationale": "The patch is within scope and only modifies allowed files without touching protected files.",
+  "required_changes": []
+}

@@ -35,6 +35,7 @@ class Proposal(BaseModel):
 
 
 ModelFamily = Literal["cnn", "rf", "mlp", "ridge", "svr"]
+RegistryModel = Literal["cnn", "rf", "mlp"]   # models present in the baseline registry
 
 
 class CouncilProposal(BaseModel):
@@ -46,7 +47,7 @@ class CouncilProposal(BaseModel):
     intervention_type: Literal["model_architecture", "training_procedure"]
     scientific_hypothesis: str
     model_family: ModelFamily
-    comparator_model: ModelFamily
+    comparator_model: RegistryModel        # must exist in the baseline registry to compare
     feature_set: Literal["one_hot"] = "one_hot"
     sampling_policy: Literal["random"] = "random"
     required_controls: list[str] = Field(default_factory=list)
@@ -99,6 +100,16 @@ class PatchReview(BaseModel):
     approved: bool
     rationale: str
     required_changes: list[str] = Field(default_factory=list)
+
+
+class Postmortem(BaseModel):
+    """Synthesizer's reflection on a completed run (CONTRACTS §5 limitations/claim)."""
+    status: Literal["accepted", "rejected", "inconclusive"]
+    summary: str
+    what_worked: list[str] = Field(default_factory=list)
+    what_failed: list[str] = Field(default_factory=list)
+    lessons: list[str] = Field(default_factory=list)
+    claim_allowed: str | None = None
 
 
 class ChairDecision(BaseModel):

@@ -134,6 +134,21 @@ pytest-before-training → keep/revert. **Result.** Live: agent created `cnn_low
 (approved, kept after 46 tests passed); a hand-crafted patch tampering with `metrics.py` was
 blocked by the guard before apply. Exit criterion met.
 
+## #16 — Capstone loop: tier_1 unlocked, comparator must be in registry, UTF-8 writes
+**Context.** Milestone 7 wires council→patch→harness→postmortem→memory into one loop.
+**Decisions/fixes.** (1) **Unlocked tier_1** in maturity_tiers.yaml — reproduction (M2) and
+harness (M3) are complete, satisfying the tier_1 `requires`. (2) `CouncilProposal.comparator_model`
+restricted to `RegistryModel` (cnn/rf/mlp): the first live run picked `cnn vs svr`, but the
+baseline registry has no svr → empty paired deltas → spurious nan/INCONCLUSIVE. Comparator
+must exist in the registry. (3) All loop artifact writes use `encoding="utf-8"` (Windows
+cp1252 crashed on a `Δ` in model-written postmortem text). **Result.** Live end-to-end:
+council approved cnn-vs-rf → ML Engineer patch (cnn_lr_0_001) approved → guard+tests passed →
+harness trained cnn vs rf baseline (10 series × 3 repeats @ N=500) → **ACCEPTED**
+(ΔR²=0.032, CI [0.008, 0.055] excludes 0) → patch kept → postmortem with claim → memory
+appended. Known limitation: small local models sometimes write postmortem prose that conflates
+context numbers with the run's; the structured `verdict.json`/`comparison` fields are
+authoritative (a reason authority providers are preferred for these roles).
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

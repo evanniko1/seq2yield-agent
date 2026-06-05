@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "violations": [],
+  "by_path": {
+    "configs/model/cnn_lr_0_001.yaml": {
+      "class": "freely_modifiable",
+      "ok": true,
+      "reason": null
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{"ts": "2026-06-05T09:52:41.885412+00:00", "event": "received_runspec", "run_id": "2026-06-05-council-cnn-vs-rf", "model_family": "cnn", "tier": "tier_0"}
+{"ts": "2026-06-05T09:52:41.905279+00:00", "event": "validate_runspec", "ok": true, "errors": [], "warnings": ["only 3 repeats (<5); primary R\u00b2 less stable than the paper's 5-repeat protocol"]}
+{"ts": "2026-06-05T09:52:41.930107+00:00", "event": "protected_guard", "passed": true, "violations": [], "by_path": {"configs/model/cnn_lr_0_001.yaml": {"class": "freely_modifiable", "ok": true, "reason": null}}}
+{"ts": "2026-06-05T09:53:12.378456+00:00", "event": "tests", "returncode": 0}
+{"ts": "2026-06-05T09:53:12.379457+00:00", "event": "execute_start"}
+{"ts": "2026-06-05T09:55:48.303022+00:00", "event": "execute_done", "n_rows": 30}
+{"ts": "2026-06-05T09:55:49.505486+00:00", "event": "compare", "status": "accepted", "baseline_mean": 0.5381174208461957, "candidate_mean": 0.5699572306493412, "mean_delta": 0.03183980980314548, "paired_bootstrap_ci": [0.0084911981257545, 0.054747324578243786], "ci_excludes_zero": true, "n_series": 10, "reasons": [], "comparison_train_size": 500, "baseline_model": "rf", "candidate_model": "cnn"}
+{"ts": "2026-06-05T09:55:49.749884+00:00", "event": "verdict", "status": "accepted"}

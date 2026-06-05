@@ -1,0 +1,14 @@
+{
+  "proposal_id": "exp001",
+  "run_id": "2026-06-05-council-cnn-vs-rf",
+  "summary": "add model variant config 'cnn_lr_0_001' (base cnn)",
+  "rationale": "",
+  "operations": [
+    {
+      "op": "create",
+      "path": "configs/model/cnn_lr_0_001.yaml",
+      "content": "base_model: cnn\nhyperparameters:\n  epochs: 20.0\n  lr: 0.001\n  dropout: 0.5\nrationale: ''\nproposal_id: exp001\n",
+      "find": null
+    }
+  ]
+}
