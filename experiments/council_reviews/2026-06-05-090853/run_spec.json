@@ -1,0 +1,64 @@
+{
+  "run_id": "2026-06-05-council-cnn-vs-mlp",
+  "proposal_id": "exp001",
+  "maturity_tier": "tier_0",
+  "dataset_manifest_hash": "e15d854d7a6482734e260297545f50d7543c5c6755910ec95dac5b86532f90ba",
+  "split_id": "provided",
+  "split_hash": "c20f19717f3b0f38aef378ada087231d3ed0517b3936ee22eb2586738020d557",
+  "model_family": "cnn",
+  "feature_set": "one_hot",
+  "sampling_policy": "random",
+  "train_sizes": [
+    250,
+    500,
+    1000,
+    2000
+  ],
+  "iterations": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "series": null,
+  "n_series": null,
+  "seed": 1,
+  "primary_metric": "r2",
+  "secondary_metrics": [
+    "rmse",
+    "pearson",
+    "spearman"
+  ],
+  "statistical_tests": [
+    "paired_bootstrap"
+  ],
+  "allowed_files": [
+    "src/seq2yield/models/",
+    "src/seq2yield/training/train.py"
+  ],
+  "protected_files": [
+    "data/raw/**",
+    "data/splits/**",
+    "src/seq2yield/data/cleaning.py",
+    "src/seq2yield/training/metrics.py",
+    "configs/objective.yaml",
+    "configs/splits.yaml",
+    "src/seq2yield/statistics/**",
+    "src/seq2yield/experiments/compare.py",
+    "configs/metrics.yaml",
+    "configs/statistical_tests.yaml"
+  ],
+  "max_runtime_minutes": 30,
+  "max_memory_gb": 16,
+  "acceptance_policy": {
+    "track": "performance",
+    "baseline_run_id": "2026-06-04-full56",
+    "baseline_model": "mlp",
+    "comparison_train_size": null,
+    "min_delta_r2": 0.02,
+    "requires_repeated_seed": true,
+    "requires_no_split_change": true,
+    "bootstrap_ci_must_exclude_zero": true
+  }
+}

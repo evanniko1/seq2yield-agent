@@ -1,0 +1,12 @@
+{
+  "status": "approve_for_execution",
+  "chosen_proposal_id": "exp001",
+  "rationale": "All proposals have sound=true, and they all have the same highest 'overall' score of 16.0. Therefore, we choose the proposal with the highest 'overall' score, which is exp001.",
+  "max_runtime_minutes": 30,
+  "max_files_to_modify": 3,
+  "required_ablations": [
+    "fixed_splits",
+    "one_hot_feature_set",
+    "random_sampling"
+  ]
+}

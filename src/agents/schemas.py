@@ -34,6 +34,29 @@ class Proposal(BaseModel):
     human_review_required: bool = False
 
 
+ModelFamily = Literal["cnn", "rf", "mlp", "ridge", "svr"]
+
+
+class CouncilProposal(BaseModel):
+    """A RunSpec-compilable proposal (Milestone 5). Constrained to the implemented Tier-0/1
+    intervention space so the chair can compile a runnable, valid RunSpec."""
+    proposal_id: str
+    title: str
+    maturity_tier: Tier
+    intervention_type: Literal["model_architecture", "training_procedure"]
+    scientific_hypothesis: str
+    model_family: ModelFamily
+    comparator_model: ModelFamily
+    feature_set: Literal["one_hot"] = "one_hot"
+    sampling_policy: Literal["random"] = "random"
+    required_controls: list[str] = Field(default_factory=list)
+    expected_failure_modes: list[str] = Field(default_factory=list)
+
+
+class ProposalBatch(BaseModel):
+    proposals: list[CouncilProposal] = Field(min_length=1)
+
+
 class CouncilReviewItem(BaseModel):
     """CONTRACTS §2 (one reviewer)."""
     role: str
@@ -48,6 +71,7 @@ class CouncilReviewItem(BaseModel):
 class ChairDecision(BaseModel):
     """CONTRACTS §2 (chair)."""
     status: Literal["approve_for_execution", "reject", "revise", "human_review"]
+    chosen_proposal_id: str | None = None
     rationale: str
     max_runtime_minutes: int = 30
     max_files_to_modify: int = 3

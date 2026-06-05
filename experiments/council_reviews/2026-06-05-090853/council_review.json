@@ -1,0 +1,165 @@
+{
+  "mean_scores": {
+    "exp001": {
+      "feasibility": 4.0,
+      "scientific_value": 3.0,
+      "confoundedness": 4.33,
+      "reproducibility": 4.67,
+      "n_reject_votes": 0,
+      "overall": 16.0,
+      "sound": true
+    },
+    "exp002": {
+      "feasibility": 4.0,
+      "scientific_value": 3.0,
+      "confoundedness": 4.33,
+      "reproducibility": 4.67,
+      "n_reject_votes": 0,
+      "overall": 16.0,
+      "sound": true
+    },
+    "exp003": {
+      "feasibility": 4.0,
+      "scientific_value": 3.0,
+      "confoundedness": 4.67,
+      "reproducibility": 4.33,
+      "n_reject_votes": 0,
+      "overall": 16.0,
+      "sound": true
+    }
+  },
+  "reviews": {
+    "exp001": [
+      {
+        "role": "modeling_reviewer",
+        "score_feasibility": 4,
+        "score_scientific_value": 3,
+        "score_confoundedness": 4,
+        "score_reproducibility": 5,
+        "required_changes": [
+          "Clarify the rationale behind choosing fixed per-series held-out sets and how this affects the generalizability of the results.",
+          "Specify the exact number of training samples (2000) in the baseline registry to ensure transparency and allow for a fair comparison with other models.",
+          "Include a detailed description of the data preprocessing steps, especially regarding the one-hot encoding of DNA sequences, to ensure reproducibility.",
+          "Provide more information on the architecture details of both CNN and MLP models, such as number of layers, neurons per layer, activation functions, etc., to facilitate comparison and understanding.",
+          "Explain how the random sampling policy is implemented and why it was chosen over other possible sampling methods."
+        ],
+        "reject_reason": null
+      },
+      {
+        "role": "methodology_reviewer",
+        "score_feasibility": 4,
+        "score_scientific_value": 3,
+        "score_confoundedness": 5,
+        "score_reproducibility": 4,
+        "required_changes": [
+          "Clarify the definition and implementation of 'fixed_splits'. Ensure that the splits are truly independent across different runs to avoid data leakage.",
+          "Provide a detailed explanation of how the random sampling policy is implemented, including any potential sources of variability or bias.",
+          "Include additional baseline models for comparison, such as decision trees or support vector machines, to provide a broader context for the performance of CNNs and MLPs.",
+          "Specify the exact version of the libraries used (e.g., TensorFlow, scikit-learn) and the hardware specifications to ensure reproducibility.",
+          "Document any preprocessing steps applied to the DNA sequences before one-hot encoding, as these could influence model performance."
+        ],
+        "reject_reason": null
+      },
+      {
+        "role": "biology_reviewer",
+        "score_feasibility": 4,
+        "score_scientific_value": 3,
+        "score_confoundedness": 4,
+        "score_reproducibility": 5,
+        "required_changes": [
+          "Clarify the biological relevance of using a fixed per-series held-out set for validation, especially in the context of protein expression prediction.",
+          "Consider adding a baseline model that incorporates translation or other biological steps to better reflect the actual process of protein synthesis from DNA sequences.",
+          "Explain how the choice of one-hot encoding affects the ability of CNNs to capture spatial dependencies in DNA sequences compared to MLPs."
+        ],
+        "reject_reason": null
+      }
+    ],
+    "exp002": [
+      {
+        "role": "modeling_reviewer",
+        "score_feasibility": 4,
+        "score_scientific_value": 3,
+        "score_confoundedness": 4,
+        "score_reproducibility": 5,
+        "required_changes": [
+          "Clarify the rationale for choosing 'fixed_splits' as a required control. Explain why this is necessary and how it affects the comparison between RF and MLP.",
+          "Specify the exact number of trees in the Random Forest model to ensure reproducibility and avoid potential overfitting issues.",
+          "Provide more details on the architecture of the Multi-Layer Perceptron, such as the number of layers and neurons per layer, to ensure a fair comparison with the RF.",
+          "Include a discussion on how the choice of 'one_hot' feature set might impact the performance of both models and whether alternative encoding schemes should be considered."
+        ],
+        "reject_reason": null
+      },
+      {
+        "role": "methodology_reviewer",
+        "score_feasibility": 4,
+        "score_scientific_value": 3,
+        "score_confoundedness": 5,
+        "score_reproducibility": 4,
+        "required_changes": [
+          "Clarify the definition of 'fixed per-series held-out sets' to ensure consistency with Nikolados et al. (2022).",
+          "Provide a detailed explanation of how the random sampling policy is implemented, including any specific parameters or strategies used.",
+          "Include a description of the data preprocessing steps, such as normalization or scaling, applied to the one-hot encoded feature set.",
+          "Specify the exact number of trees and depth for the Random Forest model to ensure reproducibility.",
+          "Explain how the Multi-Layer Perceptron architecture is defined, including the number of layers, neurons per layer, activation functions, and any regularization techniques used."
+        ],
+        "reject_reason": null
+      },
+      {
+        "role": "biology_reviewer",
+        "score_feasibility": 4,
+        "score_scientific_value": 3,
+        "score_confoundedness": 4,
+        "score_reproducibility": 5,
+        "required_changes": [
+          "Clarify the biological relevance of using a fixed split for protein expression prediction. Consider whether this approach aligns with standard experimental design practices in molecular biology.",
+          "Justify the choice of one-hot encoding for feature set. Discuss potential limitations and alternatives, such as k-mer frequency or sequence-based embeddings.",
+          "Explain the rationale behind random sampling policy. Consider if other sampling strategies could provide more robust results."
+        ],
+        "reject_reason": null
+      }
+    ],
+    "exp003": [
+      {
+        "role": "modeling_reviewer",
+        "score_feasibility": 4,
+        "score_scientific_value": 3,
+        "score_confoundedness": 5,
+        "score_reproducibility": 4,
+        "required_changes": [
+          "Clarify the rationale for using a fixed per-series held-out set and ensure that this method is appropriate for the dataset size and nature.",
+          "Specify the exact number of epochs, batch sizes, and other hyperparameters used for training both CNN and RF models to ensure reproducibility.",
+          "Include a detailed description of how the Random Forest model is configured (e.g., number of trees, maximum depth) and any preprocessing steps applied to the data before training.",
+          "Consider adding a baseline comparison with a more complex CNN architecture or other machine learning models to better understand the relative performance of different architectures."
+        ],
+        "reject_reason": null
+      },
+      {
+        "role": "methodology_reviewer",
+        "score_feasibility": 4,
+        "score_scientific_value": 3,
+        "score_confoundedness": 5,
+        "score_reproducibility": 4,
+        "required_changes": [
+          "Clarify the random seed policy for reproducibility.",
+          "Specify the exact version of libraries and frameworks used to ensure reproducibility.",
+          "Include a detailed description of how the fixed splits are generated and held out.",
+          "Provide more information on the preprocessing steps applied to the DNA sequences before one-hot encoding."
+        ],
+        "reject_reason": null
+      },
+      {
+        "role": "biology_reviewer",
+        "score_feasibility": 4,
+        "score_scientific_value": 3,
+        "score_confoundedness": 4,
+        "score_reproducibility": 5,
+        "required_changes": [
+          "Clarify the biological relevance of using a CNN for protein expression prediction from DNA sequences, especially given that CNNs are traditionally used for spatial data.",
+          "Justify why one-hot encoding is chosen over other feature representations (e.g., k-mer counts) and how it aligns with the biological understanding of DNA sequence information.",
+          "Explain the rationale behind using fixed splits for evaluation and discuss potential biases introduced by this approach, such as temporal or batch effects in the data."
+        ],
+        "reject_reason": null
+      }
+    ]
+  }
+}

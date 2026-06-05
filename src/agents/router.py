@@ -71,7 +71,8 @@ class Router:
                 order = [p for p in order if p in rp["allowed_providers"]]
         return order
 
-    def resolve(self, role: str, *, require_available: bool = True) -> ModelClient:
+    def resolve(self, role: str, *, require_available: bool = True,
+                allow_local_fallback: bool = False) -> ModelClient:
         providers = self.policy["providers"]
         pclass = self.provider_class(role)
         errs = []
@@ -89,4 +90,17 @@ class Router:
                 errs.append(f"{provider}: unavailable (key/service)")
                 continue
             return client
+
+        # Offline/keyless DEV fallback: let an authority role borrow a local model when no
+        # direct provider is available. Loudly marked; never the default (AGENTS.md §5).
+        if allow_local_fallback:
+            for provider in self.policy["provider_class_map"].get("diversity", []):
+                pcfg = providers.get(provider, {})
+                if not pcfg.get("enabled"):
+                    continue
+                model = _model_for(pcfg, "diversity")
+                client = _build(provider, model, pcfg)
+                if _available(provider, client):
+                    client.local_fallback_for = role          # type: ignore[attr-defined]
+                    return client
         raise ProviderUnavailable(f"no provider available for role '{role}': {errs}")

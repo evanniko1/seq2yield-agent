@@ -1,0 +1,65 @@
+[
+  {
+    "proposal_id": "exp001",
+    "title": "Comparison of CNN vs. MLP on Fixed Splits for Protein Expression Prediction",
+    "maturity_tier": "tier_0",
+    "intervention_type": "model_architecture",
+    "scientific_hypothesis": "The Convolutional Neural Network (CNN) will achieve a higher R\u00b2 score compared to the Multi-Layer Perceptron (MLP) on fixed per-series held-out sets.",
+    "model_family": "cnn",
+    "comparator_model": "mlp",
+    "feature_set": "one_hot",
+    "sampling_policy": "random",
+    "required_controls": [
+      "fixed_splits",
+      "one_hot_feature_set",
+      "random_sampling"
+    ],
+    "expected_failure_modes": [
+      "Overfitting due to high model complexity",
+      "Insufficient training data for CNN to learn effectively",
+      "MLP outperforming CNN if the input features are not spatially structured"
+    ]
+  },
+  {
+    "proposal_id": "exp002",
+    "title": "Comparison of RF vs. MLP on Fixed Splits for Protein Expression Prediction",
+    "maturity_tier": "tier_1",
+    "intervention_type": "model_architecture",
+    "scientific_hypothesis": "The Random Forest (RF) will achieve a higher R\u00b2 score compared to the Multi-Layer Perceptron (MLP) on fixed per-series held-out sets.",
+    "model_family": "rf",
+    "comparator_model": "mlp",
+    "feature_set": "one_hot",
+    "sampling_policy": "random",
+    "required_controls": [
+      "fixed_splits",
+      "one_hot_feature_set",
+      "random_sampling"
+    ],
+    "expected_failure_modes": [
+      "RF's interpretability issues leading to suboptimal feature selection",
+      "MLP outperforming RF if the input features are highly non-linear",
+      "Overfitting in RF due to too many trees or deep trees"
+    ]
+  },
+  {
+    "proposal_id": "exp003",
+    "title": "Comparison of CNN vs. RF on Fixed Splits for Protein Expression Prediction",
+    "maturity_tier": "tier_1",
+    "intervention_type": "model_architecture",
+    "scientific_hypothesis": "The Convolutional Neural Network (CNN) will achieve a higher R\u00b2 score compared to the Random Forest (RF) on fixed per-series held-out sets.",
+    "model_family": "cnn",
+    "comparator_model": "rf",
+    "feature_set": "one_hot",
+    "sampling_policy": "random",
+    "required_controls": [
+      "fixed_splits",
+      "one_hot_feature_set",
+      "random_sampling"
+    ],
+    "expected_failure_modes": [
+      "CNN's inability to handle non-spatial data effectively",
+      "RF outperforming CNN if the input features are highly categorical or sparse",
+      "Overfitting in CNN due to excessive filter sizes or layers"
+    ]
+  }
+]

@@ -108,6 +108,21 @@ two Ollama models (qwen2.5-coder:14b, llama3.2); Anthropic/OpenAI/OpenRouter are
 and activate when their API keys are set. Authority roles are restricted to direct providers
 in the router.
 
+## #14 — Council: chair decides, RunSpec is compiled; pre-digested scores; local fallback
+**Context.** Milestone 5. (a) Asking a 14B local model to emit a full RunSpec is unreliable;
+(b) the chair kept misreading the 1–5 `confoundedness` scale (name fights the "5=clean"
+convention) and rejected everything; (c) no API keys on the dev host, but the council must
+run end-to-end. **Decisions.** (1) The chair LLM only *selects* a proposal; the RunSpec is
+**compiled deterministically** from the approved `CouncilProposal` + chair budget + registry
+context, then `validate_runspec`'d. (2) The council **pre-computes** `overall` (higher=better)
+and a `sound` flag per proposal so the chair never interprets raw scales — this fixed the
+spurious rejections. (3) Added an opt-in `--allow-local-fallback` so authority roles can
+borrow a local model when no direct provider is available (DEV/offline only, marked in the
+audit trail; AGENTS.md §5 default stays direct-only). **Result.** Live offline council:
+3 proposals → reviewed → chair approved best → valid RunSpec (cnn vs mlp vs baseline
+registry). Proposal space constrained to the implemented Tier-0/1 model-comparison interventions
+so emitted specs are runnable by the M3 harness.
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

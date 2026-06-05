@@ -32,6 +32,10 @@ comparators, and predeclared acceptance criteria.
   `ModelClient` (Ollama, Anthropic, OpenAI, OpenRouter) with JSON-schema structured outputs,
   retry, and `ModelCallRecord` logging; a role→provider router (authority = direct only).
   Same prompt+schema validated live across 2 local Ollama models.
+- ✅ **Milestone 5** — LLM council (`scripts/run_council.py`): proposal generator → 3
+  reviewers (modeling/methodology/biology) → chair → **compiled, validated RunSpec**. Ran
+  live via Ollama (offline `--allow-local-fallback`): 3 proposals, chair approved the best,
+  emitted a valid RunSpec against the baseline registry.
 
 ## Read these first
 
