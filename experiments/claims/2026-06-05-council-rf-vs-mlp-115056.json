@@ -1,0 +1,17 @@
+{
+  "ts": "2026-06-05T11:52:59.806312+00:00",
+  "run_id": "2026-06-05-council-rf-vs-mlp-115056",
+  "proposal_id": "exp2",
+  "status": "accepted",
+  "candidate_model": "rf",
+  "baseline_model": "mlp",
+  "mean_delta_r2": 0.1445954887275005,
+  "bootstrap_ci_95": [
+    0.11557686706492741,
+    0.17480537610996644
+  ],
+  "ci_excludes_zero": true,
+  "n_series": 10,
+  "train_size": 500,
+  "claim": "The Random Forest model significantly outperformed the Multi-Layer Perceptron model in predicting protein expression from 96nt DNA sequences, as evidenced by a \u0394R\u00b2 of 0.1446 with a statistically significant confidence interval that excludes zero."
+}
