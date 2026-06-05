@@ -1,0 +1,17 @@
+{
+  "ts": "2026-06-05T10:26:24.022415+00:00",
+  "run_id": "2026-06-05-council-mlp-vs-rf-101919",
+  "proposal_id": "exp2",
+  "status": "rejected",
+  "candidate_model": "mlp",
+  "baseline_model": "rf",
+  "mean_delta_r2": -0.1546299699143725,
+  "bootstrap_ci_95": [
+    -0.1909247912005239,
+    -0.12392500124843168
+  ],
+  "ci_excludes_zero": true,
+  "n_series": 10,
+  "train_size": 500,
+  "claim": null
+}

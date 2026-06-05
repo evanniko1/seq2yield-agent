@@ -1,0 +1,17 @@
+{
+  "ts": "2026-06-05T10:37:49.285286+00:00",
+  "run_id": "2026-06-05-council-cnn-vs-rf-103256",
+  "proposal_id": "P001",
+  "status": "accepted",
+  "candidate_model": "cnn",
+  "baseline_model": "rf",
+  "mean_delta_r2": 0.03183980980314548,
+  "bootstrap_ci_95": [
+    0.0084911981257545,
+    0.054747324578243786
+  ],
+  "ci_excludes_zero": true,
+  "n_series": 10,
+  "train_size": 500,
+  "claim": "The CNN outperformed the Random Forest model in predicting protein expression from DNA sequences, as evidenced by a higher mean R\u00b2 and a statistically significant difference in performance."
+}

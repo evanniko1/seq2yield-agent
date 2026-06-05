@@ -24,11 +24,13 @@ try:
 except Exception:
     pass
 
+from datetime import datetime, timezone  # noqa: E402
+
 from agents import memory, ml_engineer, postmortem  # noqa: E402
 from agents.council import Council  # noqa: E402
 from agents.patch_reviewer import review as review_patch  # noqa: E402
-from agents.schemas import PatchPlan  # noqa: E402
 from orchestration import execution_harness, patch_manager  # noqa: E402
+from seq2yield.experiments import claim_registry  # noqa: E402
 from seq2yield.experiments.run_spec import RunSpec, validate_runspec  # noqa: E402
 
 
@@ -60,6 +62,7 @@ def main() -> int:
     proposal = next(p for p in res["proposals"] if p["proposal_id"] == dec["chosen_proposal_id"])
 
     spec = _bound(RunSpec(**res["runspec"]))
+    spec.run_id = f"{spec.run_id}-{datetime.now(timezone.utc):%H%M%S}"   # unique per cycle
     vr = validate_runspec(spec, unlocked_tier="tier_1")
     print(f"STATE: RUNSPEC_VALIDATED ({'ok' if vr.ok else vr.errors})  -> {spec.run_id}")
     if not vr.ok:
@@ -112,6 +115,8 @@ def main() -> int:
                    "baseline_model": spec.acceptance_policy.baseline_model,
                    "status": status, "mean_delta": cmp.get("mean_delta"),
                    "ci": cmp.get("paired_bootstrap_ci"), "claim_allowed": pm.claim_allowed})
+    claim_registry.record(run_id=spec.run_id, proposal_id=proposal["proposal_id"],
+                          status=status, comparison=cmp, claim_allowed=pm.claim_allowed)
 
     _report(run_dir, spec, proposal, verdict, pm, eng_who, rev_who)
     print(f"\nartifacts: {run_dir}")

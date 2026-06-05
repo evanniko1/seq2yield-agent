@@ -149,6 +149,23 @@ appended. Known limitation: small local models sometimes write postmortem prose 
 context numbers with the run's; the structured `verdict.json`/`comparison` fields are
 authoritative (a reason authority providers are preferred for these roles).
 
+## #17 — Claim registry + postmortem accuracy fix; multi-cycle population
+**Context.** Populate the research memory/claims with several loop cycles, and fix the
+postmortem number-conflation caveat. **Decisions.** (1) `seq2yield/experiments/claim_registry.py`
+records every run to `experiments/claims/registry.jsonl` (+ per-run json) and **drops the
+claim to null unless status==accepted** — no claim without an accepted run-card. (2) The
+postmortem prompt now receives ONLY this run's numbers (candidate/baseline mean R², ΔR², CI,
+n_series, train_size) with an explicit "use no other numbers" instruction, and the generic
+registry-wide context is removed from that prompt — fixing the conflation regardless of
+provider. Routing already prefers direct authority providers; `--allow-local-fallback` only
+substitutes a local model when no key is set. (3) Loop run_ids carry a HHMMSS suffix so cycles
+don't collide. **Result.** 4 cycles: 3 ACCEPTED (cnn-vs-rf, ΔR²≈+0.032) + 1 REJECTED
+(mlp-vs-rf, ΔR²≈−0.155, CI excludes 0 → significantly worse, claim=null). memory.jsonl and
+the claim registry populated; postmortems no longer cite wrong numbers. Note: with fixed
+seed + bounded config, repeated cnn-vs-rf cycles are deterministic (identical ΔR²) — wiring
+research memory into the council prompt to avoid re-running settled questions is a future
+enhancement.
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

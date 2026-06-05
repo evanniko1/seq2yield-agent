@@ -1,0 +1,17 @@
+{
+  "ts": "2026-06-05T10:48:58.262360+00:00",
+  "run_id": "2026-06-05-council-cnn-vs-rf-104400",
+  "proposal_id": "exp001",
+  "status": "accepted",
+  "candidate_model": "cnn",
+  "baseline_model": "rf",
+  "mean_delta_r2": 0.03183980980314548,
+  "bootstrap_ci_95": [
+    0.0084911981257545,
+    0.054747324578243786
+  ],
+  "ci_excludes_zero": true,
+  "n_series": 10,
+  "train_size": 500,
+  "claim": "The CNN model significantly outperformed the RF baseline, achieving a higher mean R\u00b2 value and demonstrating better predictive accuracy for protein expression from DNA sequences."
+}
