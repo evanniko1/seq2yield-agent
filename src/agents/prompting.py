@@ -14,13 +14,21 @@ _CONTEXT = (
 )
 
 
-def generator_prompt(n: int) -> tuple[str, str]:
+def generator_prompt(n: int, prior: str = "") -> tuple[str, str]:
     sys = roles.persona("proposal_generator") + "\n\n" + _CONTEXT
+    prior_block = ""
+    if prior:
+        prior_block = ("\n\nALREADY-TESTED comparisons (from research memory) — do NOT "
+                       "re-propose these; explore NOVEL model pairs/hypotheses instead:\n"
+                       f"{prior}\n"
+                       "candidate model_family may be any of cnn/rf/mlp/ridge/svr; "
+                       "comparator_model must be one of cnn/rf/mlp (the baseline registry).")
     user = (f"Propose exactly {n} DISTINCT, controlled experiments, each comparing one "
-            "model_family against a comparator_model on the same fixed splits. Vary the "
-            "model_family/hypothesis across proposals. Each must declare required_controls "
-            "and expected_failure_modes. maturity_tier must be tier_0 or tier_1. "
-            "Return JSON: {\"proposals\": [ ... ]}.")
+            "model_family against a DIFFERENT comparator_model on the same fixed splits. "
+            "Vary the model_family/hypothesis across proposals; never compare a model to "
+            "itself. Each must declare required_controls and expected_failure_modes. "
+            "maturity_tier must be tier_0 or tier_1. Return JSON: {\"proposals\": [ ... ]}."
+            + prior_block)
     return sys, user
 
 

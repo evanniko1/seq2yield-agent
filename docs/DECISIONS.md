@@ -166,6 +166,18 @@ seed + bounded config, repeated cnn-vs-rf cycles are deterministic (identical Δ
 research memory into the council prompt to avoid re-running settled questions is a future
 enhancement.
 
+## #18 — Research memory wired into the council (novelty-seeking)
+**Context.** With a fixed seed, the council kept re-picking the strongest settled comparison
+(cnn-vs-rf), producing redundant claims. **Decision.** `council.generate` now loads
+`experiments/memory.jsonl`, passes prior verdicts into the generator prompt ("do NOT
+re-propose; explore novel pairs"), and applies a deterministic `filter_novel`: drops
+self-comparisons, within-batch duplicates, and pairs already in memory — with a fallback to
+the de-duped set if everything is settled (so the council never stalls). Novelty info is
+surfaced in the run result (`novelty`) and the CLI. **Result.** Live: with (cnn,rf) and
+(mlp,rf) in memory, the generator proposed only novel pairs — cnn-vs-mlp, rf-vs-mlp,
+ridge-vs-cnn, svr-vs-mlp (dropped=0) — and the chair approved rf-vs-mlp. The loop now
+explores the model space (incl. ridge/svr candidates) instead of repeating settled questions.
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

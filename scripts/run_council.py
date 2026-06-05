@@ -38,7 +38,11 @@ def main() -> int:
     council = Council(allow_local_fallback=args.allow_local_fallback)
     res = council.run(n_proposals=args.n, out_dir=out_dir)
 
-    print(f"generator: {res['generator']}   chair: {res['chair']}")
+    print(f"generator: {res['generator']}   chair: {res.get('chair')}")
+    nov = res.get("novelty", {})
+    if nov:
+        print(f"novelty: already-tested={nov.get('tested_pairs')}  "
+              f"dropped={nov.get('dropped')}  kept={nov.get('kept_pairs')}")
     print(f"\n=== {res['n_proposals']} PROPOSALS ===")
     for p in res["proposals"]:
         s = res["mean_scores"].get(p["proposal_id"], {})

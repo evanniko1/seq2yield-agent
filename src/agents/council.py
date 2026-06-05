@@ -12,7 +12,7 @@ import yaml
 
 from seq2yield.experiments.run_spec import RunSpec, validate_runspec
 
-from . import prompting, roles
+from . import memory, prompting, roles
 from .router import Router
 from .schemas import ChairDecision, CouncilReviewItem, ProposalBatch
 
@@ -26,6 +26,37 @@ _ALLOWED = {
                            "src/seq2yield/models/"],
 }
 BASELINE_RUN_ID = "2026-06-04-full56"
+
+
+def tested_pairs(records: list[dict]) -> set[tuple[str, str]]:
+    """(candidate_model, baseline_model) pairs already evaluated in research memory."""
+    return {(r.get("candidate_model"), r.get("baseline_model")) for r in records
+            if r.get("candidate_model") and r.get("baseline_model")}
+
+
+def filter_novel(proposals, tested: set[tuple[str, str]]):
+    """Drop self-comparisons and already-tested pairs; de-dup within the batch.
+
+    Returns (kept, n_dropped). Falls back to the de-duped/self-filtered set if every
+    proposal was already tested (so the council can still proceed)."""
+    seen, deduped = set(), []
+    for p in proposals:
+        pair = (p.model_family, p.comparator_model)
+        if p.model_family == p.comparator_model or pair in seen:
+            continue
+        seen.add(pair)
+        deduped.append(p)
+    novel = [p for p in deduped if (p.model_family, p.comparator_model) not in tested]
+    kept = novel if novel else deduped
+    return kept, len(proposals) - len(kept)
+
+
+def prior_summary(records: list[dict]) -> str:
+    lines = []
+    for r in records[-12:]:
+        lines.append(f"- {r.get('candidate_model')} vs {r.get('baseline_model')} -> "
+                     f"{r.get('status')} (ΔR²={r.get('mean_delta')})")
+    return "\n".join(lines)
 
 
 def _protected() -> list[str]:
@@ -62,13 +93,17 @@ class Council:
         return obj, f"{client.provider}:{client.model}" + (" (local-fallback)" if used else "")
 
     def generate(self, n: int):
-        sys, user = prompting.generator_prompt(n)
+        prior = memory.load()
+        tested = tested_pairs(prior)
+        sys, user = prompting.generator_prompt(n, prior_summary(prior) if prior else "")
         batch, who = self._ask("proposal_generator", sys, user, ProposalBatch,
-                               temperature=0.5, max_tokens=1500)
-        # de-dup ids / ensure unique ids
-        for i, p in enumerate(batch.proposals):
+                               temperature=0.6, max_tokens=1500)
+        kept, dropped = filter_novel(batch.proposals, tested)
+        for i, p in enumerate(kept):
             p.proposal_id = p.proposal_id or f"H{i+1:03d}"
-        return batch.proposals, who
+        self.last_novelty = {"tested_pairs": sorted(tested), "dropped": dropped,
+                             "kept_pairs": [(p.model_family, p.comparator_model) for p in kept]}
+        return kept, who
 
     def review(self, proposals):
         out = {}
@@ -135,6 +170,13 @@ class Council:
 
     def run(self, n_proposals: int = 3, out_dir: str | Path | None = None) -> dict:
         proposals, gen_who = self.generate(n_proposals)
+        if not proposals:
+            return {"generator": gen_who, "n_proposals": 0, "proposals": [],
+                    "novelty": getattr(self, "last_novelty", {}),
+                    "chair_decision": {"status": "reject", "chosen_proposal_id": None,
+                                       "rationale": "generator produced no usable proposals"},
+                    "runspec": None,
+                    "runspec_validation": {"ok": False, "errors": ["no proposals"], "warnings": []}}
         reviews = self.review(proposals)
         mean_scores = self._mean_scores(reviews)
         decision, chair_who = self.chair(proposals, mean_scores)
@@ -143,6 +185,7 @@ class Council:
         result = {
             "generator": gen_who, "chair": chair_who,
             "n_proposals": len(proposals),
+            "novelty": getattr(self, "last_novelty", {}),
             "proposals": [p.model_dump() for p in proposals],
             "mean_scores": mean_scores,
             "reviews": {pid: [i.model_dump() for i in items] for pid, items in reviews.items()},

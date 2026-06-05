@@ -12,6 +12,8 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from agents import memory  # noqa: E402
 from agents.council import Council  # noqa: E402
+from agents.council import filter_novel as _filter_novel  # noqa: E402
+from agents.council import tested_pairs as _tested_pairs  # noqa: E402
 from agents.schemas import ChairDecision, CouncilProposal  # noqa: E402
 from seq2yield.experiments import claim_registry  # noqa: E402
 from seq2yield.experiments.run_spec import validate_runspec  # noqa: E402
@@ -50,6 +52,34 @@ def test_claim_only_recorded_when_accepted(tmp_path):
     assert i["claim"] is None                     # no claim without an accepted run
     assert len(claim_registry.load(tmp_path)) == 2
     assert len(claim_registry.accepted_claims(tmp_path)) == 1
+
+
+def _prop(cand, comp):
+    return CouncilProposal(proposal_id="p", title="t", maturity_tier="tier_1",
+                           intervention_type="model_architecture", scientific_hypothesis="h",
+                           model_family=cand, comparator_model=comp)
+
+
+def test_tested_pairs_from_memory():
+    recs = [{"candidate_model": "cnn", "baseline_model": "rf"},
+            {"candidate_model": "mlp", "baseline_model": "rf"}]
+    assert _tested_pairs(recs) == {("cnn", "rf"), ("mlp", "rf")}
+
+
+def test_filter_novel_drops_tested_self_and_dupes():
+    proposals = [_prop("cnn", "rf"),    # already tested -> drop
+                 _prop("rf", "rf"),      # self-comparison -> drop
+                 _prop("ridge", "rf"),   # novel -> keep
+                 _prop("ridge", "rf")]   # dupe within batch -> drop
+    kept, dropped = _filter_novel(proposals, {("cnn", "rf")})
+    pairs = [(p.model_family, p.comparator_model) for p in kept]
+    assert pairs == [("ridge", "rf")] and dropped == 3
+
+
+def test_filter_novel_falls_back_when_all_tested():
+    proposals = [_prop("cnn", "rf"), _prop("mlp", "rf")]
+    kept, _ = _filter_novel(proposals, {("cnn", "rf"), ("mlp", "rf")})
+    assert len(kept) == 2          # fallback so the council can still proceed
 
 
 def test_bounded_runspec_valid_at_tier1():
