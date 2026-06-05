@@ -123,6 +123,17 @@ audit trail; AGENTS.md §5 default stays direct-only). **Result.** Live offline 
 registry). Proposal space constrained to the implemented Tier-0/1 model-comparison interventions
 so emitted specs are runnable by the M3 harness.
 
+## #15 — ML Engineer emits a structured variant; system renders the bounded patch
+**Context.** Milestone 6. Letting a local model free-write code patches is unsafe/unreliable.
+**Decision.** The ML Engineer proposes a structured `ModelVariant` (name + base_model +
+hyperparameters); `ml_engineer.propose` renders it into a single `FileOperation` creating a
+config under `configs/model/` (freely-modifiable). The patch never targets protected files by
+construction, and `git_guard.check_paths` enforces it regardless. `patch_manager.apply`
+records an undo snapshot so any failed gate reverts cleanly. Order: guard → reviewer →
+pytest-before-training → keep/revert. **Result.** Live: agent created `cnn_low_data.yaml`
+(approved, kept after 46 tests passed); a hand-crafted patch tampering with `metrics.py` was
+blocked by the guard before apply. Exit criterion met.
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

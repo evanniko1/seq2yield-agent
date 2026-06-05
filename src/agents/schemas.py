@@ -68,6 +68,39 @@ class CouncilReviewItem(BaseModel):
     reject_reason: str | None = None
 
 
+class ModelVariant(BaseModel):
+    """The ML Engineer's structured proposal; the system renders it into a bounded PatchPlan
+    (a config under configs/model/). Keeps local models off raw code generation."""
+    variant_name: str                 # slug, e.g. "cnn_deep"
+    base_model: ModelFamily
+    hyperparameters: dict[str, float] = Field(default_factory=dict)
+    rationale: str = ""
+
+
+class FileOperation(BaseModel):
+    """One bounded edit within a PatchPlan."""
+    op: Literal["create", "modify"]
+    path: str
+    content: str = ""                 # full file content (create) or replacement (modify)
+    find: str | None = None           # for modify: anchor text to replace (must be unique)
+
+
+class PatchPlan(BaseModel):
+    """CONTRACTS — the ML Engineer's bounded change set."""
+    proposal_id: str
+    run_id: str
+    summary: str
+    rationale: str = ""
+    operations: list[FileOperation] = Field(default_factory=list)
+
+
+class PatchReview(BaseModel):
+    """The Patch Reviewer's verdict on a PatchPlan."""
+    approved: bool
+    rationale: str
+    required_changes: list[str] = Field(default_factory=list)
+
+
 class ChairDecision(BaseModel):
     """CONTRACTS §2 (chair)."""
     status: Literal["approve_for_execution", "reject", "revise", "human_review"]

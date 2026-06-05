@@ -36,6 +36,10 @@ comparators, and predeclared acceptance criteria.
   reviewers (modeling/methodology/biology) → chair → **compiled, validated RunSpec**. Ran
   live via Ollama (offline `--allow-local-fallback`): 3 proposals, chair approved the best,
   emitted a valid RunSpec against the baseline registry.
+- ✅ **Milestone 6** — ML Engineer patch loop (`scripts/run_patch_loop.py`): bounded
+  `PatchPlan` → protected-file guard → patch reviewer → pytest-before-training → keep/revert.
+  Ran live: agent created an approved config patch (kept after tests passed); a patch
+  targeting protected `metrics.py` was blocked by the guard.
 
 ## Read these first
 
