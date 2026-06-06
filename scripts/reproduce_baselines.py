@@ -89,14 +89,12 @@ def main() -> int:
                 continue
             w_s = series_subset(work, sid)
             h_s = series_subset(held, sid)
-            seqs_test, y_test = h_s[SEQ_COL].tolist(), h_s[TARGET_COL].to_numpy()
             for size in args.train_sizes:
                 n = min(size, len(w_s))
                 sample = w_s.sample(n=n, random_state=args.seed)
-                seqs_tr, y_tr = sample[SEQ_COL].tolist(), sample[TARGET_COL].to_numpy()
                 for model in args.models:
                     set_seed(args.seed)
-                    res = train_evaluate(model, seqs_tr, y_tr, seqs_test, y_test,
+                    res = train_evaluate(model, sample, h_s,
                                          feature_set="one_hot", length=96, seed=args.seed)
                     rows.append({"iteration": it, "series": sid, "model": model,
                                  "train_size": size, "n_train": res["n_train"],

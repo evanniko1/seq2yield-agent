@@ -206,6 +206,23 @@ autonomously explores (first cycle chose a novel ridge-vs-rf, REJECTED Δ−0.23
 covered by tests (sweep novelty vs single-point; compile honors sweep). Note: the chair is
 autonomous — it weighs novel model pairs and sweeps and may pick either.
 
+## #21 — Richer interventions: feature representations + DoE sampling
+**Context.** The proposal space was model-swaps only. **Decision.** Added two Tier-1
+intervention axes (data-only, no LLM code-gen):
+- **feature_representation** — `features/kmer.py` (k-mer freqs), `mechanistic.py` (the 8
+  biophysical descriptors already in the dataset), `mixed.py` (kmer+mechanistic). Feature
+  registry + `train_evaluate` + `runner` now pass the row *frame* so mechanistic/mixed can
+  read dataset columns. Flat features apply to rf/mlp/ridge/svr; cnn/transformer stay one_hot.
+- **sampling_design** — `data/sampling.py`: random / maximin_kmer (farthest-first in k-mer
+  space) / expression_stratified / series_balanced. `runner` uses `spec.sampling_policy`.
+
+`CouncilProposal` gains the new `intervention_type`s and widened `feature_set`/`sampling_policy`
+enums. For these two types the comparison is **same model vs its registry baseline** (one_hot +
+random), so `compile_runspec` sets `baseline_model = model_family`. Prompts advertise the axes
+and steer the council to follow up settled questions. **Verified on real data** (series 1): rf
+one_hot 0.657 / mixed 0.624 / mechanistic 0.532 / kmer 0.503; maximin sampling 0.552 vs random
+0.544 @N=500. Tests cover features, sampling determinism, and compile baselines (62 passing).
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

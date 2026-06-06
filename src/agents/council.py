@@ -25,7 +25,13 @@ _ALLOWED = {
     "training_procedure": ["configs/model/", "src/seq2yield/training/train.py",
                            "src/seq2yield/models/"],
     "data_efficiency": ["configs/model/", "configs/experiments/"],
+    "feature_representation": ["configs/model/", "src/seq2yield/features/"],
+    "sampling_design": ["configs/model/", "src/seq2yield/data/sampling.py",
+                        "src/seq2yield/doe/"],
 }
+# interventions that vary feature/sampling compare the SAME model against its registry
+# baseline (one_hot + random), so the baseline_model is the candidate's own model_family.
+_SAME_MODEL_BASELINE = {"feature_representation", "sampling_design"}
 BASELINE_RUN_ID = "2026-06-04-full56"
 
 
@@ -179,9 +185,13 @@ class Council:
         dh, sh = _registry_hashes()
         allowed = _ALLOWED.get(proposal.intervention_type, ["src/seq2yield/models/"])
         sizes = sorted(set(proposal.train_sizes)) or [500]
-        tag = "sweep" if proposal.intervention_type == "data_efficiency" else "vs"
+        itype = proposal.intervention_type
+        same_model = itype in _SAME_MODEL_BASELINE
+        baseline_model = proposal.model_family if same_model else proposal.comparator_model
+        tag = {"data_efficiency": "sweep", "feature_representation": f"{proposal.feature_set}-vs",
+               "sampling_design": f"{proposal.sampling_policy}-vs"}.get(itype, "vs")
         run_id = (f"{datetime.now(timezone.utc):%Y-%m-%d}-council-{proposal.model_family}-"
-                  f"{tag}-{proposal.comparator_model}")
+                  f"{tag}-{baseline_model}")
         spec = RunSpec(
             run_id=run_id, proposal_id=proposal.proposal_id,
             maturity_tier=proposal.maturity_tier,
@@ -193,7 +203,7 @@ class Council:
         )
         spec.acceptance_policy.track = "performance"
         spec.acceptance_policy.baseline_run_id = BASELINE_RUN_ID
-        spec.acceptance_policy.baseline_model = proposal.comparator_model
+        spec.acceptance_policy.baseline_model = baseline_model
         # verdict at the largest swept size (where data-hungry models have the best chance)
         spec.acceptance_policy.comparison_train_size = max(sizes)
         return spec

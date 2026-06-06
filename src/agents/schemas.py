@@ -49,12 +49,14 @@ class CouncilProposal(BaseModel):
     proposal_id: str
     title: str
     maturity_tier: Tier
-    intervention_type: Literal["model_architecture", "training_procedure", "data_efficiency"]
+    intervention_type: Literal["model_architecture", "training_procedure", "data_efficiency",
+                               "feature_representation", "sampling_design"]
     scientific_hypothesis: str
     model_family: ModelFamily
     comparator_model: RegistryModel        # must exist in the baseline registry to compare
-    feature_set: Literal["one_hot"] = "one_hot"
-    sampling_policy: Literal["random"] = "random"
+    feature_set: Literal["one_hot", "kmer", "mechanistic", "mixed"] = "one_hot"
+    sampling_policy: Literal["random", "maximin_kmer", "expression_stratified",
+                             "series_balanced"] = "random"
     train_sizes: list[TrainSize] = Field(default_factory=lambda: [500])
     required_controls: list[str] = Field(default_factory=list)
     expected_failure_modes: list[str] = Field(default_factory=list)

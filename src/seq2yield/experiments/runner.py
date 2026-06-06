@@ -9,7 +9,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from ..data.cleaning import SEQ_COL, TARGET_COL
+from ..data import sampling
+from ..data.cleaning import TARGET_COL
 from ..data.loaders import load_split_csv, series_subset
 from ..data.splits import load_manifest
 from ..training.reproducibility import set_seed
@@ -37,14 +38,13 @@ def run_runspec(spec: RunSpec, *, splits_dir: str | Path | None = None) -> dict:
         held = load_split_csv(splits["iterations"][it]["heldout_set"]["path"])
         for sid in series_ids:
             w_s, h_s = series_subset(work, sid), series_subset(held, sid)
-            seqs_te, y_te = h_s[SEQ_COL].tolist(), h_s[TARGET_COL].to_numpy()
             for size in spec.train_sizes:
                 n = min(size, len(w_s))
-                sample = w_s.sample(n=n, random_state=spec.seed)
+                sample = sampling.select(spec.sampling_policy, w_s, n, seed=spec.seed)
                 set_seed(spec.seed)
-                res = train_evaluate(spec.model_family, sample[SEQ_COL].tolist(),
-                                     sample[TARGET_COL].to_numpy(), seqs_te, y_te,
-                                     feature_set=spec.feature_set, length=96, seed=spec.seed)
+                res = train_evaluate(spec.model_family, sample, h_s,
+                                     feature_set=spec.feature_set, target_col=TARGET_COL,
+                                     length=96, seed=spec.seed)
                 rows.append({"iteration": it, "series": sid, "model": spec.model_family,
                              "train_size": size, "r2": res["r2"], "rmse": res["rmse"]})
     df = pd.DataFrame(rows)
