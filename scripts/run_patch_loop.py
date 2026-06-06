@@ -44,7 +44,7 @@ def agent_patch(fallback: bool) -> None:
                 "title": "CNN variant for low-data expression"}
     run_id = "m6-demo"
     print("== ML ENGINEER PATCH ==")
-    plan, who = ml_engineer.propose(proposal, run_id, allow_local_fallback=fallback)
+    plan, _variant, who = ml_engineer.propose(proposal, run_id, allow_local_fallback=fallback)
     print(f"  engineer: {who}\n  plan: {plan.summary}")
     for op in plan.operations:
         print(f"    {op.op} {op.path}")

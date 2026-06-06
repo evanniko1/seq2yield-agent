@@ -275,6 +275,21 @@ global (42 cells) and scope variants are tracked as extras (`scope_variant_cells
 per_series on real data (pooled trains 1 model → per-series R²; distinct from per-series).
 This completes the 4-step strategy layer (catalogue → revisit/stopping → PI planner → scope).
 
+## #23 — HPO consumption: the ML-Engineer's hyperparameters now drive training
+**Context.** The ML-Engineer emitted a `configs/model/*.yaml` variant that the runner never
+consumed — so the "autoresearch" patch was decorative. **Decision.** (1) Model factories +
+`registry.make(hyperparameters=...)` with a per-model **whitelist** (`clean_hyperparameters`)
+that coerces/keeps only safe keys (rf: n_estimators/max_depth/min_samples_leaf; mlp:
+max_iter/alpha/lr; cnn: epochs/lr/dropout; transformer: epochs/lr; ridge/svr: alpha/C).
+(2) `RunSpec.hyperparameters`; `train_evaluate`/`runner` thread them. (3) `ml_engineer.propose`
+returns the `ModelVariant`; the loop applies its hyperparameters **only for
+`training_procedure`** interventions (other axes keep defaults so comparisons stay
+controlled). (4) `training_procedure` HPO cells added to the catalogue (same-model baseline,
+in `_SAME_MODEL_BASELINE`); generator prompt advertises it. **Verified:** tuned shallow RF
+(n_estimators=15, max_depth=3) R²=0.372 vs default 0.657 — hyperparameters genuinely drive
+training; whitelist drops bogus keys. 78 tests passing. This closes the "autoresearch doesn't
+change training" gap: a `training_procedure` proposal is a real edit-run-evaluate cycle.
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

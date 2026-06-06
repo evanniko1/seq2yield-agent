@@ -31,7 +31,7 @@ _ALLOWED = {
 }
 # interventions that vary feature/sampling compare the SAME model against its registry
 # baseline (one_hot + random), so the baseline_model is the candidate's own model_family.
-_SAME_MODEL_BASELINE = {"feature_representation", "sampling_design"}
+_SAME_MODEL_BASELINE = {"feature_representation", "sampling_design", "training_procedure"}
 BASELINE_RUN_ID = "2026-06-04-full56"
 
 

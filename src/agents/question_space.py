@@ -59,6 +59,8 @@ def enumerate_cells() -> list[Cell]:
     for m in SAMPLING_MODELS:                          # sampling_design (same model)
         for sp in SAMPLING_POLICIES:
             cells.append(Cell("sampling_design", m, m, sampling_policy=sp))
+    for m in REGISTRY_MODELS:                          # training_procedure / HPO (same model)
+        cells.append(Cell("training_procedure", m, m))
     return cells
 
 
@@ -66,7 +68,7 @@ def cell_id_for(intervention_type: str, model_family: str, comparator_model: str
                 feature_set: str = "one_hot", sampling_policy: str = "random",
                 scope: str = "global") -> str:
     # same-model interventions are canonicalized to comparator = model_family
-    if intervention_type in ("feature_representation", "sampling_design"):
+    if intervention_type in ("feature_representation", "sampling_design", "training_procedure"):
         comparator_model = model_family
     if intervention_type != "feature_representation":
         feature_set = "one_hot"

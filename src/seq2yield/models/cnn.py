@@ -12,7 +12,7 @@ import torch.nn as nn
 
 
 class _Net(nn.Module):
-    def __init__(self, length: int = 96, channels: int = 4):
+    def __init__(self, length: int = 96, channels: int = 4, dropout: float = 0.3):
         super().__init__()
         self.conv = nn.Sequential(
             nn.Conv1d(channels, 64, kernel_size=7, padding=3), nn.ReLU(), nn.MaxPool1d(2),
@@ -22,8 +22,8 @@ class _Net(nn.Module):
         flat = 128 * 4
         self.head = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(flat, 256), nn.ReLU(), nn.Dropout(0.3),
-            nn.Linear(256, 128), nn.ReLU(), nn.Dropout(0.3),
+            nn.Linear(flat, 256), nn.ReLU(), nn.Dropout(dropout),
+            nn.Linear(256, 128), nn.ReLU(), nn.Dropout(dropout),
             nn.Linear(128, 64), nn.ReLU(),
             nn.Linear(64, 1),
         )
@@ -36,11 +36,12 @@ class CNNRegressor:
     """Minimal CNN regressor with a scikit-learn-ish interface."""
 
     def __init__(self, length: int = 96, epochs: int = 60, batch_size: int = 64,
-                 lr: float = 1e-3, seed: int = 0, device: str | None = None):
+                 lr: float = 1e-3, dropout: float = 0.3, seed: int = 0, device: str | None = None):
         self.length = length
         self.epochs = epochs
         self.batch_size = batch_size
         self.lr = lr
+        self.dropout = dropout
         self.seed = seed
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self._net = None
@@ -55,7 +56,7 @@ class CNNRegressor:
 
         Xt = torch.tensor(np.asarray(X, dtype=np.float32), device=self.device)
         yt = torch.tensor(yz, device=self.device)
-        net = _Net(self.length, X.shape[1]).to(self.device)
+        net = _Net(self.length, X.shape[1], self.dropout).to(self.device)
         opt = torch.optim.Adam(net.parameters(), lr=self.lr)
         loss_fn = nn.MSELoss()
 

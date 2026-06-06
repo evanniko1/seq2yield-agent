@@ -47,4 +47,4 @@ def propose(proposal: dict, run_id: str, *, allow_local_fallback: bool = False) 
         rationale=variant.rationale,
         operations=[FileOperation(op="create", path=f"configs/model/{name}.yaml",
                                   content=yaml.safe_dump(body, sort_keys=False))])
-    return plan, who
+    return plan, variant, who

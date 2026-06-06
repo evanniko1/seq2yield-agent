@@ -54,7 +54,8 @@ def _run_per_series(spec: RunSpec, splits: dict, series_ids: list[int]) -> list[
                 set_seed(spec.seed)
                 res = train_evaluate(spec.model_family, sample, h_s,
                                      feature_set=spec.feature_set, target_col=TARGET_COL,
-                                     length=96, seed=spec.seed)
+                                     length=96, seed=spec.seed,
+                                     hyperparameters=spec.hyperparameters)
                 rows.append({"iteration": it, "series": sid, "model": spec.model_family,
                              "train_size": size, "r2": res["r2"], "rmse": res["rmse"]})
     return rows

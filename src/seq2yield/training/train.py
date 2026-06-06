@@ -29,14 +29,14 @@ def features_for(model_name, frame, feature_set: str = "one_hot", length: int = 
 
 def train_evaluate(model_name, train_frame, test_frame, *, feature_set: str = "one_hot",
                    target_col: str = TARGET_COL, length: int = 96, seed: int = 0,
-                   metric_names=None) -> dict:
-    """Fit `model_name` with `feature_set` and evaluate on the held-out test frame."""
+                   hyperparameters: dict | None = None, metric_names=None) -> dict:
+    """Fit `model_name` with `feature_set` (+ optional hyperparameters) and evaluate."""
     Xtr = features_for(model_name, train_frame, feature_set, length)
     Xte = features_for(model_name, test_frame, feature_set, length)
     y_train = np.asarray(train_frame[target_col].to_numpy(), dtype=float)
     y_test = np.asarray(test_frame[target_col].to_numpy(), dtype=float)
 
-    model = model_registry.make(model_name, seed=seed)
+    model = model_registry.make(model_name, seed=seed, hyperparameters=hyperparameters)
     t0 = time.perf_counter()
     model.fit(Xtr, y_train)
     fit_s = time.perf_counter() - t0

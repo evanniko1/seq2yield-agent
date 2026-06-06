@@ -107,9 +107,15 @@ def cycle(fb: bool, n_proposals: int = 4) -> dict:
     (run_dir / "run_spec.json").write_text(spec.model_dump_json(indent=2), encoding="utf-8")
 
     print("STATE: PATCH_PROPOSED")
-    plan, eng_who = ml_engineer.propose(proposal, spec.run_id, allow_local_fallback=fb)
+    plan, variant, eng_who = ml_engineer.propose(proposal, spec.run_id, allow_local_fallback=fb)
     (run_dir / "patch_plan.json").write_text(plan.model_dump_json(indent=2), encoding="utf-8")
     print(f"  engineer {eng_who}: {plan.summary}")
+    # HPO consumption: ONLY a training_procedure intervention actually applies the engineer's
+    # hyperparameters to training (other axes keep defaults so the comparison stays controlled).
+    if proposal.get("intervention_type") == "training_procedure":
+        spec.hyperparameters = dict(variant.hyperparameters or {})
+        (run_dir / "run_spec.json").write_text(spec.model_dump_json(indent=2), encoding="utf-8")
+        print(f"  HPO: applying tuned hyperparameters {spec.hyperparameters}")
 
     print("STATE: PATCH_REVIEWED")
     rv, rev_who = review_patch(plan, allowed_files=spec.allowed_files,
