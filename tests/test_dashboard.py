@@ -30,3 +30,16 @@ def test_build_html_contains_runs_claims_and_coverage():
 def test_build_html_handles_empty():
     html = build_html([], [])
     assert "<html" in html and "no accepted claims yet" in html
+
+
+def test_build_html_renders_coverage_matrix_and_sparkline():
+    records = [{
+        "run_id": "sweep1", "candidate_model": "transformer", "baseline_model": "cnn",
+        "intervention_type": "data_efficiency", "status": "rejected", "mean_delta": -0.22,
+        "crossover": {"superior_at": None, "parity_at": None, "trend": "narrowing",
+                      "deltas_by_size": {"250": -0.26, "500": -0.24, "1000": -0.22}},
+    }]
+    h = build_html(records, [])
+    assert "coverage map" in h.lower()
+    assert "<svg" in h and "polyline" in h          # sparkline rendered
+    assert "narrowing" in h                          # crossover trend surfaced
