@@ -16,7 +16,7 @@ class OllamaClient(BaseStructuredClient):
     provider = "ollama"
 
     def __init__(self, model: str, base_url: str = "http://localhost:11434",
-                 max_retries: int = 2, timeout: float = 120.0):
+                 max_retries: int = 2, timeout: float = 300.0):
         self.model = model
         self.base_url = base_url.rstrip("/")
         self.max_retries = max_retries
@@ -32,7 +32,10 @@ class OllamaClient(BaseStructuredClient):
             "options": {"temperature": temperature, "num_predict": max_tokens},
         }
         try:
-            r = httpx.post(f"{self.base_url}/api/chat", json=payload, timeout=self.timeout)
+            try:
+                r = httpx.post(f"{self.base_url}/api/chat", json=payload, timeout=self.timeout)
+            except httpx.ReadTimeout:                # transient slow generation -> one retry
+                r = httpx.post(f"{self.base_url}/api/chat", json=payload, timeout=self.timeout)
             r.raise_for_status()
         except (httpx.ConnectError, httpx.ConnectTimeout) as e:
             raise ProviderUnavailable(f"ollama unreachable at {self.base_url}: {e}") from e

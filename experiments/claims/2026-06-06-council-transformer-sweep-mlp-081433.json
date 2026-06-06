@@ -1,0 +1,17 @@
+{
+  "ts": "2026-06-06T09:06:49.295296+00:00",
+  "run_id": "2026-06-06-council-transformer-sweep-mlp-081433",
+  "proposal_id": "005",
+  "status": "rejected",
+  "candidate_model": "transformer",
+  "baseline_model": "mlp",
+  "mean_delta_r2": -0.09892224364994122,
+  "bootstrap_ci_95": [
+    -0.12601057766312806,
+    -0.07393343230748667
+  ],
+  "ci_excludes_zero": true,
+  "n_series": 10,
+  "train_size": 2000,
+  "claim": null
+}

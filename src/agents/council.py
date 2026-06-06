@@ -143,7 +143,10 @@ class Council:
         return out
 
     @staticmethod
-    def _mean_scores(reviews):
+    def _mean_scores(reviews, proposals=None):
+        # data-efficiency sweeps interrogate "at what data size does this change?" — the
+        # paper's central theme — so they get a modest strategic bonus when sound.
+        itype = {p.proposal_id: p.intervention_type for p in (proposals or [])}
         agg = {}
         for pid, items in reviews.items():
             n = len(items) or 1
@@ -152,14 +155,16 @@ class Council:
             clean = sum(i.score_confoundedness for i in items) / n  # 5 = clean, 1 = confounded
             repro = sum(i.score_reproducibility for i in items) / n
             rejects = sum(1 for i in items if i.reject_reason)
+            bonus = 1.0 if itype.get(pid) == "data_efficiency" else 0.0
             agg[pid] = {
                 "feasibility": round(feas, 2),
                 "scientific_value": round(value, 2),
                 "confoundedness": round(clean, 2),
                 "reproducibility": round(repro, 2),
                 "n_reject_votes": rejects,
+                "data_efficiency_bonus": bonus,
                 # precomputed to remove scale-interpretation burden from the chair:
-                "overall": round(feas + value + clean + repro, 2),  # higher is better
+                "overall": round(feas + value + clean + repro + bonus, 2),  # higher is better
                 "sound": bool(clean >= 3 and feas >= 3 and rejects == 0),
             }
         return agg
@@ -203,7 +208,7 @@ class Council:
                     "runspec": None,
                     "runspec_validation": {"ok": False, "errors": ["no proposals"], "warnings": []}}
         reviews = self.review(proposals)
-        mean_scores = self._mean_scores(reviews)
+        mean_scores = self._mean_scores(reviews, proposals)
         decision, chair_who = self.chair(proposals, mean_scores)
 
         chosen = next((p for p in proposals if p.proposal_id == decision.chosen_proposal_id), None)
