@@ -1,0 +1,69 @@
+{
+  "dataset": "yeast",
+  "seq_len": 80,
+  "n_promoters": 3929,
+  "n_genes": 199,
+  "n_test": 392,
+  "models": {
+    "rf": {
+      "r2": 0.9001,
+      "r2_ci": [
+        0.8708,
+        0.9249
+      ]
+    },
+    "mlp": {
+      "r2": 0.8963,
+      "r2_ci": [
+        0.8684,
+        0.9205
+      ]
+    },
+    "cnn": {
+      "r2": 0.9098,
+      "r2_ci": [
+        0.8792,
+        0.9335
+      ]
+    }
+  },
+  "ranking": [
+    "cnn",
+    "rf",
+    "mlp"
+  ],
+  "best_vs_runnerup": {
+    "best": "cnn",
+    "runner_up": "rf",
+    "mean_delta": 0.00962606306828484,
+    "ci": [
+      -0.008980518160420253,
+      0.029406882074015147
+    ],
+    "n": 392,
+    "excludes_zero": false
+  },
+  "ranking_transfer": {
+    "ecoli_ranking": [
+      "cnn",
+      "rf",
+      "mlp"
+    ],
+    "yeast_ranking": [
+      "cnn",
+      "rf",
+      "mlp"
+    ],
+    "top_model_agrees": true
+  },
+  "environment": {
+    "python": "3.12.8",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "packages": {
+      "numpy": "1.26.4",
+      "scikit-learn": "1.6.1",
+      "torch": "2.5.1+cu121"
+    },
+    "cuda": true
+  }
+}

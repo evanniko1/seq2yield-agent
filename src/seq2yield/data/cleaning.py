@@ -20,6 +20,14 @@ BIOPHYSICAL_COLS = [
 SEQ_LEN = 96
 VALID_BASES = set("ACGT")
 
+# Secondary yeast dataset (Vaishnav et al.; docs/REPRODUCTION.md §2). 80 nt promoters -> YFP,
+# grouped by native_gene (199 groups). Canonicalized to the same Sequence/Protein/series schema
+# so the per-group machinery can treat native_gene as the group unit.
+YEAST_SEQ_LEN = 80
+YEAST_RAW_SEQ = "sequence"
+YEAST_RAW_TARGET = "protein"
+YEAST_RAW_GROUP = "native_gene"
+
 
 def clean_ecoli(df: pd.DataFrame) -> pd.DataFrame:
     """Standardize the raw E. coli frame.
@@ -40,3 +48,21 @@ def clean_ecoli(df: pd.DataFrame) -> pd.DataFrame:
     df = df[valid_len & valid_alpha & finite_target].reset_index(drop=True)
 
     return df
+
+
+def clean_yeast(df: pd.DataFrame) -> pd.DataFrame:
+    """Standardize the raw yeast frame to the canonical Sequence/Protein/series schema.
+
+    - uppercase 80 nt sequences, keep valid ACGT + finite target,
+    - map native_gene -> the `series` group unit (199 groups).
+    """
+    df = df.copy()
+    df = df.drop(columns=[c for c in df.columns if c.startswith("Unnamed")], errors="ignore")
+    df = df.rename(columns={YEAST_RAW_SEQ: SEQ_COL, YEAST_RAW_TARGET: TARGET_COL,
+                            YEAST_RAW_GROUP: SERIES_COL})
+    df[SEQ_COL] = df[SEQ_COL].astype(str).str.strip().str.upper()
+    valid_len = df[SEQ_COL].str.len() == YEAST_SEQ_LEN
+    valid_alpha = df[SEQ_COL].apply(lambda s: set(s) <= VALID_BASES)
+    finite_target = df[TARGET_COL].notna()
+    df = df[valid_len & valid_alpha & finite_target].reset_index(drop=True)
+    return df[[SEQ_COL, TARGET_COL, SERIES_COL]]

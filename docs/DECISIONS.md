@@ -328,6 +328,20 @@ Ollama) — reviewers dominate call volume (79 each). With API keys, authority-p
 accrues cost via the price table. Tests: token normalization (both shapes), cost math,
 grouping, over/under budget (88 passing).
 
+## #27 — Secondary yeast benchmark + cross-organism ranking transfer
+**Context.** Add the deposit's yeast dataset (Vaishnav et al., 80 nt promoters → YFP, 199
+genes) for a second organism + transfer questions. **Decision.** `clean_yeast` canonicalizes
+to Sequence/Protein/series (native_gene as the group). Yeast has ~20 seqs/gene — too few for
+per-gene models — so `scripts/build_yeast.py` trains models **pooled**, evaluates on a
+per-gene-stratified held-out set, and uses a **sequence-level paired bootstrap**
+(`bootstrap_r2_ci`, `paired_bootstrap_r2`) — the pooled-dataset analog of the E. coli
+per-series test (a deliberate, documented methodology difference). Direct weight transfer
+across organisms is impossible (96 vs 80 nt one-hot dims), so transfer is framed as
+**ranking transfer** (does the best model agree across organisms?). **Result:** yeast pooled
+R² — CNN 0.910 / RF 0.900 / MLP 0.896 (CNN vs RF ΔR²=0.010, CI [-0.009, 0.029] → tied);
+ranking [cnn, rf, mlp] **identical to E. coli** (conclusions transfer). Tests: cleaning,
+stratified holdout coverage, bootstrap detection (94 passing).
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that
