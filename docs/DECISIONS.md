@@ -251,6 +251,17 @@ body was refactored into a reusable `cycle()` returning a summary; memory record
 `revisit`/`n_series`/`n_repeats`. **Validated**: imports + power levels + tests (low=10/3,
 high=20/5). Next: PI planner (step 3), selectable scope (step 4).
 
+## #24 — Strategy step 3: PI / planner agent
+**Context.** The generator chose targets opportunistically; nothing set *strategic direction*.
+**Decision.** Enabled the disabled `principal_investigator` role as a planner. `agents/planner.py`:
+`pi_plan(memory)` — the PI (authority role) picks which intervention axes to prioritize given
+coverage (graceful deterministic fallback to all axes when no API key); `rank_targets()` turns
+that focus into a breadth-first, round-robin-by-type list of uncovered cells (then inconclusive
+for revisit). `council.generate` now runs PI → planner → generator, so proposals are
+strategy-directed, not free-association. PI focus/rationale surfaced in the run result + CLI.
+**Validated**: planner ranking (breadth-first, focus-first, inconclusive-last) + PI fallback
+without keys (22 targeted tests). Next: selectable optimization scope (step 4).
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

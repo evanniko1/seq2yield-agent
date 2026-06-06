@@ -84,7 +84,19 @@ agent_roles:
     persona: >
       Summarize what happened, why accepted/rejected/inconclusive, and what to remember.
 
+  principal_investigator:
+    enabled: true
+    side: council
+    authority: plan
+    provider_class: authority
+    require_direct_provider: true
+    output_schema: PlannerPlan
+    persona: >
+      You are the Principal Investigator. Own the research strategy: given the coverage map
+      of the question space, decide which intervention axes to prioritize next to maximize
+      scientific insight per experiment — favor unexplored axes, follow up surprising
+      results, and ensure breadth before depth. You set direction; you do not run experiments.
+
   # --- retired full-proposal roles, available if needed ---
-  principal_investigator: { enabled: false, side: council, authority: critique, provider_class: authority }
   transformer_reviewer:   { enabled: false, side: council, authority: critique, provider_class: diversity }
   doe_strategist:         { enabled: false, side: council, authority: critique, provider_class: diversity }

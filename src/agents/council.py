@@ -12,7 +12,7 @@ import yaml
 
 from seq2yield.experiments.run_spec import RunSpec, validate_runspec
 
-from . import memory, prompting, question_space, roles
+from . import memory, planner, prompting, question_space, roles
 from .router import Router
 from .schemas import ChairDecision, CouncilReviewItem, ProposalBatch
 
@@ -136,9 +136,10 @@ def _registry_hashes() -> tuple[str | None, str | None]:
 
 
 class Council:
-    def __init__(self, allow_local_fallback: bool = False):
+    def __init__(self, allow_local_fallback: bool = False, use_planner: bool = True):
         self.router = Router()
         self.fallback = allow_local_fallback
+        self.use_planner = use_planner
 
     def _ask(self, role: str, system: str, user: str, schema, **kw):
         client = self.router.resolve(role, allow_local_fallback=self.fallback)
@@ -151,17 +152,23 @@ class Council:
         prior = memory.load()
         cov = question_space.coverage(prior)
         settled = {cid for cid, e in cov.items() if e["status"] == "settled"}
-        unexplored = question_space.uncovered(prior, statuses=("untested",))
+        # PI sets strategic focus; planner turns it into prioritized concrete target cells
+        if self.use_planner:
+            focus, pi_rationale, pi_who = planner.pi_plan(prior, allow_local_fallback=self.fallback)
+        else:
+            focus, pi_rationale, pi_who = planner.INTERVENTIONS, "planner disabled", "none"
+        targets = planner.rank_targets(prior, focus_types=focus)
         sys, user = prompting.generator_prompt(n, prior_summary(prior) if prior else "",
-                                               targets=unexplored)
+                                               targets=targets)
         batch, who = self._ask("proposal_generator", sys, user, ProposalBatch,
                                temperature=0.6, max_tokens=1800)
         kept, dropped = filter_unsettled(batch.proposals, settled)
         for i, p in enumerate(kept):
             p.proposal_id = p.proposal_id or f"H{i+1:03d}"
         self.last_novelty = {"coverage": question_space.summarize(prior),
-                             "n_untested": len(unexplored), "dropped": dropped,
-                             "kept_cells": [proposal_cell_id(p) for p in kept]}
+                             "pi_focus": focus, "pi_rationale": pi_rationale, "pi": pi_who,
+                             "n_untested": len(question_space.uncovered(prior)),
+                             "dropped": dropped, "kept_cells": [proposal_cell_id(p) for p in kept]}
         return kept, who
 
     def review(self, proposals):

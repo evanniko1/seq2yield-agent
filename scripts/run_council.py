@@ -42,6 +42,7 @@ def main() -> int:
     nov = res.get("novelty", {})
     if nov:
         print(f"coverage: {nov.get('coverage')}")
+        print(f"PI ({nov.get('pi')}) focus={nov.get('pi_focus')}: {str(nov.get('pi_rationale'))[:160]}")
         print(f"untested cells remaining: {nov.get('n_untested')}  dropped(settled/dupe): "
               f"{nov.get('dropped')}  kept_cells={nov.get('kept_cells')}")
     print(f"\n=== {res['n_proposals']} PROPOSALS ===")

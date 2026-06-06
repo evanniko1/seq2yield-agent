@@ -110,6 +110,15 @@ class PatchReview(BaseModel):
     required_changes: list[str] = Field(default_factory=list)
 
 
+class PlannerPlan(BaseModel):
+    """Principal Investigator's strategic direction: which intervention axes to prioritize
+    next, given coverage. Concrete cell selection is done deterministically from this focus."""
+    focus_intervention_types: list[Literal["model_architecture", "data_efficiency",
+                                           "feature_representation", "sampling_design"]] = \
+        Field(default_factory=list)
+    rationale: str = ""
+
+
 class Postmortem(BaseModel):
     """Synthesizer's reflection on a completed run (CONTRACTS §5 limitations/claim)."""
     status: Literal["accepted", "rejected", "inconclusive"]
