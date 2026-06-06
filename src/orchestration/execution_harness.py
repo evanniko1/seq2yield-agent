@@ -119,6 +119,16 @@ def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
     cmp["comparison_train_size"] = size
     cmp["baseline_model"] = pol.baseline_model
     cmp["candidate_model"] = spec.model_family
+
+    # per-size statistical verdicts + crossover for multi-size sweeps (rigorous answer to
+    # "at what N does the candidate catch up?")
+    sizes = sorted(set(spec.train_sizes) & set(base_df["train_size"].unique()))
+    if len(sizes) > 1:
+        per_size = compare_mod.compare_per_size(base_df, result["metrics"], sizes,
+                                                pol.baseline_model, spec.model_family, pol,
+                                                seed=spec.seed)
+        cmp["per_size"] = per_size
+        cmp["crossover"] = compare_mod.crossover_analysis(per_size)
     audit_log.append(run_dir, "compare", cmp)
 
     return _verdict(run_dir, cmp["status"],

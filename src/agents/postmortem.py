@@ -13,6 +13,7 @@ from .schemas import Postmortem
 
 
 def synthesize(proposal: dict, verdict: dict, *, curve: list | None = None,
+               crossover: dict | None = None,
                allow_local_fallback: bool = False) -> tuple[Postmortem, str]:
     # NOTE: do NOT include the generic project context here — its registry-wide R² numbers
     # caused local models to conflate them with this run's. Give ONLY this run's facts.
@@ -29,11 +30,13 @@ def synthesize(proposal: dict, verdict: dict, *, curve: list | None = None,
         "n_series": cmp.get("n_series"),
         "verdict_train_size": cmp.get("comparison_train_size"),
         "verdict": verdict.get("status"),
-        "data_efficiency_curve": curve or [],   # per-size ΔR² (for data_efficiency sweeps)
+        "data_efficiency_curve": curve or [],   # per-size ΔR² (+ CI/status if available)
+        "crossover": crossover or {},           # superior_at / parity_at / trend (statistical)
     }
-    sweep_hint = ("If data_efficiency_curve has multiple sizes, comment on the trend — does "
-                  "the candidate close the gap (ΔR² rising toward 0) as train_size grows, and "
-                  "at what size (if any) does it catch up? " if curve and len(curve) > 1 else "")
+    sweep_hint = ("This is a data-efficiency sweep with PER-SIZE statistical verdicts and a "
+                  "crossover summary. State whether/at what train_size the candidate reaches "
+                  "parity or superiority (use crossover.superior_at / parity_at / trend); do "
+                  "not over-claim where CIs include 0. " if crossover else "")
     user = ("Write a postmortem for this completed run. Use ONLY the numbers in run_facts "
             "below — do NOT cite any other R² values. status MUST equal run_facts.verdict. "
             "Set claim_allowed to a one-sentence claim ONLY if verdict=='accepted' (else null). "

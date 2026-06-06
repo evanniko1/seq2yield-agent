@@ -301,6 +301,20 @@ claim), and the full coverage map color-coded by status. `build_html` is a pure 
 (unit-tested with synthetic + empty inputs). 80 tests passing. Also demonstrated HPO live
 through the harness: tuned RF vs default-RF → INCONCLUSIVE (ΔR²=-0.003, CI spans 0).
 
+## #25 — Per-size statistical verdicts + crossover (conditionally-protected change, human-approved)
+**Context.** Sweeps recorded per-size ΔR² means but the bootstrap *verdict* was at a single
+size, so "at what N does X catch up?" wasn't statistically grounded. This requires editing
+`experiments/compare.py` — **conditionally protected** (formal proposal + human review). The
+user explicitly authorized it (this is the human-review path, not an agent patch).
+**Decision.** Refactored `compare.py` to a shared `_decide`/`_compare_series` core and added
+`compare_per_size` (a paired-bootstrap verdict at EACH train size) + `crossover_analysis`
+(superior_at / parity_at / trend from the per-size deltas). The harness attaches `per_size` +
+`crossover` to the verdict for multi-size sweeps; the loop surfaces them in the report
+(per-size CI/verdict table + crossover line), postmortem facts, and memory. Single-size
+behavior is unchanged. Tests: per-size verdicts (worse@small, better@large), crossover
+identification, single-size parity (83 passing). The council can now answer
+"at what N does the candidate catch up?" with statistical rigor, not just means.
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

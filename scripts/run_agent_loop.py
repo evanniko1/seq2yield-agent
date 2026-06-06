@@ -147,14 +147,22 @@ def cycle(fb: bool, n_proposals: int = 4) -> dict:
     cmp = verdict.get("comparison", {})
     print(f"STATE: {status.upper()}  ΔR²={cmp.get('mean_delta')} CI={cmp.get('paired_bootstrap_ci')}")
 
-    # data-efficiency curve: per-size candidate vs baseline mean R² (evidence for sweeps)
-    curve = _data_efficiency_curve(spec, run_dir)
-    if curve:
+    # prefer the harness's per-size statistical verdicts (with CIs) when present
+    curve = cmp.get("per_size") or _data_efficiency_curve(spec, run_dir)
+    crossover = cmp.get("crossover")
+    if cmp.get("per_size"):
+        print("  per-size verdicts:", {p["train_size"]: f"{p['mean_delta']:+.3f}/{p['status']}"
+                                       for p in cmp["per_size"]})
+    if crossover:
+        print(f"  crossover: superior_at={crossover['superior_at']} "
+              f"parity_at={crossover['parity_at']} trend={crossover['trend']}")
+    elif curve:
         print("  data-efficiency (ΔR² per train_size):",
-              {c["train_size"]: round(c["delta"], 3) for c in curve})
+              {c["train_size"]: round(c.get("delta", c.get("mean_delta", 0)), 3) for c in curve})
 
     print("STATE: POSTMORTEM_COMPLETE")
-    pm, pm_who = postmortem.synthesize(proposal, verdict, curve=curve, allow_local_fallback=fb)
+    pm, pm_who = postmortem.synthesize(proposal, verdict, curve=curve, crossover=crossover,
+                                       allow_local_fallback=fb)
     (run_dir / "postmortem.json").write_text(pm.model_dump_json(indent=2), encoding="utf-8")
     print(f"  postmortem {pm_who}: claim_allowed={pm.claim_allowed}")
 
@@ -167,7 +175,7 @@ def cycle(fb: bool, n_proposals: int = 4) -> dict:
                    "n_series": spec.n_series, "n_repeats": len(spec.iterations),
                    "status": status, "mean_delta": cmp.get("mean_delta"),
                    "ci": cmp.get("paired_bootstrap_ci"), "claim_allowed": pm.claim_allowed,
-                   "data_efficiency": curve})
+                   "data_efficiency": curve, "crossover": crossover})
     claim_registry.record(run_id=spec.run_id, proposal_id=proposal["proposal_id"],
                           status=status, comparison=cmp, claim_allowed=pm.claim_allowed)
 
@@ -204,13 +212,27 @@ def _report(run_dir, spec, proposal, verdict, pm, eng_who, rev_who, curve=None):
         f"- hypothesis: {proposal['scientific_hypothesis']}", "",
     ]
     if curve:
-        lines += ["## Data-efficiency curve (candidate vs baseline registry, per train_size)", "",
-                  "| train_size | candidate R² | baseline R² | ΔR² | n_series |",
-                  "| --- | --- | --- | --- | --- |"]
+        has_ci = any("paired_bootstrap_ci" in c for c in curve)
+        header = ("| train_size | candidate R² | baseline R² | ΔR² | 95% CI | verdict |"
+                  if has_ci else "| train_size | candidate R² | baseline R² | ΔR² | n_series |")
+        lines += ["## Data-efficiency curve (per-size paired-bootstrap verdicts)"
+                  if has_ci else "## Data-efficiency curve (candidate vs baseline, per train_size)",
+                  "", header,
+                  "| --- | --- | --- | --- | --- | --- |" if has_ci else "| --- | --- | --- | --- | --- |"]
         for c in curve:
-            lines.append(f"| {c['train_size']} | {c['candidate_mean']} | {c['baseline_mean']} "
-                         f"| {c['delta']} | {c['n_series']} |")
+            d = c.get("mean_delta", c.get("delta"))
+            cm, bm = c.get("candidate_mean"), c.get("baseline_mean")
+            if has_ci:
+                ci = c.get("paired_bootstrap_ci")
+                lines.append(f"| {c['train_size']} | {round(cm,4)} | {round(bm,4)} | "
+                             f"{round(d,4)} | {ci} | {c.get('status','—')} |")
+            else:
+                lines.append(f"| {c['train_size']} | {cm} | {bm} | {round(d,4)} | {c.get('n_series')} |")
         lines.append("")
+        cross = cmp.get("crossover")
+        if cross:
+            lines += [f"**Crossover:** superior_at={cross['superior_at']}, "
+                      f"parity_at={cross['parity_at']}, trend={cross['trend']}", ""]
     lines += [
         "## Comparison (candidate vs baseline registry, paired bootstrap over series)",
         f"- baseline ({cmp.get('baseline_model')}) mean R²: {cmp.get('baseline_mean')}",

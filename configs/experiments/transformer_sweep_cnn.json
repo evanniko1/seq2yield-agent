@@ -1,0 +1,26 @@
+{
+  "run_id": "2026-06-06-transformer-sweep-cnn",
+  "proposal_id": "DEMO_1A_SWEEP",
+  "maturity_tier": "tier_1",
+  "model_family": "transformer",
+  "feature_set": "one_hot",
+  "sampling_policy": "random",
+  "train_sizes": [250, 500, 1000, 2000],
+  "iterations": [1, 2, 3],
+  "n_series": 10,
+  "seed": 1,
+  "primary_metric": "r2",
+  "allowed_files": ["configs/model/", "src/seq2yield/models/"],
+  "protected_files": [],
+  "max_runtime_minutes": 30,
+  "acceptance_policy": {
+    "track": "performance",
+    "baseline_run_id": "2026-06-04-full56",
+    "baseline_model": "cnn",
+    "comparison_train_size": 2000,
+    "min_delta_r2": 0.02,
+    "requires_repeated_seed": true,
+    "requires_no_split_change": true,
+    "bootstrap_ci_must_exclude_zero": true
+  }
+}
