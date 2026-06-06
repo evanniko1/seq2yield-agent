@@ -342,6 +342,17 @@ R² — CNN 0.910 / RF 0.900 / MLP 0.896 (CNN vs RF ΔR²=0.010, CI [-0.009, 0.0
 ranking [cnn, rf, mlp] **identical to E. coli** (conclusions transfer). Tests: cleaning,
 stratified holdout coverage, bootstrap detection (94 passing).
 
+## #28 — Methodology audit: pooled-confound fix + per_series-scope removal
+**Context.** A statistics/metrics audit across all axes (docs/CRITIQUE.md). **Findings/fixes.**
+(1) `scope=pooled` compared a pooled candidate (n_series×N rows) against the per-series
+registry (N rows each) — a data-budget confound. Fixed: the harness now trains the comparator
+**pooled in-run** on the same budget for pooled runs (`baseline_source`). (2) `per_series`
+scope was behaviorally identical to `global` (no-op label) — removed; per-series differences
+are reported for every run via `heterogeneity_analysis`. The critique also documents known
+caveats not yet fixed (no multiple-comparison correction, unscaled flat features for non-tree
+models, param-count fairness, repeat asymmetry, decorative non-HPO patch, weak local-model
+judgment) and prioritizes them in docs/BACKLOG.md. 94 tests passing.
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

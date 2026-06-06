@@ -103,12 +103,26 @@ def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
                         {"run_id": spec.run_id, "stage": "compare",
                          "reasons": [f"track '{pol.track}' comparison not implemented in M3"]})
 
-    base_csv = ROOT / "experiments/runs" / pol.baseline_run_id / "metrics.csv"
-    if not base_csv.exists():
-        return _verdict(run_dir, "rejected",
-                        {"run_id": spec.run_id, "stage": "compare",
-                         "reasons": [f"baseline metrics not found: {base_csv}"]})
-    base_df = pd.read_csv(base_csv)
+    # Choose the baseline reference. For a per-series candidate, the per-series registry is a
+    # clean control. For a POOLED candidate, the per-series registry is NOT comparable (it gives
+    # each per-series model far less data), so we train the comparator POOLED in-run on the same
+    # data budget — removing the pooled-vs-per-series + data-size confound (CRITIQUE / audit).
+    if spec.scope == "pooled":
+        base_spec = spec.model_copy(deep=True)
+        base_spec.model_family = pol.baseline_model
+        base_spec.feature_set = "one_hot"
+        base_spec.sampling_policy = "random"
+        base_spec.hyperparameters = {}
+        base_df = run_runspec(base_spec)["metrics"]
+        baseline_source = "in_run_pooled"
+    else:
+        base_csv = ROOT / "experiments/runs" / pol.baseline_run_id / "metrics.csv"
+        if not base_csv.exists():
+            return _verdict(run_dir, "rejected",
+                            {"run_id": spec.run_id, "stage": "compare",
+                             "reasons": [f"baseline metrics not found: {base_csv}"]})
+        base_df = pd.read_csv(base_csv)
+        baseline_source = "registry:" + pol.baseline_run_id
 
     size = pol.comparison_train_size or max(
         set(spec.train_sizes) & set(base_df["train_size"].unique()))
@@ -119,6 +133,7 @@ def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
     cmp["comparison_train_size"] = size
     cmp["baseline_model"] = pol.baseline_model
     cmp["candidate_model"] = spec.model_family
+    cmp["baseline_source"] = baseline_source
     # per-series heterogeneity: where the winner differs across series (Q6)
     cmp["heterogeneity"] = compare_mod.heterogeneity_analysis(base_ps, cand_ps)
 

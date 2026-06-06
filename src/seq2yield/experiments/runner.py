@@ -40,7 +40,7 @@ def run_runspec(spec: RunSpec, *, splits_dir: str | Path | None = None) -> dict:
 
 
 def _run_per_series(spec: RunSpec, splits: dict, series_ids: list[int]) -> list[dict]:
-    """global / per_series scope: one model trained per mutational series."""
+    """global scope: one model trained per mutational series (heterogeneity reported separately)."""
     rows = []
     for i in spec.iterations:
         it = f"iteration_{i}"

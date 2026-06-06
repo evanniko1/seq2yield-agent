@@ -140,7 +140,9 @@ Engineering-track equivalence (outputs within tolerance) is the bar, not bit-ide
 - **A.** Fixed-split supervised prediction reproduced for RF/MLP/CNN on one-hot.
 - **B.** At least one representative **data-size curve** reproduced.
 - **C.** Diversity-controlled training behaviour reproduced (qualitative trend).
-- **D.** Single-series vs cross-series generalization (later; needs yeast/secondary).
+- **D.** Single-series vs cross-series generalization + secondary yeast benchmark — DONE:
+  `scripts/build_yeast.py` (pooled 80 nt YFP, per-gene held-out, sequence-level bootstrap) +
+  cross-organism ranking transfer (CNN>RF>MLP identical across organisms). See DECISIONS #27.
 - **E.** Clean baseline run registry (run-cards for every baseline).
 
 Exit criterion: at least one data-size curve **and** one CNN-vs-classical comparison

@@ -58,10 +58,10 @@ class CouncilProposal(BaseModel):
     sampling_policy: Literal["random", "maximin_kmer", "expression_stratified",
                              "series_balanced"] = "random"
     train_sizes: list[TrainSize] = Field(default_factory=lambda: [500])
-    # optimization scope: global = per-series models judged by mean across series (default);
-    # per_series = same, but report where the winner differs across series; pooled = ONE model
-    # trained across all series, still evaluated per-series.
-    scope: Literal["global", "per_series", "pooled"] = "global"
+    # optimization scope: global = one model trained per mutational series, judged by mean R²
+    # across series (per-series heterogeneity is reported for EVERY run regardless); pooled =
+    # ONE model trained across all series (compared to an in-run pooled baseline).
+    scope: Literal["global", "pooled"] = "global"
     required_controls: list[str] = Field(default_factory=list)
     expected_failure_modes: list[str] = Field(default_factory=list)
 

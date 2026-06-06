@@ -87,8 +87,8 @@ def record_cell_id(rec: dict) -> str:
 
 
 def _valid_cell(cid: str) -> bool:
-    """A non-catalogue cell is valid to track only if it is a scope variant (per_series/pooled)
-    of a catalogue cell — not a degenerate combo (e.g. a feature study on a conv model)."""
+    """A non-catalogue cell is valid to track only if it is a scope variant (pooled) of a
+    catalogue cell — not a degenerate combo (e.g. a feature study on a conv model)."""
     base = cid.rsplit("|", 1)[0]
     catalogue_bases = {c.cell_id.rsplit("|", 1)[0] for c in enumerate_cells()}
     return base in catalogue_bases
