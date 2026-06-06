@@ -27,7 +27,15 @@ def paired_bootstrap_ci(baseline_per_series, candidate_per_series, *,
         "alpha": alpha,
         "n_series": int(n),
         "excludes_zero": bool(lo > 0 or hi < 0),
+        "p_value": _bootstrap_p(boot_means),
     }
+
+
+def _bootstrap_p(boot_deltas: np.ndarray) -> float:
+    """Two-sided bootstrap p-value: 2 × the fraction of resamples on the null side of 0."""
+    frac_le = float(np.mean(boot_deltas <= 0))
+    frac_ge = float(np.mean(boot_deltas >= 0))
+    return float(min(1.0, 2.0 * min(frac_le, frac_ge)))
 
 
 def _r2(y_true, y_pred) -> float:
@@ -69,4 +77,5 @@ def paired_bootstrap_r2(y_true, pred_candidate, pred_baseline, *, n_boot: int = 
     lo, hi = np.nanquantile(deltas, [alpha / 2, 1 - alpha / 2])
     return {"mean_delta": float(_r2(y_true, pc) - _r2(y_true, pb)),
             "ci": [float(lo), float(hi)], "n": int(n),
-            "excludes_zero": bool(lo > 0 or hi < 0)}
+            "excludes_zero": bool(lo > 0 or hi < 0),
+            "p_value": _bootstrap_p(deltas[~np.isnan(deltas)])}

@@ -178,7 +178,8 @@ def cycle(fb: bool, n_proposals: int = 4) -> dict:
                    "scope": spec.scope, "train_sizes": spec.train_sizes, "revisit": revisit,
                    "n_series": spec.n_series, "n_repeats": len(spec.iterations),
                    "status": status, "mean_delta": cmp.get("mean_delta"),
-                   "ci": cmp.get("paired_bootstrap_ci"), "claim_allowed": pm.claim_allowed,
+                   "ci": cmp.get("paired_bootstrap_ci"), "p_value": cmp.get("p_value"),
+                   "claim_allowed": pm.claim_allowed,
                    "data_efficiency": curve, "crossover": crossover,
                    "heterogeneity": het or None})
     claim_registry.record(run_id=spec.run_id, proposal_id=proposal["proposal_id"],

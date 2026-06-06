@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src"))
 
 from agents import question_space  # noqa: E402
+from seq2yield.statistics import multiple_comparisons as mc  # noqa: E402
 
 _STATUS_COLOR = {"accepted": "#1a7f37", "rejected": "#b42318", "inconclusive": "#b54708",
                  "settled": "#1a7f37", "untested": "#cfd4dc"}
@@ -99,6 +100,7 @@ def build_html(records: list[dict], claims: list[dict], cost: dict | None = None
         verdicts[r.get("status", "inconclusive")] = verdicts.get(r.get("status"), 0) + 1
     accepted_claims = [c for c in claims if c.get("claim")]
     n_revisits = sum(1 for r in records if r.get("revisit"))
+    fdr = mc.correct_claims(records, alpha=0.05, method="bh")   # family-wise correction (C1)
 
     # --- runs table (with scope + data-efficiency sparkline/crossover) ---
     run_rows = []
@@ -158,6 +160,8 @@ def build_html(records: list[dict], claims: list[dict], cost: dict | None = None
      <div class="bar"><i style="width:{summ['coverage_pct']}%"></i></div>
      {summ['settled']}/{summ['total_cells']} cells · {summ['untested']} untested</div></div>
   {f'<div class="card"><div class="n">${cost["total_cost_usd"]:.2f}</div><div class="l">est. cost · {cost["total_tokens"]:,} tokens · {cost["n_calls"]} calls</div></div>' if cost else ''}
+  <div class="card"><div class="n">{fdr['n_after_correction']}/{fdr['n_raw_discoveries']}</div>
+     <div class="l">discoveries surviving BH-FDR<br>({fdr['n_comparisons']} comparisons, q&lt;0.05)</div></div>
 </div>
 
 {_cost_section(cost)}

@@ -29,6 +29,7 @@ def record(*, run_id: str, proposal_id: str, status: str, comparison: dict,
         "mean_delta_r2": comparison.get("mean_delta"),
         "bootstrap_ci_95": comparison.get("paired_bootstrap_ci"),
         "ci_excludes_zero": comparison.get("ci_excludes_zero"),
+        "p_value": comparison.get("p_value"),
         "n_series": comparison.get("n_series"),
         "train_size": comparison.get("comparison_train_size"),
         # claim only survives if the harness accepted the run

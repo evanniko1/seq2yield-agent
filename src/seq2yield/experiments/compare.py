@@ -43,6 +43,7 @@ def _compare_series(base: pd.Series, cand: pd.Series, policy: AcceptancePolicy, 
         "mean_delta": float(delta),
         "paired_bootstrap_ci": boot["ci"],
         "ci_excludes_zero": boot["excludes_zero"],
+        "p_value": boot.get("p_value"),
         "n_series": boot["n_series"],
         "reasons": reasons,
     }

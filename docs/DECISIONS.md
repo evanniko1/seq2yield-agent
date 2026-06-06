@@ -353,6 +353,17 @@ caveats not yet fixed (no multiple-comparison correction, unscaled flat features
 models, param-count fairness, repeat asymmetry, decorative non-HPO patch, weak local-model
 judgment) and prioritizes them in docs/BACKLOG.md. 94 tests passing.
 
+## #29 — C1: multiple-comparison correction (BH-FDR) over the claim registry
+**Context.** The council runs many comparisons; each decided significance at α=0.05 alone, so
+family-wise false positives were uncontrolled. **Decision.** Bootstrap now returns a two-sided
+`p_value` (`paired_bootstrap_ci`, `paired_bootstrap_r2`); it flows through compare → verdict →
+memory + claim registry. `statistics/multiple_comparisons.py` implements Benjamini-Hochberg
+(default) + Bonferroni and `correct_claims` (family = runs with a p_value; reports raw vs
+correction-surviving discoveries + BH q-values). `scripts/show_claims.py` prints the corrected
+view; the dashboard gained a "discoveries surviving BH-FDR" card. Pre-C1 records (no p_value)
+are excluded and reported separately. Tests: BH partial rejection, Bonferroni stricter, q-value
+monotonicity, missing-p handling, bootstrap-p sanity (99 passing).
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that
