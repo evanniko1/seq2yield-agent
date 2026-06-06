@@ -27,11 +27,12 @@ class Cell:
     comparator_model: str
     feature_set: str = "one_hot"
     sampling_policy: str = "random"
+    scope: str = "global"
 
     @property
     def cell_id(self) -> str:
         return "|".join([self.intervention_type, self.model_family, self.comparator_model,
-                         self.feature_set, self.sampling_policy])
+                         self.feature_set, self.sampling_policy, self.scope])
 
     def describe(self) -> str:
         it = self.intervention_type
@@ -62,7 +63,8 @@ def enumerate_cells() -> list[Cell]:
 
 
 def cell_id_for(intervention_type: str, model_family: str, comparator_model: str,
-                feature_set: str = "one_hot", sampling_policy: str = "random") -> str:
+                feature_set: str = "one_hot", sampling_policy: str = "random",
+                scope: str = "global") -> str:
     # same-model interventions are canonicalized to comparator = model_family
     if intervention_type in ("feature_representation", "sampling_design"):
         comparator_model = model_family
@@ -71,25 +73,39 @@ def cell_id_for(intervention_type: str, model_family: str, comparator_model: str
     if intervention_type != "sampling_design":
         sampling_policy = "random"
     return Cell(intervention_type, model_family, comparator_model,
-                feature_set, sampling_policy).cell_id
+                feature_set, sampling_policy, scope).cell_id
 
 
 def record_cell_id(rec: dict) -> str:
     return cell_id_for(
         rec.get("intervention_type", "model_architecture"),
         rec.get("candidate_model"), rec.get("baseline_model"),
-        rec.get("feature_set", "one_hot"), rec.get("sampling_policy", "random"))
+        rec.get("feature_set", "one_hot"), rec.get("sampling_policy", "random"),
+        rec.get("scope", "global"))
+
+
+def _valid_cell(cid: str) -> bool:
+    """A non-catalogue cell is valid to track only if it is a scope variant (per_series/pooled)
+    of a catalogue cell — not a degenerate combo (e.g. a feature study on a conv model)."""
+    base = cid.rsplit("|", 1)[0]
+    catalogue_bases = {c.cell_id.rsplit("|", 1)[0] for c in enumerate_cells()}
+    return base in catalogue_bases
 
 
 def coverage(records: list[dict]) -> dict:
-    """cell_id -> {status, n_runs, statuses, last_delta}. status in untested/inconclusive/settled."""
+    """cell_id -> {status, n_runs, statuses, last_delta, in_catalogue}. status in
+    untested/inconclusive/settled. Off-catalogue scope variants are tracked as extras;
+    truly degenerate combos are skipped."""
     cells = {c.cell_id: c for c in enumerate_cells()}
     cov = {cid: {"status": "untested", "n_runs": 0, "statuses": [], "last_delta": None,
-                 "describe": c.describe()} for cid, c in cells.items()}
+                 "in_catalogue": True, "describe": c.describe()} for cid, c in cells.items()}
     for rec in records:
         cid = record_cell_id(rec)
-        if cid not in cov:                              # off-catalogue (e.g. degenerate) — skip
-            continue
+        if cid not in cov:
+            if not _valid_cell(cid):                    # degenerate -> skip
+                continue
+            cov[cid] = {"status": "untested", "n_runs": 0, "statuses": [], "last_delta": None,
+                        "in_catalogue": False, "describe": f"(scope variant) {cid}"}
         e = cov[cid]
         e["n_runs"] += 1
         e["statuses"].append(rec.get("status"))
@@ -103,11 +119,14 @@ def coverage(records: list[dict]) -> dict:
 
 def summarize(records: list[dict]) -> dict:
     cov = coverage(records)
+    cat = {cid: e for cid, e in cov.items() if e["in_catalogue"]}
     by = {"untested": 0, "inconclusive": 0, "settled": 0}
-    for e in cov.values():
+    for e in cat.values():
         by[e["status"]] += 1
-    return {"total_cells": len(cov), **by,
-            "coverage_pct": round(100 * by["settled"] / max(1, len(cov)), 1)}
+    extras = sum(1 for e in cov.values() if not e["in_catalogue"])
+    return {"total_cells": len(cat), **by,
+            "coverage_pct": round(100 * by["settled"] / max(1, len(cat)), 1),
+            "scope_variant_cells": extras}
 
 
 def uncovered(records: list[dict], statuses=("untested",)) -> list[Cell]:

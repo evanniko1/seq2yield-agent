@@ -29,7 +29,7 @@ def test_rank_targets_inconclusive_after_untested():
              "status": "inconclusive"}]
     cells = planner.rank_targets(recs)
     ids = [c.cell_id for c in cells]
-    inc = "feature_representation|rf|rf|kmer|random"
+    inc = "feature_representation|rf|rf|kmer|random|global"
     assert inc in ids and ids.index(inc) > 0   # appears, after untested cells
 
 

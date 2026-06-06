@@ -13,8 +13,10 @@ from ..data import sampling
 from ..data.cleaning import TARGET_COL
 from ..data.loaders import load_split_csv, series_subset
 from ..data.splits import load_manifest
+from ..models import registry as model_registry
+from ..training import metrics as M
 from ..training.reproducibility import set_seed
-from ..training.train import train_evaluate
+from ..training.train import features_for, train_evaluate
 from .run_spec import RunSpec
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -31,6 +33,14 @@ def resolve_series(spec: RunSpec, splits: dict) -> list[int]:
 def run_runspec(spec: RunSpec, *, splits_dir: str | Path | None = None) -> dict:
     splits = load_manifest(splits_dir or ROOT / "data/splits")
     series_ids = resolve_series(spec, splits)
+    runner = _run_pooled if spec.scope == "pooled" else _run_per_series
+    rows = runner(spec, splits, series_ids)
+    return {"metrics": pd.DataFrame(rows), "series": series_ids,
+            "split_hash": splits["split_hash"]}
+
+
+def _run_per_series(spec: RunSpec, splits: dict, series_ids: list[int]) -> list[dict]:
+    """global / per_series scope: one model trained per mutational series."""
     rows = []
     for i in spec.iterations:
         it = f"iteration_{i}"
@@ -47,8 +57,36 @@ def run_runspec(spec: RunSpec, *, splits_dir: str | Path | None = None) -> dict:
                                      length=96, seed=spec.seed)
                 rows.append({"iteration": it, "series": sid, "model": spec.model_family,
                              "train_size": size, "r2": res["r2"], "rmse": res["rmse"]})
-    df = pd.DataFrame(rows)
-    return {"metrics": df, "series": series_ids, "split_hash": splits["split_hash"]}
+    return rows
+
+
+def _run_pooled(spec: RunSpec, splits: dict, series_ids: list[int]) -> list[dict]:
+    """pooled scope: ONE model trained on rows pooled across all series, then evaluated
+    per-series (so it is comparable to the per-series baseline registry)."""
+    rows = []
+    for i in spec.iterations:
+        it = f"iteration_{i}"
+        work = load_split_csv(splits["iterations"][it]["working_set"]["path"])
+        held = load_split_csv(splits["iterations"][it]["heldout_set"]["path"])
+        for size in spec.train_sizes:
+            parts = []
+            for sid in series_ids:
+                w_s = series_subset(work, sid)
+                parts.append(sampling.select(spec.sampling_policy, w_s,
+                                             min(size, len(w_s)), seed=spec.seed))
+            train_frame = pd.concat(parts, ignore_index=True)
+            set_seed(spec.seed)
+            Xtr = features_for(spec.model_family, train_frame, spec.feature_set)
+            model = model_registry.make(spec.model_family, seed=spec.seed)
+            model.fit(Xtr, train_frame[TARGET_COL].to_numpy())
+            for sid in series_ids:                       # evaluate the pooled model per series
+                h_s = series_subset(held, sid)
+                Xte = features_for(spec.model_family, h_s, spec.feature_set)
+                y = h_s[TARGET_COL].to_numpy()
+                pred = model.predict(Xte)
+                rows.append({"iteration": it, "series": sid, "model": spec.model_family,
+                             "train_size": size, "r2": M.r2(y, pred), "rmse": M.rmse(y, pred)})
+    return rows
 
 
 def per_series_r2(df: pd.DataFrame, train_size: int, model: str | None = None) -> pd.Series:

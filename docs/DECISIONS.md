@@ -262,6 +262,19 @@ strategy-directed, not free-association. PI focus/rationale surfaced in the run 
 **Validated**: planner ranking (breadth-first, focus-first, inconclusive-last) + PI fallback
 without keys (22 targeted tests). Next: selectable optimization scope (step 4).
 
+## #25 — Strategy step 4: selectable optimization scope (Q6)
+**Context.** The council only ever sought ONE algorithm judged by mean R² across per-series
+models. **Decision.** `scope` is now a proposal/RunSpec field: **global** (default; per-series
+models, mean comparison), **per_series** (same execution, surfaces per-series heterogeneity),
+**pooled** (train ONE model across all series, still evaluated per-series so it stays
+comparable to the per-series baseline registry). `runner` branches: `_run_per_series` vs
+`_run_pooled`; `train.features_for` extracted for reuse. `scope` is part of the cell_id, so
+global/pooled/per_series of the same comparison are distinct questions; the catalogue stays
+global (42 cells) and scope variants are tracked as extras (`scope_variant_cells`).
+**Validated**: unit (compile sets scope+run_id, scope in cell_id) + functional pooled-vs-
+per_series on real data (pooled trains 1 model → per-series R²; distinct from per-series).
+This completes the 4-step strategy layer (catalogue → revisit/stopping → PI planner → scope).
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

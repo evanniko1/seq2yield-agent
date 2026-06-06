@@ -75,3 +75,20 @@ def test_compile_sampling_design_baseline_is_same_model():
     assert spec.sampling_policy == "maximin_kmer"
     assert spec.acceptance_policy.baseline_model == "rf"
     assert "src/seq2yield/data/sampling.py" in spec.allowed_files
+
+
+def test_compile_pooled_scope_sets_runspec_and_runid():
+    prop = CouncilProposal(proposal_id="p", title="pooled rf vs cnn", maturity_tier="tier_1",
+                           intervention_type="model_architecture", scientific_hypothesis="h",
+                           model_family="rf", comparator_model="cnn", scope="pooled")
+    dec = ChairDecision(status="approve_for_execution", chosen_proposal_id="p", rationale="x")
+    spec = Council(allow_local_fallback=True).compile_runspec(prop, dec)
+    assert spec.scope == "pooled"
+    assert "pooled" in spec.run_id
+
+
+def test_scope_in_cell_id():
+    from agents import question_space as qs
+    g = qs.cell_id_for("model_architecture", "rf", "cnn", scope="global")
+    p = qs.cell_id_for("model_architecture", "rf", "cnn", scope="pooled")
+    assert g != p and g.endswith("|global") and p.endswith("|pooled")

@@ -58,8 +58,8 @@ def _key(p):
 
 
 def proposal_cell_id(p) -> str:
-    return question_space.cell_id_for(p.intervention_type, p.model_family,
-                                      p.comparator_model, p.feature_set, p.sampling_policy)
+    return question_space.cell_id_for(p.intervention_type, p.model_family, p.comparator_model,
+                                      p.feature_set, p.sampling_policy, p.scope)
 
 
 def _is_self_comparison(p) -> bool:
@@ -230,14 +230,15 @@ class Council:
         baseline_model = proposal.model_family if same_model else proposal.comparator_model
         tag = {"data_efficiency": "sweep", "feature_representation": f"{proposal.feature_set}-vs",
                "sampling_design": f"{proposal.sampling_policy}-vs"}.get(itype, "vs")
+        scope_tag = "" if proposal.scope == "global" else f"-{proposal.scope}"
         run_id = (f"{datetime.now(timezone.utc):%Y-%m-%d}-council-{proposal.model_family}-"
-                  f"{tag}-{baseline_model}")
+                  f"{tag}-{baseline_model}{scope_tag}")
         spec = RunSpec(
             run_id=run_id, proposal_id=proposal.proposal_id,
             maturity_tier=proposal.maturity_tier,
             dataset_manifest_hash=dh, split_hash=sh,
             model_family=proposal.model_family, feature_set=proposal.feature_set,
-            sampling_policy=proposal.sampling_policy, train_sizes=sizes,
+            sampling_policy=proposal.sampling_policy, scope=proposal.scope, train_sizes=sizes,
             allowed_files=allowed, protected_files=_protected(),
             max_runtime_minutes=decision.max_runtime_minutes,
         )

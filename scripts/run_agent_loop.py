@@ -88,7 +88,7 @@ def cycle(fb: bool, n_proposals: int = 4) -> dict:
     cid = question_space.cell_id_for(
         proposal.get("intervention_type", "model_architecture"), proposal["model_family"],
         proposal["comparator_model"], proposal.get("feature_set", "one_hot"),
-        proposal.get("sampling_policy", "random"))
+        proposal.get("sampling_policy", "random"), proposal.get("scope", "global"))
     cov = question_space.coverage(memory.load())
     revisit = cov.get(cid, {}).get("status") == "inconclusive"
     if revisit:
@@ -157,7 +157,7 @@ def cycle(fb: bool, n_proposals: int = 4) -> dict:
                    "baseline_model": spec.acceptance_policy.baseline_model,
                    "intervention_type": proposal.get("intervention_type", "model_architecture"),
                    "feature_set": spec.feature_set, "sampling_policy": spec.sampling_policy,
-                   "train_sizes": spec.train_sizes, "revisit": revisit,
+                   "scope": spec.scope, "train_sizes": spec.train_sizes, "revisit": revisit,
                    "n_series": spec.n_series, "n_repeats": len(spec.iterations),
                    "status": status, "mean_delta": cmp.get("mean_delta"),
                    "ci": cmp.get("paired_bootstrap_ci"), "claim_allowed": pm.claim_allowed,

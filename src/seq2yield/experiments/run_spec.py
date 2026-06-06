@@ -34,6 +34,7 @@ class RunSpec(BaseModel):
     model_family: str
     feature_set: str = "one_hot"
     sampling_policy: str = "random"
+    scope: str = "global"               # global | per_series | pooled (Q6)
     train_sizes: list[int] = Field(default_factory=lambda: [250, 500, 1000, 2000])
     iterations: list[int] = Field(default_factory=lambda: [1, 2, 3, 4, 5])
     series: list[int] | None = None             # None -> all series in the split
