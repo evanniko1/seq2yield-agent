@@ -41,8 +41,9 @@ def main() -> int:
     print(f"generator: {res['generator']}   chair: {res.get('chair')}")
     nov = res.get("novelty", {})
     if nov:
-        print(f"novelty: already-tested={nov.get('tested_keys')}  "
-              f"dropped={nov.get('dropped')}  kept={nov.get('kept')}")
+        print(f"coverage: {nov.get('coverage')}")
+        print(f"untested cells remaining: {nov.get('n_untested')}  dropped(settled/dupe): "
+              f"{nov.get('dropped')}  kept_cells={nov.get('kept_cells')}")
     print(f"\n=== {res['n_proposals']} PROPOSALS ===")
     for p in res["proposals"]:
         s = res["mean_scores"].get(p["proposal_id"], {})

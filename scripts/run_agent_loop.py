@@ -147,6 +147,7 @@ def main() -> int:
                    "candidate_model": spec.model_family,
                    "baseline_model": spec.acceptance_policy.baseline_model,
                    "intervention_type": proposal.get("intervention_type", "model_architecture"),
+                   "feature_set": spec.feature_set, "sampling_policy": spec.sampling_policy,
                    "train_sizes": spec.train_sizes,
                    "status": status, "mean_delta": cmp.get("mean_delta"),
                    "ci": cmp.get("paired_bootstrap_ci"), "claim_allowed": pm.claim_allowed,

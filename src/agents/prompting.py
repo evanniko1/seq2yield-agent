@@ -18,7 +18,7 @@ _CONTEXT = (
 )
 
 
-def generator_prompt(n: int, prior: str = "") -> tuple[str, str]:
+def generator_prompt(n: int, prior: str = "", targets=None) -> tuple[str, str]:
     sys = roles.persona("proposal_generator") + "\n\n" + _CONTEXT
     prior_block = ""
     if prior:
@@ -27,6 +27,14 @@ def generator_prompt(n: int, prior: str = "") -> tuple[str, str]:
                        f"{prior}\n"
                        "candidate model_family may be any of cnn/rf/mlp/ridge/svr/transformer; "
                        "comparator_model must be one of cnn/rf/mlp (the baseline registry).")
+    if targets:
+        sample = targets[:12]
+        lines = "\n".join(
+            f"  - [{t.intervention_type}] model_family={t.model_family} "
+            f"comparator_model={t.comparator_model} feature_set={t.feature_set} "
+            f"sampling_policy={t.sampling_policy}  ({t.describe()})" for t in sample)
+        prior_block += ("\n\nUNEXPLORED questions from the coverage map — PREFER proposing "
+                        f"from these uncovered cells ({len(targets)} remain):\n{lines}")
     user = (f"Propose exactly {n} DISTINCT, controlled experiments, each comparing one "
             "model_family against a DIFFERENT comparator_model on the same fixed splits. "
             "Vary the model_family/hypothesis across proposals; never compare a model to "

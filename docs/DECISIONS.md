@@ -223,6 +223,22 @@ and steer the council to follow up settled questions. **Verified on real data** 
 one_hot 0.657 / mixed 0.624 / mechanistic 0.532 / kmer 0.503; maximin sampling 0.552 vs random
 0.544 @N=500. Tests cover features, sampling determinism, and compile baselines (62 passing).
 
+## #22 — Strategy step 1: explicit question-space catalogue + coverage map
+**Context.** The council explored opportunistically with a too-coarse novelty key (it
+collapsed feature_set/sampling/train_size, so e.g. all RF feature studies looked "done" after
+one) and had no positive notion of what it had/hadn't explored. **Decision.** Added
+`agents/question_space.py`: enumerates the VALID Tier-0/1 cells (model_architecture,
+data_efficiency, feature_representation [flat models only], sampling_design) — 42 cells.
+`coverage(memory)` maps runs to cells with status untested/inconclusive/settled (off-catalogue
+degenerate runs skipped). `council.generate` now (a) computes coverage, (b) offers the
+generator the UNEXPLORED cells as targets, and (c) filters by cell-level novelty
+(`filter_unsettled`) — fixing the coarse key and allowing inconclusive revisit. `scripts/
+show_coverage.py` prints the map; memory records now carry feature_set/sampling_policy.
+**Result.** Live coverage from current memory: 9/42 settled (21.4%), 33 untested — the council
+now knows its frontier. Tests cover catalogue validity, cell-id canonicalization, status
+transitions, off-catalogue skip (67 passing). Next: revisit + stopping (step 2), PI planner
+(step 3), selectable scope (step 4).
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

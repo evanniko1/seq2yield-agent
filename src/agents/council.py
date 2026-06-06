@@ -12,7 +12,7 @@ import yaml
 
 from seq2yield.experiments.run_spec import RunSpec, validate_runspec
 
-from . import memory, prompting, roles
+from . import memory, prompting, question_space, roles
 from .router import Router
 from .schemas import ChairDecision, CouncilReviewItem, ProposalBatch
 
@@ -55,6 +55,35 @@ def tested_keys(records: list[dict]) -> set[tuple[str, str, str]]:
 
 def _key(p):
     return (p.model_family, p.comparator_model, p.intervention_type)
+
+
+def proposal_cell_id(p) -> str:
+    return question_space.cell_id_for(p.intervention_type, p.model_family,
+                                      p.comparator_model, p.feature_set, p.sampling_policy)
+
+
+def _is_self_comparison(p) -> bool:
+    # same model is valid for feature/sampling (same-model baseline) but not for model comparisons
+    return (p.model_family == p.comparator_model
+            and p.intervention_type in ("model_architecture", "data_efficiency"))
+
+
+def filter_unsettled(proposals, settled_ids: set[str]):
+    """Coverage-based novelty: drop invalid self-comparisons, in-batch duplicate cells, and
+    cells already SETTLED (accepted/rejected). Inconclusive/untested cells are kept (revisit
+    is allowed). Falls back to the de-duped set if every proposal is settled."""
+    seen, deduped = set(), []
+    for p in proposals:
+        if _is_self_comparison(p):
+            continue
+        cid = proposal_cell_id(p)
+        if cid in seen:
+            continue
+        seen.add(cid)
+        deduped.append(p)
+    novel = [p for p in deduped if proposal_cell_id(p) not in settled_ids]
+    kept = novel if novel else deduped
+    return kept, len(proposals) - len(kept)
 
 
 def filter_novel(proposals, tested: set[tuple[str, str, str]]):
@@ -120,15 +149,19 @@ class Council:
 
     def generate(self, n: int):
         prior = memory.load()
-        tested = tested_keys(prior)
-        sys, user = prompting.generator_prompt(n, prior_summary(prior) if prior else "")
+        cov = question_space.coverage(prior)
+        settled = {cid for cid, e in cov.items() if e["status"] == "settled"}
+        unexplored = question_space.uncovered(prior, statuses=("untested",))
+        sys, user = prompting.generator_prompt(n, prior_summary(prior) if prior else "",
+                                               targets=unexplored)
         batch, who = self._ask("proposal_generator", sys, user, ProposalBatch,
                                temperature=0.6, max_tokens=1800)
-        kept, dropped = filter_novel(batch.proposals, tested)
+        kept, dropped = filter_unsettled(batch.proposals, settled)
         for i, p in enumerate(kept):
             p.proposal_id = p.proposal_id or f"H{i+1:03d}"
-        self.last_novelty = {"tested_keys": sorted(list(k) for k in tested), "dropped": dropped,
-                             "kept": [_key(p) for p in kept]}
+        self.last_novelty = {"coverage": question_space.summarize(prior),
+                             "n_untested": len(unexplored), "dropped": dropped,
+                             "kept_cells": [proposal_cell_id(p) for p in kept]}
         return kept, who
 
     def review(self, proposals):
