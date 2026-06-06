@@ -1,0 +1,14 @@
+# Cost / token budget (src/orchestration/budget.py). Caps are enforced per campaign;
+# the cost report (scripts/show_cost.py) and dashboard read all-time totals.
+budget:
+  max_total_tokens: 5000000
+  max_total_cost_usd: 10.0
+  max_calls: 5000
+
+# $ per 1,000,000 tokens (input, output). PLACEHOLDERS — set to your accounts' real rates.
+# Local Ollama is free.
+prices_usd_per_million:
+  anthropic: {input: 3.0, output: 15.0}
+  openai: {input: 2.5, output: 10.0}
+  openrouter: {input: 1.0, output: 1.0}
+  ollama: {input: 0.0, output: 0.0}

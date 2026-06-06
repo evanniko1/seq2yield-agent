@@ -75,7 +75,23 @@ def _coverage_matrix(cov: dict) -> str:
     return "".join(blocks)
 
 
-def build_html(records: list[dict], claims: list[dict]) -> str:
+def _cost_section(cost: dict) -> str:
+    if not cost:
+        return ""
+    rows = []
+    for prov, d in sorted(cost.get("by_provider", {}).items(), key=lambda kv: -kv[1]["tokens"]):
+        rows.append(f"<tr><td>{_esc(prov)}</td><td style='text-align:right'>{d['calls']}</td>"
+                    f"<td style='text-align:right'>{d['tokens']:,}</td>"
+                    f"<td style='text-align:right'>${d['cost_usd']:.4f}</td></tr>")
+    return (f"<h2>Cost &amp; tokens ({cost['n_calls']} model calls)</h2>"
+            f"<table><tr><th>provider</th><th>calls</th><th>tokens</th><th>est. cost</th></tr>"
+            f"{''.join(rows)}"
+            f"<tr><td><b>total</b></td><td style='text-align:right'><b>{cost['n_calls']}</b></td>"
+            f"<td style='text-align:right'><b>{cost['total_tokens']:,}</b></td>"
+            f"<td style='text-align:right'><b>${cost['total_cost_usd']:.4f}</b></td></tr></table>")
+
+
+def build_html(records: list[dict], claims: list[dict], cost: dict | None = None) -> str:
     summ = question_space.summarize(records)
     cov = question_space.coverage(records)
     verdicts = {"accepted": 0, "rejected": 0, "inconclusive": 0}
@@ -138,7 +154,10 @@ def build_html(records: list[dict], claims: list[dict]) -> str:
   <div class="card"><div class="n">{summ['coverage_pct']}%</div><div class="l">question-space settled
      <div class="bar"><i style="width:{summ['coverage_pct']}%"></i></div>
      {summ['settled']}/{summ['total_cells']} cells · {summ['untested']} untested</div></div>
+  {f'<div class="card"><div class="n">${cost["total_cost_usd"]:.2f}</div><div class="l">est. cost · {cost["total_tokens"]:,} tokens · {cost["n_calls"]} calls</div></div>' if cost else ''}
 </div>
+
+{_cost_section(cost)}
 
 <h2>Accepted claims</h2>
 <ul>{''.join(claim_rows)}</ul>
@@ -163,8 +182,11 @@ run-cards/claims/memory, owns no workflow state (PROJECT_SPEC §21). Sparklines 
 
 def build_dashboard(out_path: str | Path | None = None) -> Path:
     from agents import memory
+    from orchestration import budget
     from seq2yield.experiments import claim_registry
     out_path = Path(out_path or ROOT / "reports" / "dashboard" / "index.html")
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(build_html(memory.load(), claim_registry.load()), encoding="utf-8")
+    cost = budget.summarize(budget.load_calls())
+    out_path.write_text(build_html(memory.load(), claim_registry.load(), cost=cost),
+                        encoding="utf-8")
     return out_path

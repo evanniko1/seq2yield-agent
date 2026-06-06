@@ -315,6 +315,19 @@ behavior is unchanged. Tests: per-size verdicts (worse@small, better@large), cro
 identification, single-size parity (83 passing). The council can now answer
 "at what N does the candidate catch up?" with statistical rigor, not just means.
 
+## #26 — Cost / token budget tracking
+**Context.** We logged per-call tokens but never aggregated cost or enforced a budget.
+**Decision.** `orchestration/budget.py` aggregates `reports/model_calls.jsonl` into token +
+estimated-$ totals (by provider/model/role), normalizing token shapes (Ollama input/output
+vs OpenAI prompt/completion). Prices + caps in `configs/experiment_budget.yaml` (Ollama free;
+others placeholder rates). `BudgetTracker` enforces token/cost/call caps; `run_campaign`
+tracks **this campaign's** calls (delta from log length) and STOPS when the budget is
+exhausted (new stop rule). `scripts/show_cost.py` prints the report; the dashboard gained a
+cost card + by-provider table. **Live:** 341 calls / 245,841 tokens / $0.00 (all local
+Ollama) — reviewers dominate call volume (79 each). With API keys, authority-provider usage
+accrues cost via the price table. Tests: token normalization (both shapes), cost math,
+grouping, over/under budget (88 passing).
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

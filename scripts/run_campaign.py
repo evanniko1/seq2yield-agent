@@ -7,6 +7,7 @@ Stopping rules (any triggers):
   - coverage target reached (settled fraction >= --coverage-target)
   - all cells resolved (no untested and no inconclusive)
   - diminishing returns (no new settled cell for --patience cycles)
+  - budget exhausted (campaign tokens/cost exceed caps)
   - safety cap (--max-cycles)
 
 Usage:
@@ -28,6 +29,7 @@ except Exception:
 
 import run_agent_loop as loop  # noqa: E402
 from agents import memory, question_space  # noqa: E402
+from orchestration import budget  # noqa: E402
 
 
 def main() -> int:
@@ -37,16 +39,32 @@ def main() -> int:
     ap.add_argument("--max-cycles", type=int, default=8)
     ap.add_argument("--coverage-target", type=float, default=0.5, help="settled fraction to stop")
     ap.add_argument("--patience", type=int, default=3, help="stop after N cycles with no new settled cell")
+    ap.add_argument("--max-cost-usd", type=float, default=None, help="campaign cost cap ($)")
+    ap.add_argument("--max-tokens", type=int, default=None, help="campaign token cap")
     args = ap.parse_args()
+
+    # budget enforced over THIS campaign's calls (delta from current log length)
+    caps = {}
+    if args.max_cost_usd is not None:
+        caps["max_total_cost_usd"] = args.max_cost_usd
+    if args.max_tokens is not None:
+        caps["max_total_tokens"] = args.max_tokens
+    tracker = budget.BudgetTracker(caps=caps or None)
+    base_calls = len(budget.load_calls())
 
     no_progress = 0
     for c in range(1, args.max_cycles + 1):
         summ = question_space.summarize(memory.load())
         frac = summ["settled"] / max(1, summ["total_cells"])
+        bstat = tracker.status(budget.load_calls()[base_calls:])
         print(f"\n############ CAMPAIGN CYCLE {c}/{args.max_cycles} "
               f"(settled {summ['settled']}/{summ['total_cells']} = {summ['coverage_pct']}%, "
               f"inconclusive {summ['inconclusive']}, untested {summ['untested']}) ############")
+        print(f"[budget] campaign: {bstat['n_calls']} calls, {bstat['total_tokens']:,} tokens, "
+              f"${bstat['total_cost_usd']:.4f}")
 
+        if bstat["over_budget"]:
+            print(f"STOP: budget exhausted — {bstat['breaches']}"); break
         if frac >= args.coverage_target:
             print(f"STOP: coverage target {args.coverage_target:.0%} reached."); break
         if summ["untested"] == 0 and summ["inconclusive"] == 0:
