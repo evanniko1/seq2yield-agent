@@ -1,0 +1,17 @@
+{
+  "ts": "2026-06-06T07:14:01.045225+00:00",
+  "run_id": "2026-06-05-transformer-vs-cnn",
+  "proposal_id": "DEMO_1A",
+  "status": "rejected",
+  "candidate_model": "transformer",
+  "baseline_model": "cnn",
+  "mean_delta_r2": -0.2393701970452365,
+  "bootstrap_ci_95": [
+    -0.27160936709463707,
+    -0.20654392993828455
+  ],
+  "ci_excludes_zero": true,
+  "n_series": 10,
+  "train_size": 500,
+  "claim": null
+}

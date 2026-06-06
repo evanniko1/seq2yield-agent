@@ -24,29 +24,46 @@ _ALLOWED = {
                            "src/seq2yield/training/train.py"],
     "training_procedure": ["configs/model/", "src/seq2yield/training/train.py",
                            "src/seq2yield/models/"],
+    "data_efficiency": ["configs/model/", "configs/experiments/"],
 }
 BASELINE_RUN_ID = "2026-06-04-full56"
 
 
 def tested_pairs(records: list[dict]) -> set[tuple[str, str]]:
-    """(candidate_model, baseline_model) pairs already evaluated in research memory."""
+    """(candidate_model, baseline_model) pairs already evaluated (for display)."""
     return {(r.get("candidate_model"), r.get("baseline_model")) for r in records
             if r.get("candidate_model") and r.get("baseline_model")}
 
 
-def filter_novel(proposals, tested: set[tuple[str, str]]):
-    """Drop self-comparisons and already-tested pairs; de-dup within the batch.
+def tested_keys(records: list[dict]) -> set[tuple[str, str, str]]:
+    """(candidate, comparator, intervention_type) keys already evaluated. A data-efficiency
+    sweep of a pair is a DIFFERENT question than a single-point model comparison, so the
+    intervention_type is part of the novelty key. Legacy records default to model_architecture."""
+    out = set()
+    for r in records:
+        if r.get("candidate_model") and r.get("baseline_model"):
+            out.add((r["candidate_model"], r["baseline_model"],
+                     r.get("intervention_type", "model_architecture")))
+    return out
 
-    Returns (kept, n_dropped). Falls back to the de-duped/self-filtered set if every
-    proposal was already tested (so the council can still proceed)."""
+
+def _key(p):
+    return (p.model_family, p.comparator_model, p.intervention_type)
+
+
+def filter_novel(proposals, tested: set[tuple[str, str, str]]):
+    """Drop self-comparisons and already-tested (pair, intervention) keys; de-dup the batch.
+
+    Returns (kept, n_dropped). Falls back to the de-duped/self-filtered set if every proposal
+    was already tested (so the council can still proceed)."""
     seen, deduped = set(), []
     for p in proposals:
-        pair = (p.model_family, p.comparator_model)
-        if p.model_family == p.comparator_model or pair in seen:
+        k = _key(p)
+        if p.model_family == p.comparator_model or k in seen:
             continue
-        seen.add(pair)
+        seen.add(k)
         deduped.append(p)
-    novel = [p for p in deduped if (p.model_family, p.comparator_model) not in tested]
+    novel = [p for p in deduped if _key(p) not in tested]
     kept = novel if novel else deduped
     return kept, len(proposals) - len(kept)
 
@@ -54,8 +71,11 @@ def filter_novel(proposals, tested: set[tuple[str, str]]):
 def prior_summary(records: list[dict]) -> str:
     lines = []
     for r in records[-12:]:
-        lines.append(f"- {r.get('candidate_model')} vs {r.get('baseline_model')} -> "
-                     f"{r.get('status')} (ΔR²={r.get('mean_delta')})")
+        it = r.get("intervention_type", "model_architecture")
+        sizes = r.get("train_sizes")
+        sz = f" @train={sizes}" if sizes else ""
+        lines.append(f"- [{it}] {r.get('candidate_model')} vs {r.get('baseline_model')}{sz} "
+                     f"-> {r.get('status')} (ΔR²={r.get('mean_delta')})")
     return "\n".join(lines)
 
 
@@ -94,15 +114,15 @@ class Council:
 
     def generate(self, n: int):
         prior = memory.load()
-        tested = tested_pairs(prior)
+        tested = tested_keys(prior)
         sys, user = prompting.generator_prompt(n, prior_summary(prior) if prior else "")
         batch, who = self._ask("proposal_generator", sys, user, ProposalBatch,
-                               temperature=0.6, max_tokens=1500)
+                               temperature=0.6, max_tokens=1800)
         kept, dropped = filter_novel(batch.proposals, tested)
         for i, p in enumerate(kept):
             p.proposal_id = p.proposal_id or f"H{i+1:03d}"
-        self.last_novelty = {"tested_pairs": sorted(tested), "dropped": dropped,
-                             "kept_pairs": [(p.model_family, p.comparator_model) for p in kept]}
+        self.last_novelty = {"tested_keys": sorted(list(k) for k in tested), "dropped": dropped,
+                             "kept": [_key(p) for p in kept]}
         return kept, who
 
     def review(self, proposals):
@@ -153,19 +173,24 @@ class Council:
     def compile_runspec(self, proposal, decision) -> RunSpec:
         dh, sh = _registry_hashes()
         allowed = _ALLOWED.get(proposal.intervention_type, ["src/seq2yield/models/"])
-        run_id = f"{datetime.now(timezone.utc):%Y-%m-%d}-council-{proposal.model_family}-vs-{proposal.comparator_model}"
+        sizes = sorted(set(proposal.train_sizes)) or [500]
+        tag = "sweep" if proposal.intervention_type == "data_efficiency" else "vs"
+        run_id = (f"{datetime.now(timezone.utc):%Y-%m-%d}-council-{proposal.model_family}-"
+                  f"{tag}-{proposal.comparator_model}")
         spec = RunSpec(
             run_id=run_id, proposal_id=proposal.proposal_id,
             maturity_tier=proposal.maturity_tier,
             dataset_manifest_hash=dh, split_hash=sh,
             model_family=proposal.model_family, feature_set=proposal.feature_set,
-            sampling_policy=proposal.sampling_policy,
+            sampling_policy=proposal.sampling_policy, train_sizes=sizes,
             allowed_files=allowed, protected_files=_protected(),
             max_runtime_minutes=decision.max_runtime_minutes,
         )
         spec.acceptance_policy.track = "performance"
         spec.acceptance_policy.baseline_run_id = BASELINE_RUN_ID
         spec.acceptance_policy.baseline_model = proposal.comparator_model
+        # verdict at the largest swept size (where data-hungry models have the best chance)
+        spec.acceptance_policy.comparison_train_size = max(sizes)
         return spec
 
     def run(self, n_proposals: int = 3, out_dir: str | Path | None = None) -> dict:

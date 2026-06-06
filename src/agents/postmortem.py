@@ -12,7 +12,8 @@ from .router import Router
 from .schemas import Postmortem
 
 
-def synthesize(proposal: dict, verdict: dict, *, allow_local_fallback: bool = False) -> tuple[Postmortem, str]:
+def synthesize(proposal: dict, verdict: dict, *, curve: list | None = None,
+               allow_local_fallback: bool = False) -> tuple[Postmortem, str]:
     # NOTE: do NOT include the generic project context here — its registry-wide R² numbers
     # caused local models to conflate them with this run's. Give ONLY this run's facts.
     sys = roles.persona("postmortem_synthesizer")
@@ -26,14 +27,18 @@ def synthesize(proposal: dict, verdict: dict, *, allow_local_fallback: bool = Fa
         "bootstrap_ci_95": cmp.get("paired_bootstrap_ci"),
         "ci_excludes_zero": cmp.get("ci_excludes_zero"),
         "n_series": cmp.get("n_series"),
-        "train_size": cmp.get("comparison_train_size"),
+        "verdict_train_size": cmp.get("comparison_train_size"),
         "verdict": verdict.get("status"),
+        "data_efficiency_curve": curve or [],   # per-size ΔR² (for data_efficiency sweeps)
     }
+    sweep_hint = ("If data_efficiency_curve has multiple sizes, comment on the trend — does "
+                  "the candidate close the gap (ΔR² rising toward 0) as train_size grows, and "
+                  "at what size (if any) does it catch up? " if curve and len(curve) > 1 else "")
     user = ("Write a postmortem for this completed run. Use ONLY the numbers in run_facts "
             "below — do NOT cite any other R² values. status MUST equal run_facts.verdict. "
             "Set claim_allowed to a one-sentence claim ONLY if verdict=='accepted' (else null). "
-            "This was a bounded run (n_series, train_size given); be honest about statistical "
-            "power and confounds.\n\n"
+            "This was a bounded run; be honest about statistical power and confounds. "
+            + sweep_hint + "\n\n"
             f"proposal:\n{json.dumps(proposal, indent=2)}\n\n"
             f"run_facts:\n{json.dumps(facts, indent=2)}")
     client = Router().resolve("postmortem_synthesizer", allow_local_fallback=allow_local_fallback)

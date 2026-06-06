@@ -29,7 +29,14 @@ def generator_prompt(n: int, prior: str = "") -> tuple[str, str]:
             "model_family against a DIFFERENT comparator_model on the same fixed splits. "
             "Vary the model_family/hypothesis across proposals; never compare a model to "
             "itself. Each must declare required_controls and expected_failure_modes. "
-            "maturity_tier must be tier_0 or tier_1. Return JSON: {\"proposals\": [ ... ]}."
+            "maturity_tier must be tier_0 or tier_1.\n"
+            "intervention_type options: 'model_architecture' (single train_size) or "
+            "'data_efficiency' (a SWEEP — set train_sizes to several of [250,500,1000,2000] "
+            "to test at what data size a model catches up to its comparator). train_sizes is "
+            "a list drawn from [250,500,1000,2000].\n"
+            "IMPORTANT: build on the research memory — if a model lost at a small train_size, "
+            "a strong follow-up is a 'data_efficiency' sweep asking whether it catches up with "
+            "more data. Return JSON: {\"proposals\": [ ... ]}."
             + prior_block)
     return sys, user
 

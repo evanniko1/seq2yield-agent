@@ -191,6 +191,21 @@ constraints — a scientifically useful negative result, and a clean demonstrati
 harness rejects significantly-worse candidates. (Transformers are data-hungry; the CNN's
 locality bias wins at small N.)
 
+## #20 — Council can interrogate train-size / data-efficiency (richer proposal space)
+**Context.** The transformer lost at N=500; the natural scientific follow-up ("does it catch
+up with more data?") was a question the council couldn't even express. **Decision.** (1) Seed
+the transformer result into memory/claims so the council knows it. (2) `CouncilProposal` gains
+`train_sizes` (from the registry sizes) and a `data_efficiency` intervention_type (a sweep).
+(3) Novelty keys on `(candidate, comparator, intervention_type)` — a data-efficiency sweep of
+an already-tested pair is a NEW question, not blocked. (4) `compile_runspec` honors the sweep
+(sorted/deduped sizes; verdict at the largest); the loop stops forcing N=500 and computes a
+**per-size data-efficiency curve** (candidate vs baseline ΔR² at each size), fed to the
+postmortem + report + memory. (5) Generator prompt steers: "if a model lost at small N,
+propose a data_efficiency sweep." **Result.** Loop runs under the enriched schema; the council
+autonomously explores (first cycle chose a novel ridge-vs-rf, REJECTED Δ−0.236). Capability
+covered by tests (sweep novelty vs single-point; compile honors sweep). Note: the chair is
+autonomous — it weighs novel model pairs and sweeps and may pick either.
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

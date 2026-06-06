@@ -13,6 +13,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from agents import memory  # noqa: E402
 from agents.council import Council  # noqa: E402
 from agents.council import filter_novel as _filter_novel  # noqa: E402
+from agents.council import tested_keys as _tested_keys  # noqa: E402
 from agents.council import tested_pairs as _tested_pairs  # noqa: E402
 from agents.schemas import ChairDecision, CouncilProposal  # noqa: E402
 from seq2yield.experiments import claim_registry  # noqa: E402
@@ -54,16 +55,20 @@ def test_claim_only_recorded_when_accepted(tmp_path):
     assert len(claim_registry.accepted_claims(tmp_path)) == 1
 
 
-def _prop(cand, comp):
+def _prop(cand, comp, itype="model_architecture", sizes=None):
     return CouncilProposal(proposal_id="p", title="t", maturity_tier="tier_1",
-                           intervention_type="model_architecture", scientific_hypothesis="h",
-                           model_family=cand, comparator_model=comp)
+                           intervention_type=itype, scientific_hypothesis="h",
+                           model_family=cand, comparator_model=comp,
+                           train_sizes=sizes or [500])
 
 
-def test_tested_pairs_from_memory():
+def test_tested_pairs_and_keys_from_memory():
     recs = [{"candidate_model": "cnn", "baseline_model": "rf"},
-            {"candidate_model": "mlp", "baseline_model": "rf"}]
-    assert _tested_pairs(recs) == {("cnn", "rf"), ("mlp", "rf")}
+            {"candidate_model": "transformer", "baseline_model": "cnn",
+             "intervention_type": "model_architecture"}]
+    assert _tested_pairs(recs) == {("cnn", "rf"), ("transformer", "cnn")}
+    # legacy record (no intervention_type) defaults to model_architecture
+    assert ("cnn", "rf", "model_architecture") in _tested_keys(recs)
 
 
 def test_filter_novel_drops_tested_self_and_dupes():
@@ -71,26 +76,25 @@ def test_filter_novel_drops_tested_self_and_dupes():
                  _prop("rf", "rf"),      # self-comparison -> drop
                  _prop("ridge", "rf"),   # novel -> keep
                  _prop("ridge", "rf")]   # dupe within batch -> drop
-    kept, dropped = _filter_novel(proposals, {("cnn", "rf")})
+    kept, dropped = _filter_novel(proposals, {("cnn", "rf", "model_architecture")})
     pairs = [(p.model_family, p.comparator_model) for p in kept]
     assert pairs == [("ridge", "rf")] and dropped == 3
 
 
-def test_filter_novel_falls_back_when_all_tested():
-    proposals = [_prop("cnn", "rf"), _prop("mlp", "rf")]
-    kept, _ = _filter_novel(proposals, {("cnn", "rf"), ("mlp", "rf")})
-    assert len(kept) == 2          # fallback so the council can still proceed
+def test_data_efficiency_sweep_is_novel_vs_singlepoint():
+    # transformer-vs-cnn was tested as a single-point model_architecture comparison;
+    # a data_efficiency sweep of the same pair is a DIFFERENT question -> kept.
+    tested = {("transformer", "cnn", "model_architecture")}
+    sweep = _prop("transformer", "cnn", itype="data_efficiency", sizes=[500, 1000, 2000])
+    kept, dropped = _filter_novel([sweep], tested)
+    assert len(kept) == 1 and dropped == 0
 
 
-def test_bounded_runspec_valid_at_tier1():
-    prop = CouncilProposal(proposal_id="exp001", title="cnn vs rf", maturity_tier="tier_1",
-                           intervention_type="model_architecture",
-                           scientific_hypothesis="cnn models non-local interactions",
-                           model_family="cnn", comparator_model="rf")
-    dec = ChairDecision(status="approve_for_execution", chosen_proposal_id="exp001",
-                        rationale="best")
+def test_compile_runspec_honors_sweep():
+    prop = _prop("transformer", "cnn", itype="data_efficiency", sizes=[2000, 500, 1000])
+    dec = ChairDecision(status="approve_for_execution", chosen_proposal_id="p", rationale="x")
     spec = Council(allow_local_fallback=True).compile_runspec(prop, dec)
-    spec.n_series, spec.iterations, spec.train_sizes = 10, [1, 2, 3], [500]
+    assert spec.train_sizes == [500, 1000, 2000]                  # sorted, deduped
+    assert spec.acceptance_policy.comparison_train_size == 2000   # verdict at largest
     vr = validate_runspec(spec, unlocked_tier="tier_1")
     assert vr.ok, vr.errors
-    assert "configs/model/" in spec.allowed_files

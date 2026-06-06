@@ -26,22 +26,49 @@ except Exception:
 
 from datetime import datetime, timezone  # noqa: E402
 
+import pandas as pd  # noqa: E402
+
 from agents import memory, ml_engineer, postmortem  # noqa: E402
 from agents.council import Council  # noqa: E402
 from agents.patch_reviewer import review as review_patch  # noqa: E402
 from orchestration import execution_harness, patch_manager  # noqa: E402
 from seq2yield.experiments import claim_registry  # noqa: E402
 from seq2yield.experiments.run_spec import RunSpec, validate_runspec  # noqa: E402
+from seq2yield.experiments.runner import per_series_r2  # noqa: E402
 
 
 def _bound(spec: RunSpec) -> RunSpec:
+    # Bound runtime via series/repeats, but HONOR the council's train_sizes (so a
+    # data_efficiency sweep actually sweeps). Verdict at the largest swept size.
     spec.n_series = 10
     spec.series = None
     spec.iterations = [1, 2, 3]
-    spec.train_sizes = [500]
-    spec.acceptance_policy.comparison_train_size = 500
-    spec.max_runtime_minutes = 20
+    spec.train_sizes = sorted(set(spec.train_sizes)) or [500]
+    spec.acceptance_policy.comparison_train_size = max(spec.train_sizes)
+    spec.max_runtime_minutes = 25
     return spec
+
+
+def _data_efficiency_curve(spec, run_dir) -> list:
+    """Per train_size: candidate vs baseline-registry mean R² over the common series."""
+    cand_csv = run_dir / "metrics.csv"
+    base_csv = ROOT / "experiments/runs" / spec.acceptance_policy.baseline_run_id / "metrics.csv"
+    if not cand_csv.exists() or not base_csv.exists():
+        return []
+    cand_df, base_df = pd.read_csv(cand_csv), pd.read_csv(base_csv)
+    base_model = spec.acceptance_policy.baseline_model
+    curve = []
+    for size in sorted(spec.train_sizes):
+        c = per_series_r2(cand_df, size, spec.model_family)
+        b = per_series_r2(base_df, size, base_model)
+        common = c.index.intersection(b.index)
+        if len(common) == 0:
+            continue
+        cm, bm = float(c.loc[common].mean()), float(b.loc[common].mean())
+        curve.append({"train_size": int(size), "candidate_mean": round(cm, 4),
+                      "baseline_mean": round(bm, 4), "delta": round(cm - bm, 4),
+                      "n_series": int(len(common))})
+    return curve
 
 
 def main() -> int:
@@ -105,39 +132,60 @@ def main() -> int:
     cmp = verdict.get("comparison", {})
     print(f"STATE: {status.upper()}  ΔR²={cmp.get('mean_delta')} CI={cmp.get('paired_bootstrap_ci')}")
 
+    # data-efficiency curve: per-size candidate vs baseline mean R² (evidence for sweeps)
+    curve = _data_efficiency_curve(spec, run_dir)
+    if curve:
+        print("  data-efficiency (ΔR² per train_size):",
+              {c["train_size"]: round(c["delta"], 3) for c in curve})
+
     print("STATE: POSTMORTEM_COMPLETE")
-    pm, pm_who = postmortem.synthesize(proposal, verdict, allow_local_fallback=fb)
+    pm, pm_who = postmortem.synthesize(proposal, verdict, curve=curve, allow_local_fallback=fb)
     (run_dir / "postmortem.json").write_text(pm.model_dump_json(indent=2), encoding="utf-8")
     print(f"  postmortem {pm_who}: claim_allowed={pm.claim_allowed}")
 
     memory.append({"run_id": spec.run_id, "proposal_id": proposal["proposal_id"],
                    "candidate_model": spec.model_family,
                    "baseline_model": spec.acceptance_policy.baseline_model,
+                   "intervention_type": proposal.get("intervention_type", "model_architecture"),
+                   "train_sizes": spec.train_sizes,
                    "status": status, "mean_delta": cmp.get("mean_delta"),
-                   "ci": cmp.get("paired_bootstrap_ci"), "claim_allowed": pm.claim_allowed})
+                   "ci": cmp.get("paired_bootstrap_ci"), "claim_allowed": pm.claim_allowed,
+                   "data_efficiency": curve})
     claim_registry.record(run_id=spec.run_id, proposal_id=proposal["proposal_id"],
                           status=status, comparison=cmp, claim_allowed=pm.claim_allowed)
 
-    _report(run_dir, spec, proposal, verdict, pm, eng_who, rev_who)
+    _report(run_dir, spec, proposal, verdict, pm, eng_who, rev_who, curve)
     print(f"\nartifacts: {run_dir}")
     print(f"report: reports/static/{spec.run_id}_loop_report.md")
     print(f"\nExit criterion (proposal->patch->run->evaluate->postmortem with a verdict): MET ({status})")
     return 0
 
 
-def _report(run_dir, spec, proposal, verdict, pm, eng_who, rev_who):
+def _report(run_dir, spec, proposal, verdict, pm, eng_who, rev_who, curve=None):
     cmp = verdict.get("comparison", {})
     out = ROOT / "reports/static" / f"{spec.run_id}_loop_report.md"
     out.parent.mkdir(parents=True, exist_ok=True)
     lines = [
         f"# Agentic loop report — {spec.run_id}", "",
-        f"**Verdict: {verdict['status'].upper()}**  (bounded demo: "
-        f"{spec.n_series} series × {len(spec.iterations)} repeats @ train_size "
-        f"{spec.train_sizes[0]})", "",
+        f"**Verdict: {verdict['status'].upper()}**  (bounded: "
+        f"{spec.n_series} series × {len(spec.iterations)} repeats; "
+        f"intervention={proposal.get('intervention_type')}; train_sizes={spec.train_sizes}; "
+        f"verdict @ {spec.acceptance_policy.comparison_train_size})", "",
         "## Proposal",
         f"- {proposal['proposal_id']}: **{proposal['model_family']} vs "
-        f"{proposal['comparator_model']}** [{proposal['maturity_tier']}]",
+        f"{proposal['comparator_model']}** [{proposal['maturity_tier']}] "
+        f"({proposal.get('intervention_type')})",
         f"- hypothesis: {proposal['scientific_hypothesis']}", "",
+    ]
+    if curve:
+        lines += ["## Data-efficiency curve (candidate vs baseline registry, per train_size)", "",
+                  "| train_size | candidate R² | baseline R² | ΔR² | n_series |",
+                  "| --- | --- | --- | --- | --- |"]
+        for c in curve:
+            lines.append(f"| {c['train_size']} | {c['candidate_mean']} | {c['baseline_mean']} "
+                         f"| {c['delta']} | {c['n_series']} |")
+        lines.append("")
+    lines += [
         "## Comparison (candidate vs baseline registry, paired bootstrap over series)",
         f"- baseline ({cmp.get('baseline_model')}) mean R²: {cmp.get('baseline_mean')}",
         f"- candidate ({cmp.get('candidate_model')}) mean R²: {cmp.get('candidate_mean')}",

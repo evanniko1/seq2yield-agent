@@ -36,20 +36,26 @@ class Proposal(BaseModel):
 
 ModelFamily = Literal["cnn", "rf", "mlp", "ridge", "svr", "transformer"]
 RegistryModel = Literal["cnn", "rf", "mlp"]   # models present in the baseline registry
+TrainSize = Literal[250, 500, 1000, 2000]     # train sizes present in the baseline registry
 
 
 class CouncilProposal(BaseModel):
-    """A RunSpec-compilable proposal (Milestone 5). Constrained to the implemented Tier-0/1
-    intervention space so the chair can compile a runnable, valid RunSpec."""
+    """A RunSpec-compilable proposal (Milestone 5+). Constrained to the implemented Tier-0/1
+    intervention space so the chair can compile a runnable, valid RunSpec.
+
+    intervention_type='data_efficiency' with a multi-element train_sizes expresses a data-size
+    sweep: "at what training-set size does <model_family> catch up to <comparator_model>?"
+    """
     proposal_id: str
     title: str
     maturity_tier: Tier
-    intervention_type: Literal["model_architecture", "training_procedure"]
+    intervention_type: Literal["model_architecture", "training_procedure", "data_efficiency"]
     scientific_hypothesis: str
     model_family: ModelFamily
     comparator_model: RegistryModel        # must exist in the baseline registry to compare
     feature_set: Literal["one_hot"] = "one_hot"
     sampling_policy: Literal["random"] = "random"
+    train_sizes: list[TrainSize] = Field(default_factory=lambda: [500])
     required_controls: list[str] = Field(default_factory=list)
     expected_failure_modes: list[str] = Field(default_factory=list)
 
