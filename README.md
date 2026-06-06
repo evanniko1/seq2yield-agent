@@ -46,8 +46,17 @@ comparators, and predeclared acceptance criteria.
   end-to-end: **ACCEPTED** cnn-vs-rf (ΔR²=0.032, 95% CI [0.008, 0.055], n=10 series); patch
   kept, claim recorded, run trail + postmortem persisted.
 
-**The bounded agentic POC is complete (Tier 0/1).** All eight pieces — audit, reproduction,
-harness, providers, council, patch loop, full loop — run end-to-end with a real verdict.
+- ✅ **Milestone 8** — read-only dashboard (`scripts/build_dashboard.py` → `reports/dashboard/
+  index.html`): static audit view of experiments, accepted claims, and the question-space
+  coverage map. Owns no workflow state.
+
+**The bounded agentic POC is complete (Tier 0/1), plus strategy & extension layers.** Beyond
+the eight milestones: a **research-strategy layer** (PI planner + explicit question-space
+catalogue + coverage map + revisit/stopping campaigns), **richer interventions**
+(feature representations, DoE sampling, **HPO** that drives training, selectable
+global/per-series/pooled scope), and a **Transformer** candidate. The council reads its
+coverage map and explores uncovered cells autonomously; `scripts/run_campaign.py` runs to a
+stopping rule; `scripts/show_coverage.py` prints the frontier.
 
 ## Read these first
 

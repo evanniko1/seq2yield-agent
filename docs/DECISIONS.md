@@ -290,6 +290,17 @@ in `_SAME_MODEL_BASELINE`); generator prompt advertises it. **Verified:** tuned 
 training; whitelist drops bogus keys. 78 tests passing. This closes the "autoresearch doesn't
 change training" gap: a `training_procedure` proposal is a real edit-run-evaluate cycle.
 
+## #24 — Milestone 8: read-only research dashboard
+**Context.** The research trail (runs, claims, coverage map) is now rich and worth seeing.
+**Decision.** `reporting/dashboard_export.py` builds a single self-contained static HTML from
+research memory + claim registry + question-space coverage (no deps, no JS framework);
+`scripts/build_dashboard.py` writes `reports/dashboard/index.html`. It is an AUDIT UI — reads
+artifacts, owns no workflow state (PROJECT_SPEC §21). Shows: verdict/coverage summary cards,
+accepted claims, the experiments table (intervention, candidate-vs-baseline, ΔR², verdict,
+claim), and the full coverage map color-coded by status. `build_html` is a pure function
+(unit-tested with synthetic + empty inputs). 80 tests passing. Also demonstrated HPO live
+through the harness: tuned RF vs default-RF → INCONCLUSIVE (ΔR²=-0.003, CI spans 0).
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

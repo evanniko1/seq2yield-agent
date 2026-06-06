@@ -1,0 +1,27 @@
+{
+  "run_id": "2026-06-06-hpo-rf",
+  "proposal_id": "HPO_RF",
+  "maturity_tier": "tier_1",
+  "model_family": "rf",
+  "feature_set": "one_hot",
+  "sampling_policy": "random",
+  "hyperparameters": {"n_estimators": 400, "max_depth": 24, "min_samples_leaf": 2},
+  "train_sizes": [500],
+  "iterations": [1, 2, 3],
+  "n_series": 10,
+  "seed": 1,
+  "primary_metric": "r2",
+  "allowed_files": ["configs/model/", "src/seq2yield/models/"],
+  "protected_files": [],
+  "max_runtime_minutes": 20,
+  "acceptance_policy": {
+    "track": "performance",
+    "baseline_run_id": "2026-06-04-full56",
+    "baseline_model": "rf",
+    "comparison_train_size": 500,
+    "min_delta_r2": 0.02,
+    "requires_repeated_seed": true,
+    "requires_no_split_change": true,
+    "bootstrap_ci_must_exclude_zero": true
+  }
+}

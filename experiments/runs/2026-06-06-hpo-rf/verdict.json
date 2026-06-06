@@ -1,0 +1,37 @@
+{
+  "run_id": "2026-06-06-hpo-rf",
+  "status": "inconclusive",
+  "stage": "complete",
+  "comparison": {
+    "status": "inconclusive",
+    "baseline_mean": 0.5381174208461957,
+    "candidate_mean": 0.5355569168170382,
+    "mean_delta": -0.0025605040291574567,
+    "paired_bootstrap_ci": [
+      -0.00804171727095542,
+      0.0026256121894696356
+    ],
+    "ci_excludes_zero": false,
+    "n_series": 10,
+    "reasons": [
+      "mean \u0394R\u00b2=-0.0026 < min_delta_r2=0.02",
+      "bootstrap CI [-0.00804171727095542, 0.0026256121894696356] includes 0"
+    ],
+    "comparison_train_size": 500,
+    "baseline_model": "rf",
+    "candidate_model": "rf"
+  },
+  "environment": {
+    "python": "3.12.8",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "packages": {
+      "numpy": "1.26.4",
+      "scikit-learn": "1.6.1",
+      "torch": "2.5.1+cu121"
+    },
+    "cuda": true
+  },
+  "warnings": [
+    "only 3 repeats (<5); primary R\u00b2 less stable than the paper's 5-repeat protocol"
+  ]
+}
