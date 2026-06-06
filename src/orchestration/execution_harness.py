@@ -119,6 +119,8 @@ def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
     cmp["comparison_train_size"] = size
     cmp["baseline_model"] = pol.baseline_model
     cmp["candidate_model"] = spec.model_family
+    # per-series heterogeneity: where the winner differs across series (Q6)
+    cmp["heterogeneity"] = compare_mod.heterogeneity_analysis(base_ps, cand_ps)
 
     # per-size statistical verdicts + crossover for multi-size sweeps (rigorous answer to
     # "at what N does the candidate catch up?")

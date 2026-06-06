@@ -153,6 +153,10 @@ def cycle(fb: bool, n_proposals: int = 4) -> dict:
     if cmp.get("per_size"):
         print("  per-size verdicts:", {p["train_size"]: f"{p['mean_delta']:+.3f}/{p['status']}"
                                        for p in cmp["per_size"]})
+    het = cmp.get("heterogeneity") or {}
+    if het:
+        print(f"  heterogeneity: candidate wins {het['candidate_wins']}/{het['n_series']} series "
+              f"(win_rate {het['win_rate']}), worst {het['worst_series']}, best {het['best_series']}")
     if crossover:
         print(f"  crossover: superior_at={crossover['superior_at']} "
               f"parity_at={crossover['parity_at']} trend={crossover['trend']}")
@@ -162,7 +166,7 @@ def cycle(fb: bool, n_proposals: int = 4) -> dict:
 
     print("STATE: POSTMORTEM_COMPLETE")
     pm, pm_who = postmortem.synthesize(proposal, verdict, curve=curve, crossover=crossover,
-                                       allow_local_fallback=fb)
+                                       heterogeneity=het or None, allow_local_fallback=fb)
     (run_dir / "postmortem.json").write_text(pm.model_dump_json(indent=2), encoding="utf-8")
     print(f"  postmortem {pm_who}: claim_allowed={pm.claim_allowed}")
 
@@ -175,7 +179,8 @@ def cycle(fb: bool, n_proposals: int = 4) -> dict:
                    "n_series": spec.n_series, "n_repeats": len(spec.iterations),
                    "status": status, "mean_delta": cmp.get("mean_delta"),
                    "ci": cmp.get("paired_bootstrap_ci"), "claim_allowed": pm.claim_allowed,
-                   "data_efficiency": curve, "crossover": crossover})
+                   "data_efficiency": curve, "crossover": crossover,
+                   "heterogeneity": het or None})
     claim_registry.record(run_id=spec.run_id, proposal_id=proposal["proposal_id"],
                           status=status, comparison=cmp, claim_allowed=pm.claim_allowed)
 
@@ -240,6 +245,17 @@ def _report(run_dir, spec, proposal, verdict, pm, eng_who, rev_who, curve=None):
         f"- ΔR² = {cmp.get('mean_delta')}  ·  95% CI {cmp.get('paired_bootstrap_ci')}  ·  "
         f"excludes 0: {cmp.get('ci_excludes_zero')}  ·  n_series={cmp.get('n_series')}",
         f"- acceptance reasons: {cmp.get('reasons')}", "",
+    ]
+    het = cmp.get("heterogeneity") or {}
+    if het:
+        lines += ["## Per-series heterogeneity (where the winner differs)",
+                  f"- candidate wins **{het['candidate_wins']}/{het['n_series']}** series "
+                  f"(win_rate {het['win_rate']}, ties {het['ties']})",
+                  f"- ΔR² across series: min {het['delta_min']} · median {het['delta_median']} "
+                  f"· max {het['delta_max']}",
+                  f"- worst series {het['worst_series']['series']} (ΔR²={het['worst_series']['delta']}), "
+                  f"best series {het['best_series']['series']} (ΔR²={het['best_series']['delta']})", ""]
+    lines += [
         "## Postmortem",
         f"- {pm.summary}",
         f"- worked: {pm.what_worked}",

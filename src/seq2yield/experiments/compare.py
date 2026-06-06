@@ -74,6 +74,31 @@ def compare_per_size(base_df: pd.DataFrame, cand_df: pd.DataFrame, sizes,
     return out
 
 
+def heterogeneity_analysis(baseline_per_series: pd.Series, candidate_per_series: pd.Series,
+                           *, tie_band: float = 0.005) -> dict:
+    """Where does the winner differ ACROSS series? Reports the per-series ΔR² distribution —
+    win/loss/tie counts, win rate, and the best/worst series — so 'best on average' vs 'best
+    everywhere' is visible instead of collapsed into the mean (answers Q6 heterogeneity)."""
+    common = baseline_per_series.index.intersection(candidate_per_series.index)
+    if len(common) == 0:
+        return {}
+    delta = (candidate_per_series.loc[common] - baseline_per_series.loc[common]).sort_values()
+    wins = int((delta > tie_band).sum())
+    losses = int((delta < -tie_band).sum())
+    ties = int(len(delta) - wins - losses)
+    return {
+        "n_series": int(len(delta)),
+        "candidate_wins": wins, "candidate_losses": losses, "ties": ties,
+        "win_rate": round(wins / len(delta), 3),
+        "tie_band": tie_band,
+        "delta_min": round(float(delta.min()), 4),
+        "delta_median": round(float(delta.median()), 4),
+        "delta_max": round(float(delta.max()), 4),
+        "best_series": {"series": int(delta.index[-1]), "delta": round(float(delta.iloc[-1]), 4)},
+        "worst_series": {"series": int(delta.index[0]), "delta": round(float(delta.iloc[0]), 4)},
+    }
+
+
 def crossover_analysis(per_size: list[dict]) -> dict:
     """From per-size verdicts, report where the candidate reaches superiority/parity and the
     overall trend — a statistically-grounded answer to 'at what N does it catch up?'."""
