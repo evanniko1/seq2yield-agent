@@ -1,0 +1,17 @@
+{
+  "ts": "2026-06-06T10:03:49.164259+00:00",
+  "run_id": "2026-06-06-council-mlp-sweep-rf-093045",
+  "proposal_id": "005",
+  "status": "rejected",
+  "candidate_model": "mlp",
+  "baseline_model": "rf",
+  "mean_delta_r2": -0.08437382199034472,
+  "bootstrap_ci_95": [
+    -0.11044506155556237,
+    -0.06106652289869428
+  ],
+  "ci_excludes_zero": true,
+  "n_series": 10,
+  "train_size": 2000,
+  "claim": null
+}

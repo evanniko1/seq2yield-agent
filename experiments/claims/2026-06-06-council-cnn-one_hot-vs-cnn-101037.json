@@ -1,0 +1,17 @@
+{
+  "ts": "2026-06-06T10:27:20.793266+00:00",
+  "run_id": "2026-06-06-council-cnn-one_hot-vs-cnn-101037",
+  "proposal_id": "exp04",
+  "status": "inconclusive",
+  "candidate_model": "cnn",
+  "baseline_model": "cnn",
+  "mean_delta_r2": -0.005219739639898346,
+  "bootstrap_ci_95": [
+    -0.012540931946680019,
+    0.0014772098317007779
+  ],
+  "ci_excludes_zero": false,
+  "n_series": 10,
+  "train_size": 2000,
+  "claim": null
+}

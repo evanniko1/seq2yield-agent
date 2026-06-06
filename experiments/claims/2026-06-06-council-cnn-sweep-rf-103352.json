@@ -1,0 +1,17 @@
+{
+  "ts": "2026-06-06T10:48:57.968563+00:00",
+  "run_id": "2026-06-06-council-cnn-sweep-rf-103352",
+  "proposal_id": "004",
+  "status": "accepted",
+  "candidate_model": "cnn",
+  "baseline_model": "rf",
+  "mean_delta_r2": 0.027532141269943834,
+  "bootstrap_ci_95": [
+    0.01632797086350322,
+    0.040284809657106485
+  ],
+  "ci_excludes_zero": true,
+  "n_series": 10,
+  "train_size": 2000,
+  "claim": "The CNN model demonstrates comparable performance to the Random Forest model as the amount of training data increases, closing the gap in performance by a statistically significant margin at the largest train size of 2000 observations."
+}
