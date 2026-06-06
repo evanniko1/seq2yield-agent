@@ -239,6 +239,18 @@ now knows its frontier. Tests cover catalogue validity, cell-id canonicalization
 transitions, off-catalogue skip (67 passing). Next: revisit + stopping (step 2), PI planner
 (step 3), selectable scope (step 4).
 
+## #23 — Strategy step 2: revisit + stopping policy (autonomous campaigns)
+**Context.** A question was "done" after one shot; inconclusive results were abandoned; and a
+human chose how many cycles to run. **Decision.** (1) **Revisit**: `run_agent_loop.cycle()`
+checks the chosen cell's coverage status; if it is `inconclusive`, it re-runs at higher
+statistical power (n_series 10→20, repeats 3→5) and tags the run `revisit`. (2) **Stopping**:
+new `scripts/run_campaign.py` runs cycles until a rule fires — coverage target reached, all
+cells resolved, diminishing returns (no new settled cell for `--patience` cycles), or a
+max-cycles safety cap — so the council, not a human, decides when a campaign is done. The loop
+body was refactored into a reusable `cycle()` returning a summary; memory records now carry
+`revisit`/`n_series`/`n_repeats`. **Validated**: imports + power levels + tests (low=10/3,
+high=20/5). Next: PI planner (step 3), selectable scope (step 4).
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

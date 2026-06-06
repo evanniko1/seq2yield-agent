@@ -28,7 +28,7 @@ from datetime import datetime, timezone  # noqa: E402
 
 import pandas as pd  # noqa: E402
 
-from agents import memory, ml_engineer, postmortem  # noqa: E402
+from agents import memory, ml_engineer, postmortem, question_space  # noqa: E402
 from agents.council import Council  # noqa: E402
 from agents.patch_reviewer import review as review_patch  # noqa: E402
 from orchestration import execution_harness, patch_manager  # noqa: E402
@@ -37,15 +37,16 @@ from seq2yield.experiments.run_spec import RunSpec, validate_runspec  # noqa: E4
 from seq2yield.experiments.runner import per_series_r2  # noqa: E402
 
 
-def _bound(spec: RunSpec) -> RunSpec:
+def _bound(spec: RunSpec, high_power: bool = False) -> RunSpec:
     # Bound runtime via series/repeats, but HONOR the council's train_sizes (so a
     # data_efficiency sweep actually sweeps). Verdict at the largest swept size.
-    spec.n_series = 10
+    # high_power: a REVISIT of an inconclusive cell uses more series/repeats for power.
+    spec.n_series = 20 if high_power else 10
     spec.series = None
-    spec.iterations = [1, 2, 3]
+    spec.iterations = [1, 2, 3, 4, 5] if high_power else [1, 2, 3]
     spec.train_sizes = sorted(set(spec.train_sizes)) or [500]
     spec.acceptance_policy.comparison_train_size = max(spec.train_sizes)
-    spec.max_runtime_minutes = 25
+    spec.max_runtime_minutes = 35 if high_power else 25
     return spec
 
 
@@ -71,29 +72,35 @@ def _data_efficiency_curve(spec, run_dir) -> list:
     return curve
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--allow-local-fallback", action="store_true")
-    ap.add_argument("--n", type=int, default=3)
-    args = ap.parse_args()
-    fb = args.allow_local_fallback
-
+def cycle(fb: bool, n_proposals: int = 4) -> dict:
+    """One full agentic cycle. Returns a summary dict (status / cell_id / revisit / run_id)."""
     print("STATE: DRAFT_PROPOSALS -> COUNCIL_REVIEWED -> CHAIR_APPROVED")
     council = Council(allow_local_fallback=fb)
-    res = council.run(n_proposals=args.n)
+    res = council.run(n_proposals=n_proposals)
     dec = res["chair_decision"]
     print(f"  chair: {dec['status']} (chose {dec['chosen_proposal_id']})")
     if not res["runspec"] or not (res["runspec_validation"] or {}).get("ok"):
         print("  loop ends: council produced no valid RunSpec.")
-        return 0
+        return {"approved": False, "status": None}
     proposal = next(p for p in res["proposals"] if p["proposal_id"] == dec["chosen_proposal_id"])
 
-    spec = _bound(RunSpec(**res["runspec"]))
-    spec.run_id = f"{spec.run_id}-{datetime.now(timezone.utc):%H%M%S}"   # unique per cycle
+    # REVISIT: if this cell is already inconclusive in memory, run at higher power
+    cid = question_space.cell_id_for(
+        proposal.get("intervention_type", "model_architecture"), proposal["model_family"],
+        proposal["comparator_model"], proposal.get("feature_set", "one_hot"),
+        proposal.get("sampling_policy", "random"))
+    cov = question_space.coverage(memory.load())
+    revisit = cov.get(cid, {}).get("status") == "inconclusive"
+    if revisit:
+        print(f"  REVISIT: cell {cid} is inconclusive -> escalating statistical power")
+
+    spec = _bound(RunSpec(**res["runspec"]), high_power=revisit)
+    spec.run_id = f"{spec.run_id}{'-revisit' if revisit else ''}-{datetime.now(timezone.utc):%H%M%S}"
     vr = validate_runspec(spec, unlocked_tier="tier_1")
     print(f"STATE: RUNSPEC_VALIDATED ({'ok' if vr.ok else vr.errors})  -> {spec.run_id}")
     if not vr.ok:
-        print("  loop ends: bounded RunSpec invalid."); return 0
+        print("  loop ends: bounded RunSpec invalid.")
+        return {"approved": False, "status": None}
     run_dir = ROOT / "experiments/runs" / spec.run_id
     run_dir.mkdir(parents=True, exist_ok=True)
     (run_dir / "proposal.json").write_text(json.dumps(proposal, indent=2), encoding="utf-8")
@@ -111,7 +118,8 @@ def main() -> int:
     (run_dir / "patch_review.json").write_text(rv.model_dump_json(indent=2), encoding="utf-8")
     print(f"  reviewer {rev_who}: {'APPROVED' if rv.approved else 'REJECTED'}")
     if not rv.approved:
-        print("  loop ends: patch rejected by reviewer."); return 0
+        print("  loop ends: patch rejected by reviewer.")
+        return {"approved": False, "status": None}
 
     undo = patch_manager.apply(plan)
     print("STATE: EXECUTED -> EVALUATED (harness: guard -> tests -> train -> compare)")
@@ -120,7 +128,8 @@ def main() -> int:
                                         run_tests=True)
     except Exception as e:
         patch_manager.revert(undo)
-        print(f"  harness error; patch reverted: {e}"); return 1
+        print(f"  harness error; patch reverted: {e}")
+        return {"approved": True, "status": "error", "cell_id": cid, "revisit": revisit}
 
     status = verdict["status"]
     if status == "accepted":
@@ -148,7 +157,8 @@ def main() -> int:
                    "baseline_model": spec.acceptance_policy.baseline_model,
                    "intervention_type": proposal.get("intervention_type", "model_architecture"),
                    "feature_set": spec.feature_set, "sampling_policy": spec.sampling_policy,
-                   "train_sizes": spec.train_sizes,
+                   "train_sizes": spec.train_sizes, "revisit": revisit,
+                   "n_series": spec.n_series, "n_repeats": len(spec.iterations),
                    "status": status, "mean_delta": cmp.get("mean_delta"),
                    "ci": cmp.get("paired_bootstrap_ci"), "claim_allowed": pm.claim_allowed,
                    "data_efficiency": curve})
@@ -156,9 +166,18 @@ def main() -> int:
                           status=status, comparison=cmp, claim_allowed=pm.claim_allowed)
 
     _report(run_dir, spec, proposal, verdict, pm, eng_who, rev_who, curve)
-    print(f"\nartifacts: {run_dir}")
-    print(f"report: reports/static/{spec.run_id}_loop_report.md")
-    print(f"\nExit criterion (proposal->patch->run->evaluate->postmortem with a verdict): MET ({status})")
+    print(f"\nartifacts: {run_dir}  ·  report: reports/static/{spec.run_id}_loop_report.md")
+    print(f"Exit criterion (proposal->patch->run->evaluate->postmortem with a verdict): MET ({status})")
+    return {"approved": True, "status": status, "cell_id": cid, "revisit": revisit,
+            "run_id": spec.run_id}
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--allow-local-fallback", action="store_true")
+    ap.add_argument("--n", type=int, default=4)
+    args = ap.parse_args()
+    cycle(args.allow_local_fallback, n_proposals=args.n)
     return 0
 
 
