@@ -54,7 +54,7 @@ def test_compile_feature_scaling_axis():
     spec = Council(allow_local_fallback=True).compile_runspec(
         p, ChairDecision(status="approve_for_execution", chosen_proposal_id="p", rationale="x"))
     assert spec.intervention_type == "feature_scaling"
-    assert spec.feature_scaling == "minmax"            # candidate scaled
+    assert spec.feature_scaling == "auto"              # candidate uses a data-tailored scaler
     assert spec.acceptance_policy.baseline_model == "mlp"
 
 
@@ -64,7 +64,7 @@ def test_compile_feature_representation_defaults_minmax_for_mlp():
                         model_family="mlp", comparator_model="mlp", feature_set="kmer")
     spec = Council(allow_local_fallback=True).compile_runspec(
         p, ChairDecision(status="approve_for_execution", chosen_proposal_id="p", rationale="x"))
-    assert spec.feature_scaling == "minmax"            # fair comparison on scale-sensitive MLP
+    assert spec.feature_scaling == "auto"              # data-tailored, fair comparison on MLP
 
 
 def test_baseline_spec_resets_only_varied_knob():
@@ -80,3 +80,30 @@ def test_baseline_spec_resets_only_varied_knob():
 def test_feature_scaling_in_catalogue():
     ids = {c.cell_id for c in qs.enumerate_cells()}
     assert "feature_scaling|mlp|mlp|one_hot|random|global" in ids
+
+
+def test_recommend_scaler_is_data_tailored_and_sound():
+    from seq2yield.features import scaling as sc
+    rng = np.random.default_rng(0)
+    # binary/one-hot -> none (no-op)
+    assert sc.recommend_scaler(rng.integers(0, 2, (50, 8)).astype(float))[0] == "none"
+    # heavy outliers (across all features) -> robust
+    X = rng.normal(0, 1, (200, 4)); X[:30, :] = 1000.0
+    assert sc.recommend_scaler(X)[0] == "robust"
+    # signed, ~symmetric -> standard
+    assert sc.recommend_scaler(rng.normal(0, 1, (300, 5)))[0] in ("standard", "robust")
+    # bounded non-negative -> minmax
+    assert sc.recommend_scaler(rng.uniform(0, 1, (300, 5)))[0] == "minmax"
+    # every recommendation is a valid, fit-able scaler (applicability guarantee)
+    for name in sc.SCALERS:
+        s = sc.make_scaler(name)
+        if s is not None:
+            s.fit(rng.normal(0, 1, (60, 4)))
+
+
+def test_auto_scaling_resolves_and_is_recorded():
+    rng = np.random.default_rng(0)
+    seqs = ["".join(rng.choice(list("ACGT"), 96)) for _ in range(80)]
+    f = pd.DataFrame({SEQ_COL: seqs, TARGET_COL: rng.uniform(1, 100, 80)})
+    r = train_evaluate("mlp", f, f, feature_set="kmer", feature_scaling="auto", seed=0)
+    assert r["feature_scaling"] in ("minmax", "standard", "robust", "quantile")  # not 'auto'

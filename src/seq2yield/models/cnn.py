@@ -10,6 +10,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from ._torch_train import train_loop
+
 
 class _Net(nn.Module):
     def __init__(self, length: int = 96, channels: int = 4, dropout: float = 0.3):
@@ -30,6 +32,10 @@ class _Net(nn.Module):
 
     def forward(self, x):
         return self.head(self.conv(x)).squeeze(-1)
+
+
+def cnn_param_count(length: int = 96, channels: int = 4) -> int:
+    return sum(p.numel() for p in _Net(length, channels).parameters())
 
 
 class CNNRegressor:
@@ -57,21 +63,10 @@ class CNNRegressor:
         Xt = torch.tensor(np.asarray(X, dtype=np.float32), device=self.device)
         yt = torch.tensor(yz, device=self.device)
         net = _Net(self.length, X.shape[1], self.dropout).to(self.device)
-        opt = torch.optim.Adam(net.parameters(), lr=self.lr)
-        loss_fn = nn.MSELoss()
-
-        n = Xt.shape[0]
-        net.train()
-        g = torch.Generator(device="cpu").manual_seed(self.seed)
-        for _ in range(self.epochs):
-            perm = torch.randperm(n, generator=g).to(self.device)
-            for i in range(0, n, self.batch_size):
-                idx = perm[i:i + self.batch_size]
-                opt.zero_grad()
-                loss = loss_fn(net(Xt[idx]), yt[idx])
-                loss.backward()
-                opt.step()
+        net = train_loop(net, Xt, yt, epochs=self.epochs, batch_size=self.batch_size,
+                         lr=self.lr, seed=self.seed, device=self.device)
         self._net = net
+        self.param_count = sum(p.numel() for p in net.parameters())
         return self
 
     @torch.no_grad()

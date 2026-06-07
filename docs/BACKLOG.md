@@ -26,7 +26,7 @@ Living list. Every caveat/finding from [CRITIQUE.md](CRITIQUE.md) is tracked her
 | ID | Item | Why | Effort | Protected? |
 |---|---|---|---|---|
 | ~~C4~~ | ✅ **DONE** — MinMax (train-fit, paper-aligned) flat scaling + `feature_scaling` axis + isolated in-run baselines (mlp+kmer 0.27→0.44) | unscaled features under-credited scale-sensitive models | M | DECISIONS #30 |
-| **C5** | Log parameter counts; add CNN/Transformer val-split + early stopping | arch/data-efficiency comparisons not capacity- or training-controlled | M | no |
+| ~~C5~~ | ✅ **DONE** — param counts (torch) + val-split/early-stopping; harness logs param_ratio/fairness. Plus **vetted multi-scaler registry + data-tailored `auto`** (DECISIONS #31/#32) | arch comparisons not capacity/training-controlled; scaling too narrow | M | done |
 | **C6** | Force deterministic CNN (cuDNN deterministic algorithms) | manual_seed set but run-to-run variance possible | S | no |
 
 ## Remaining — agentic AI

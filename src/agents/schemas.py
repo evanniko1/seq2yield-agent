@@ -57,7 +57,8 @@ class CouncilProposal(BaseModel):
     feature_set: Literal["one_hot", "kmer", "mechanistic", "mixed"] = "one_hot"
     sampling_policy: Literal["random", "maximin_kmer", "expression_stratified",
                              "series_balanced"] = "random"
-    feature_scaling: Literal["none", "minmax"] = "none"
+    feature_scaling: Literal["none", "auto", "minmax", "standard", "robust",
+                             "maxabs", "quantile", "power"] = "none"
     train_sizes: list[TrainSize] = Field(default_factory=lambda: [500])
     # optimization scope: global = one model trained per mutational series, judged by mean R²
     # across series (per-series heterogeneity is reported for EVERY run regardless); pooled =

@@ -80,10 +80,14 @@ def _run_pooled(spec: RunSpec, splits: dict, series_ids: list[int]) -> list[dict
             set_seed(spec.seed)
             Xtr = features_for(spec.model_family, train_frame, spec.feature_set)
             scaler = None
-            if spec.feature_scaling == "minmax" and model_registry.feature_kind(spec.model_family) == "flat":
-                from sklearn.preprocessing import MinMaxScaler
-                scaler = MinMaxScaler().fit(Xtr)
-                Xtr = scaler.transform(Xtr)
+            if spec.feature_scaling not in (None, "none") and model_registry.feature_kind(spec.model_family) == "flat":
+                from ..features import scaling as scaling_mod
+                name = (scaling_mod.recommend_scaler(Xtr)[0]
+                        if spec.feature_scaling == "auto" else spec.feature_scaling)
+                scaler = scaling_mod.make_scaler(name)
+                if scaler is not None:
+                    scaler.fit(Xtr)
+                    Xtr = scaler.transform(Xtr)
             model = model_registry.make(spec.model_family, seed=spec.seed,
                                         hyperparameters=spec.hyperparameters)
             model.fit(Xtr, train_frame[TARGET_COL].to_numpy())

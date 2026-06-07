@@ -153,6 +153,14 @@ def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
     cmp["baseline_model"] = pol.baseline_model
     cmp["candidate_model"] = spec.model_family
     cmp["baseline_source"] = baseline_source
+    # capacity transparency: parameter counts for torch models (None for sklearn). Flags
+    # un-controlled-capacity architecture comparisons (CRITIQUE C5).
+    from seq2yield.models import registry as _reg
+    cp, bp = _reg.param_count(spec.model_family), _reg.param_count(pol.baseline_model)
+    cmp["candidate_params"], cmp["baseline_params"] = cp, bp
+    if cp and bp:
+        cmp["param_ratio"] = round(cp / bp, 2)
+        cmp["param_fairness"] = "ok" if 0.5 <= cp / bp <= 2.0 else "capacity-imbalanced"
     # per-series heterogeneity: where the winner differs across series (Q6)
     cmp["heterogeneity"] = compare_mod.heterogeneity_analysis(base_ps, cand_ps)
 

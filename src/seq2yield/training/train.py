@@ -34,12 +34,17 @@ def train_evaluate(model_name, train_frame, test_frame, *, feature_set: str = "o
     """Fit `model_name` with `feature_set` (+ optional scaling/hyperparameters) and evaluate."""
     Xtr = features_for(model_name, train_frame, feature_set, length)
     Xte = features_for(model_name, test_frame, feature_set, length)
-    # MinMax scaling FIT ON TRAIN ONLY (paper's non-deep pipeline; avoids test leakage). Flat
-    # features only — one-hot images for conv models are left as-is.
-    if feature_scaling == "minmax" and model_registry.feature_kind(model_name) == "flat":
-        from sklearn.preprocessing import MinMaxScaler
-        scaler = MinMaxScaler().fit(Xtr)
-        Xtr, Xte = scaler.transform(Xtr), scaler.transform(Xte)
+    # Feature scaling FIT ON TRAIN ONLY (paper's non-deep pipeline; avoids test leakage). Flat
+    # features only — conv one-hot images are left as-is. `auto` = data-tailored recommendation.
+    resolved_scaling = feature_scaling
+    if feature_scaling not in (None, "none") and model_registry.feature_kind(model_name) == "flat":
+        from ..features import scaling as scaling_mod
+        if feature_scaling == "auto":
+            resolved_scaling, _reason = scaling_mod.recommend_scaler(Xtr)
+        scaler = scaling_mod.make_scaler(resolved_scaling)
+        if scaler is not None:
+            scaler.fit(Xtr)
+            Xtr, Xte = scaler.transform(Xtr), scaler.transform(Xte)
     y_train = np.asarray(train_frame[target_col].to_numpy(), dtype=float)
     y_test = np.asarray(test_frame[target_col].to_numpy(), dtype=float)
 
@@ -54,5 +59,5 @@ def train_evaluate(model_name, train_frame, test_frame, *, feature_set: str = "o
     result["n_train"] = int(len(y_train))
     result["n_test"] = int(len(y_test))
     result["feature_set"] = feature_set
-    result["feature_scaling"] = feature_scaling
+    result["feature_scaling"] = resolved_scaling   # the actually-applied scaler (auto resolves)
     return result

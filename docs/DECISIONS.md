@@ -379,6 +379,28 @@ different-model comparisons) — every axis is now an isolated, controlled compa
 **Verified:** mlp+kmer 0.273→0.442 with MinMax (one_hot 0.576→0.576 no-op; RF ~invariant).
 106 tests passing.
 
+## #31 — C5: parameter counts + torch val-split/early-stopping
+**Context.** Architecture/data-efficiency comparisons weren't capacity- or training-controlled
+(CNN/Transformer trained fixed epochs, no validation). **Decision.** Shared
+`models/_torch_train.train_loop` adds an internal val split + early stopping + best-state
+restore (tiny-n falls back to capped full-data epochs). CNN/Transformer expose `param_count`;
+`registry.param_count(name)` returns it for torch models (None for sklearn). The harness logs
+`candidate_params`/`baseline_params` + `param_ratio`/`param_fairness` flag when both are torch
+(e.g. cnn-vs-transformer), surfacing capacity (im)balance. Tests: param counts, length scaling,
+early-stop tiny-n (112 passing).
+
+## #32 — C4 extra: vetted multi-scaler registry + data-tailored `auto`
+**Context.** "MinMax only" is too narrow; blind scaler enumeration would be unsound (e.g. log on
+negative MFE descriptors). **Decision.** `features/scaling.py` — a vetted, train-fit, leakage-
+safe scaler registry (none/minmax/standard/robust/maxabs/quantile/power[Yeo-Johnson], all valid
+for any real matrix) + `recommend_scaler` that inspects the TRAIN distribution (binary?,
+outlier fraction, skew, sign) and picks the appropriate transform. `feature_scaling="auto"`
+resolves at train time to the recommended scaler (recorded). The `feature_scaling` axis and
+non-tree feature studies now use `auto` (data-tailored) rather than fixed MinMax. So the setup
+*can* assess other scalers correctly: comparisons stay isolated (in-run baseline) + bootstrap/
+FDR-judged, recommendations are applicability-guarded and sound. Tests: registry fit-ability,
+recommender on binary/outlier/signed/bounded data, auto-resolution recorded.
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

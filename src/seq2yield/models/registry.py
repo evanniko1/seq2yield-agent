@@ -7,8 +7,8 @@ feature_kind tells the trainer which feature representation to build:
 from __future__ import annotations
 
 from . import classical, mlp
-from .cnn import CNNRegressor
-from .transformer import TransformerRegressor
+from .cnn import CNNRegressor, cnn_param_count
+from .transformer import TransformerRegressor, transformer_param_count
 
 _MODELS = {
     "ridge": (classical.ridge, "flat"),
@@ -51,6 +51,16 @@ def make(name: str, *, seed: int = 0, hyperparameters: dict | None = None, **kw)
         raise KeyError(f"unknown model '{name}'. available: {list(_MODELS)}")
     factory, _ = _MODELS[name]
     return factory(seed=seed, **clean_hyperparameters(name, hyperparameters), **kw)
+
+
+_PARAM_COUNT = {"cnn": cnn_param_count, "transformer": transformer_param_count}
+
+
+def param_count(name: str, length: int = 96) -> int | None:
+    """Trainable parameter count for torch models; None for sklearn models (no clean count).
+    Used to flag capacity (un)fairness in architecture comparisons (CRITIQUE C5)."""
+    fn = _PARAM_COUNT.get(name)
+    return fn(length) if fn else None
 
 
 def feature_kind(name: str) -> str:

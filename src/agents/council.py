@@ -236,11 +236,12 @@ class Council:
         scope_tag = "" if proposal.scope == "global" else f"-{proposal.scope}"
         run_id = (f"{datetime.now(timezone.utc):%Y-%m-%d}-council-{proposal.model_family}-"
                   f"{tag}-{baseline_model}{scope_tag}")
-        # feature_scaling: candidate uses MinMax (paper's non-deep pipeline). Also default flat
-        # feature studies on scale-sensitive models to MinMax so the comparison is fair (C4).
-        scaling = "minmax" if itype == "feature_scaling" else proposal.feature_scaling
+        # feature_scaling axis tests a DATA-TAILORED scaler (auto picks the sound transform for
+        # the feature distribution) vs unscaled. Flat feature studies on scale-sensitive models
+        # also default to auto so the representation comparison is fair (C4/C5 extra).
+        scaling = "auto" if itype == "feature_scaling" else proposal.feature_scaling
         if itype == "feature_representation" and proposal.model_family in ("mlp", "ridge", "svr"):
-            scaling = "minmax"
+            scaling = "auto"
         spec = RunSpec(
             run_id=run_id, proposal_id=proposal.proposal_id,
             intervention_type=itype, maturity_tier=proposal.maturity_tier,
