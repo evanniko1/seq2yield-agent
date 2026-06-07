@@ -18,7 +18,7 @@ Living list. Every caveat/finding from [CRITIQUE.md](CRITIQUE.md) is tracked her
 | ID | Item | Why | Effort | Protected? |
 |---|---|---|---|---|
 | ~~C1~~ | ✅ **DONE** — BH-FDR/Bonferroni over the claim registry (bootstrap p-value → `multiple_comparisons.py` → `show_claims.py` + dashboard card) | family-wise false positives | M | DECISIONS #29 |
-| **C2** | Match repeats (5 MC-CV) for committed claims | candidate uses 3 vs registry 5 ⇒ asymmetric variance | S | no |
+| ~~C2~~ | ✅ **DONE** — loop uses 5 MC-CV repeats (symmetric with registry); + target-stratified torch val split (representative, no tail-slice) | candidate 3 vs registry 5 asymmetry | S | DECISIONS #33 |
 | **C3** | Reconcile/clearly fence the two bootstrap units (E. coli series-level vs yeast sequence-level) | CIs not directly comparable across datasets | S–M | conditional (compare.py) |
 | **C7** | Justify or parameterize `min_delta_r2=0.02` practical-significance threshold | currently an arbitrary choice | S | conditional (configs/metrics) |
 

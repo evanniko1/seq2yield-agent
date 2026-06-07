@@ -38,15 +38,17 @@ from seq2yield.experiments.runner import per_series_r2  # noqa: E402
 
 
 def _bound(spec: RunSpec, high_power: bool = False) -> RunSpec:
-    # Bound runtime via series/repeats, but HONOR the council's train_sizes (so a
-    # data_efficiency sweep actually sweeps). Verdict at the largest swept size.
-    # high_power: a REVISIT of an inconclusive cell uses more series/repeats for power.
+    # Bound runtime via series, but HONOR the council's train_sizes (so a data_efficiency sweep
+    # actually sweeps). Verdict at the largest swept size.
+    # C2: always use 5 MC-CV repeats so the candidate's per-series R² is a 5-repeat mean,
+    # SYMMETRIC with the registry baseline (also 5 repeats) — removes the 3-vs-5 asymmetry.
+    # high_power: a REVISIT of an inconclusive cell widens the series set for more power.
     spec.n_series = 20 if high_power else 10
     spec.series = None
-    spec.iterations = [1, 2, 3, 4, 5] if high_power else [1, 2, 3]
+    spec.iterations = [1, 2, 3, 4, 5]
     spec.train_sizes = sorted(set(spec.train_sizes)) or [500]
     spec.acceptance_policy.comparison_train_size = max(spec.train_sizes)
-    spec.max_runtime_minutes = 35 if high_power else 25
+    spec.max_runtime_minutes = 45 if high_power else 35
     return spec
 
 

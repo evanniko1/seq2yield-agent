@@ -401,6 +401,18 @@ non-tree feature studies now use `auto` (data-tailored) rather than fixed MinMax
 FDR-judged, recommendations are applicability-guarded and sound. Tests: registry fit-ability,
 recommender on binary/outlier/signed/bounded data, auto-resolution recorded.
 
+## #33 — C2: 5 MC-CV repeats (symmetry) + target-stratified internal val split
+**Context.** (C2) Candidate runs used 3 repeats vs the registry's 5 → asymmetric per-series
+variance. (Extra) The torch early-stopping val split was a random slice — better than Keras'
+unshuffled tail slice, but still not guaranteed representative. **Decisions.** (1) The bounded
+loop now always uses **5 MC-CV iterations**, symmetric with the registry baseline (revisits
+widen the series set for power instead of repeats). (2) `stratified_val_indices` makes the torch
+internal validation split **target-stratified** (rank-binned on expression, sample from each
+bin) so it spans the whole target range at every train size — the representative-validation fix
+(matches the historical custom-validation approach; avoids the Keras tail-slice pitfall).
+Implementation is torch/sklearn (the deposit notebooks are Keras; we reimplement). Tests:
+val split spans the full range on ordered data, disjoint, ~val_frac. 113 passing.
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

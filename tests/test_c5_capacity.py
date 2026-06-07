@@ -37,6 +37,16 @@ def test_cnn_fit_sets_param_count_and_predicts():
     assert p.shape == (60,) and np.isfinite(p).all()
 
 
+def test_stratified_val_split_is_representative_not_tail():
+    from seq2yield.models._torch_train import stratified_val_indices
+    y = np.arange(200, dtype=float)                 # strictly ordered (worst case for a tail slice)
+    val, tr = stratified_val_indices(y, val_frac=0.2, seed=0)
+    assert len(val) + len(tr) == 200 and set(val).isdisjoint(set(tr))
+    # representative: val spans the WHOLE target range (a tail slice would only have y>=160)
+    assert y[val].min() < 20 and y[val].max() > 180
+    assert 30 <= len(val) <= 50                      # ~20% stratified
+
+
 def test_early_stopping_handles_tiny_n():
     # n<20 path must not crash (no val split)
     rng = np.random.default_rng(0)
