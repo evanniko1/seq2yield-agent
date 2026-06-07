@@ -1,0 +1,18 @@
+{
+  "ts": "2026-06-06T23:56:13.811910+00:00",
+  "run_id": "2026-06-06-council-mlp-sweep-cnn-233302",
+  "proposal_id": "002",
+  "status": "rejected",
+  "candidate_model": "mlp",
+  "baseline_model": "cnn",
+  "mean_delta_r2": -0.11646074712064369,
+  "bootstrap_ci_95": [
+    -0.13970596220609946,
+    -0.09512010752070649
+  ],
+  "ci_excludes_zero": true,
+  "p_value": 0.0,
+  "n_series": 10,
+  "train_size": 2000,
+  "claim": null
+}

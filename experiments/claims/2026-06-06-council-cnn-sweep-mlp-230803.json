@@ -1,0 +1,18 @@
+{
+  "ts": "2026-06-06T23:26:02.130221+00:00",
+  "run_id": "2026-06-06-council-cnn-sweep-mlp-230803",
+  "proposal_id": "exp002",
+  "status": "accepted",
+  "candidate_model": "cnn",
+  "baseline_model": "mlp",
+  "mean_delta_r2": 0.11127778162898946,
+  "bootstrap_ci_95": [
+    0.09591572109080981,
+    0.1253977018528377
+  ],
+  "ci_excludes_zero": true,
+  "p_value": 0.0,
+  "n_series": 10,
+  "train_size": 2000,
+  "claim": "The CNN model demonstrates superior performance compared to the MLP model as data size increases, achieving parity or superiority from a train_size of 250 onwards."
+}

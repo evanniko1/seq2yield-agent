@@ -1,0 +1,18 @@
+{
+  "ts": "2026-06-07T00:05:27.996766+00:00",
+  "run_id": "2026-06-07-council-ridge-sweep-rf-000410",
+  "proposal_id": "exp02",
+  "status": "rejected",
+  "candidate_model": "ridge",
+  "baseline_model": "rf",
+  "mean_delta_r2": -0.23554964764519823,
+  "bootstrap_ci_95": [
+    -0.2802240058913014,
+    -0.2007694511229039
+  ],
+  "ci_excludes_zero": true,
+  "p_value": 0.0,
+  "n_series": 10,
+  "train_size": 2000,
+  "claim": null
+}
