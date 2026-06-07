@@ -53,7 +53,8 @@ def _run_per_series(spec: RunSpec, splits: dict, series_ids: list[int]) -> list[
                 sample = sampling.select(spec.sampling_policy, w_s, n, seed=spec.seed)
                 set_seed(spec.seed)
                 res = train_evaluate(spec.model_family, sample, h_s,
-                                     feature_set=spec.feature_set, target_col=TARGET_COL,
+                                     feature_set=spec.feature_set,
+                                     feature_scaling=spec.feature_scaling, target_col=TARGET_COL,
                                      length=96, seed=spec.seed,
                                      hyperparameters=spec.hyperparameters)
                 rows.append({"iteration": it, "series": sid, "model": spec.model_family,
@@ -78,11 +79,19 @@ def _run_pooled(spec: RunSpec, splits: dict, series_ids: list[int]) -> list[dict
             train_frame = pd.concat(parts, ignore_index=True)
             set_seed(spec.seed)
             Xtr = features_for(spec.model_family, train_frame, spec.feature_set)
-            model = model_registry.make(spec.model_family, seed=spec.seed)
+            scaler = None
+            if spec.feature_scaling == "minmax" and model_registry.feature_kind(spec.model_family) == "flat":
+                from sklearn.preprocessing import MinMaxScaler
+                scaler = MinMaxScaler().fit(Xtr)
+                Xtr = scaler.transform(Xtr)
+            model = model_registry.make(spec.model_family, seed=spec.seed,
+                                        hyperparameters=spec.hyperparameters)
             model.fit(Xtr, train_frame[TARGET_COL].to_numpy())
             for sid in series_ids:                       # evaluate the pooled model per series
                 h_s = series_subset(held, sid)
                 Xte = features_for(spec.model_family, h_s, spec.feature_set)
+                if scaler is not None:
+                    Xte = scaler.transform(Xte)
                 y = h_s[TARGET_COL].to_numpy()
                 pred = model.predict(Xte)
                 rows.append({"iteration": it, "series": sid, "model": spec.model_family,

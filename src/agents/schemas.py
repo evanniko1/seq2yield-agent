@@ -50,13 +50,14 @@ class CouncilProposal(BaseModel):
     title: str
     maturity_tier: Tier
     intervention_type: Literal["model_architecture", "training_procedure", "data_efficiency",
-                               "feature_representation", "sampling_design"]
+                               "feature_representation", "sampling_design", "feature_scaling"]
     scientific_hypothesis: str
     model_family: ModelFamily
     comparator_model: RegistryModel        # must exist in the baseline registry to compare
     feature_set: Literal["one_hot", "kmer", "mechanistic", "mixed"] = "one_hot"
     sampling_policy: Literal["random", "maximin_kmer", "expression_stratified",
                              "series_balanced"] = "random"
+    feature_scaling: Literal["none", "minmax"] = "none"
     train_sizes: list[TrainSize] = Field(default_factory=lambda: [500])
     # optimization scope: global = one model trained per mutational series, judged by mean R²
     # across series (per-series heterogeneity is reported for EVERY run regardless); pooled =

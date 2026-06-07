@@ -25,7 +25,7 @@ Living list. Every caveat/finding from [CRITIQUE.md](CRITIQUE.md) is tracked her
 ## Remaining — ML / DL methodology
 | ID | Item | Why | Effort | Protected? |
 |---|---|---|---|---|
-| **C4** | Standardize flat features for non-tree models (MLP/ridge/SVR); ensure baseline scaled consistently | unscaled k-mer/mechanistic under-credits feature axis on scale-sensitive models | M | no |
+| ~~C4~~ | ✅ **DONE** — MinMax (train-fit, paper-aligned) flat scaling + `feature_scaling` axis + isolated in-run baselines (mlp+kmer 0.27→0.44) | unscaled features under-credited scale-sensitive models | M | DECISIONS #30 |
 | **C5** | Log parameter counts; add CNN/Transformer val-split + early stopping | arch/data-efficiency comparisons not capacity- or training-controlled | M | no |
 | **C6** | Force deterministic CNN (cuDNN deterministic algorithms) | manual_seed set but run-to-run variance possible | S | no |
 

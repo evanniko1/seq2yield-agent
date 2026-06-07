@@ -31,9 +31,11 @@ class RunSpec(BaseModel):
     split_id: str = "provided"
     split_hash: str | None = None
 
+    intervention_type: str = "model_architecture"   # which knob this experiment varies
     model_family: str
     feature_set: str = "one_hot"
     sampling_policy: str = "random"
+    feature_scaling: str = "none"        # none | minmax (train-fit, flat features; paper used MinMax)
     hyperparameters: dict = Field(default_factory=dict)   # HPO: overrides model defaults
     scope: str = "global"               # global | pooled (Q6)
     train_sizes: list[int] = Field(default_factory=lambda: [250, 500, 1000, 2000])

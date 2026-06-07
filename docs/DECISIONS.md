@@ -364,6 +364,21 @@ view; the dashboard gained a "discoveries surviving BH-FDR" card. Pre-C1 records
 are excluded and reported separately. Tests: BH partial rejection, Bonferroni stricter, q-value
 monotonicity, missing-p handling, bootstrap-p sanity (99 passing).
 
+## #30 — C4: MinMax (train-fit) flat-feature scaling + feature_scaling axis + isolated baselines
+**Context.** Flat features fed scale-sensitive models unscaled — under-crediting k-mer/
+mechanistic on MLP. **Checked the original code first:** `2_Train_Non_Deep_Regressors.ipynb`
+uses `MinMaxScaler` **fit on train only** (their comment: avoid test leakage); the CNN notebook
+and `models_misc.py` do none. **Decision (paper-aligned):** (1) MinMax train-fit scaling for
+flat features (`train_evaluate`/`runner`; conv one-hot images untouched); `RunSpec.feature_scaling`
+{none,minmax}. (2) New **`feature_scaling` intervention axis** — "does MinMax help model X?"
+(catalogue cells for rf/mlp; council can ask it). (3) feature_representation on mlp/ridge/svr
+now defaults the candidate to MinMax so the representation comparison is fair. (4) **Generalized
+the harness baseline**: `RunSpec.intervention_type` + `_baseline_spec` build an in-run baseline
+identical to the candidate EXCEPT the one varied knob (registry used only for plain global
+different-model comparisons) — every axis is now an isolated, controlled comparison.
+**Verified:** mlp+kmer 0.273→0.442 with MinMax (one_hot 0.576→0.576 no-op; RF ~invariant).
+106 tests passing.
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

@@ -28,10 +28,12 @@ _ALLOWED = {
     "feature_representation": ["configs/model/", "src/seq2yield/features/"],
     "sampling_design": ["configs/model/", "src/seq2yield/data/sampling.py",
                         "src/seq2yield/doe/"],
+    "feature_scaling": ["configs/model/", "src/seq2yield/features/", "src/seq2yield/training/"],
 }
-# interventions that vary feature/sampling compare the SAME model against its registry
-# baseline (one_hot + random), so the baseline_model is the candidate's own model_family.
-_SAME_MODEL_BASELINE = {"feature_representation", "sampling_design", "training_procedure"}
+# interventions that vary a same-model knob compare the candidate against the SAME model with
+# that knob reset to default (baseline_model = the candidate's own model_family).
+_SAME_MODEL_BASELINE = {"feature_representation", "sampling_design", "training_procedure",
+                        "feature_scaling"}
 BASELINE_RUN_ID = "2026-06-04-full56"
 
 
@@ -229,16 +231,23 @@ class Council:
         same_model = itype in _SAME_MODEL_BASELINE
         baseline_model = proposal.model_family if same_model else proposal.comparator_model
         tag = {"data_efficiency": "sweep", "feature_representation": f"{proposal.feature_set}-vs",
-               "sampling_design": f"{proposal.sampling_policy}-vs"}.get(itype, "vs")
+               "sampling_design": f"{proposal.sampling_policy}-vs",
+               "feature_scaling": "minmax-vs"}.get(itype, "vs")
         scope_tag = "" if proposal.scope == "global" else f"-{proposal.scope}"
         run_id = (f"{datetime.now(timezone.utc):%Y-%m-%d}-council-{proposal.model_family}-"
                   f"{tag}-{baseline_model}{scope_tag}")
+        # feature_scaling: candidate uses MinMax (paper's non-deep pipeline). Also default flat
+        # feature studies on scale-sensitive models to MinMax so the comparison is fair (C4).
+        scaling = "minmax" if itype == "feature_scaling" else proposal.feature_scaling
+        if itype == "feature_representation" and proposal.model_family in ("mlp", "ridge", "svr"):
+            scaling = "minmax"
         spec = RunSpec(
             run_id=run_id, proposal_id=proposal.proposal_id,
-            maturity_tier=proposal.maturity_tier,
+            intervention_type=itype, maturity_tier=proposal.maturity_tier,
             dataset_manifest_hash=dh, split_hash=sh,
             model_family=proposal.model_family, feature_set=proposal.feature_set,
-            sampling_policy=proposal.sampling_policy, scope=proposal.scope, train_sizes=sizes,
+            sampling_policy=proposal.sampling_policy, feature_scaling=scaling,
+            scope=proposal.scope, train_sizes=sizes,
             allowed_files=allowed, protected_files=_protected(),
             max_runtime_minutes=decision.max_runtime_minutes,
         )

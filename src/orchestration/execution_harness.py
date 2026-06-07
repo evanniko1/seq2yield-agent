@@ -45,6 +45,26 @@ def _verdict(run_dir: Path, status: str, detail: dict) -> dict:
     return out
 
 
+def _baseline_spec(spec: RunSpec, baseline_model: str) -> RunSpec:
+    """Build the in-run baseline: identical to the candidate EXCEPT the one varied knob is reset
+    to its default, so the comparison isolates exactly that knob (controlled comparison)."""
+    b = spec.model_copy(deep=True)
+    it = spec.intervention_type
+    if it in ("model_architecture", "data_efficiency"):
+        b.model_family = baseline_model            # different model; keep scope/features/etc.
+    elif it == "feature_representation":
+        b.feature_set = "one_hot"                  # same model, scaling kept -> isolate feature
+    elif it == "sampling_design":
+        b.sampling_policy = "random"
+    elif it == "feature_scaling":
+        b.feature_scaling = "none"
+    elif it == "training_procedure":
+        b.hyperparameters = {}
+    else:
+        b.model_family = baseline_model
+    return b
+
+
 def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
         run_tests: bool = True) -> dict:
     run_dir = ROOT / "experiments/runs" / spec.run_id
@@ -103,19 +123,15 @@ def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
                         {"run_id": spec.run_id, "stage": "compare",
                          "reasons": [f"track '{pol.track}' comparison not implemented in M3"]})
 
-    # Choose the baseline reference. For a per-series candidate, the per-series registry is a
-    # clean control. For a POOLED candidate, the per-series registry is NOT comparable (it gives
-    # each per-series model far less data), so we train the comparator POOLED in-run on the same
-    # data budget — removing the pooled-vs-per-series + data-size confound (CRITIQUE / audit).
-    if spec.scope == "pooled":
-        base_spec = spec.model_copy(deep=True)
-        base_spec.model_family = pol.baseline_model
-        base_spec.feature_set = "one_hot"
-        base_spec.sampling_policy = "random"
-        base_spec.hyperparameters = {}
-        base_df = run_runspec(base_spec)["metrics"]
-        baseline_source = "in_run_pooled"
-    else:
+    # Choose the baseline reference. The registry (per-series, one_hot, random, defaults,
+    # unscaled) is a valid control ONLY for a plain different-model comparison; any other axis
+    # must be compared to an in-run baseline that is identical to the candidate EXCEPT for the
+    # one varied knob — otherwise the comparison is confounded (CRITIQUE / audit).
+    plain = (spec.scope == "global" and spec.feature_set == "one_hot"
+             and spec.sampling_policy == "random" and spec.feature_scaling == "none"
+             and not spec.hyperparameters)
+    use_registry = plain and spec.intervention_type in ("model_architecture", "data_efficiency")
+    if use_registry:
         base_csv = ROOT / "experiments/runs" / pol.baseline_run_id / "metrics.csv"
         if not base_csv.exists():
             return _verdict(run_dir, "rejected",
@@ -123,6 +139,9 @@ def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
                              "reasons": [f"baseline metrics not found: {base_csv}"]})
         base_df = pd.read_csv(base_csv)
         baseline_source = "registry:" + pol.baseline_run_id
+    else:
+        base_df = run_runspec(_baseline_spec(spec, pol.baseline_model))["metrics"]
+        baseline_source = "in_run"
 
     size = pol.comparison_train_size or max(
         set(spec.train_sizes) & set(base_df["train_size"].unique()))
