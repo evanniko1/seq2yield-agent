@@ -98,3 +98,20 @@ def test_compile_runspec_honors_sweep():
     assert spec.acceptance_policy.comparison_train_size == 2000   # verdict at largest
     vr = validate_runspec(spec, unlocked_tier="tier_1")
     assert vr.ok, vr.errors
+
+
+def test_chair_selection_bonus_is_configurable():
+    from agents.schemas import CouncilReviewItem
+    c = Council(allow_local_fallback=True)
+    de = _prop("cnn", "rf", itype="data_efficiency"); de.proposal_id = "de"
+    ma = _prop("cnn", "rf", itype="model_architecture"); ma.proposal_id = "ma"
+    rev = lambda: [CouncilReviewItem(role="r", score_feasibility=4, score_scientific_value=4,
+                                     score_confoundedness=4, score_reproducibility=4)]
+    reviews = {"de": rev(), "ma": rev()}
+    c.selection_bonuses = {"data_efficiency": 0.5}
+    s = c._mean_scores(reviews, [de, ma])
+    assert s["de"]["selection_bonus"] == 0.5 and s["ma"]["selection_bonus"] == 0.0
+    assert s["de"]["overall"] == 16.5 and s["ma"]["overall"] == 16.0   # bonus steers selection
+    c.selection_bonuses = {}                                            # pure peer merit
+    s2 = c._mean_scores(reviews, [de, ma])
+    assert s2["de"]["overall"] == s2["ma"]["overall"] == 16.0

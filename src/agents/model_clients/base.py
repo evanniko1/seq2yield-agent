@@ -19,6 +19,22 @@ ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_LOG = ROOT / "reports" / "model_calls.jsonl"
 
 
+def _load_dotenv(path: Path = ROOT / ".env") -> None:
+    """Load KEY=VALUE lines from a gitignored .env into the environment (real env vars win).
+    Keeps API keys out of committed files (copy .env.example -> .env and fill in)."""
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, val = line.split("=", 1)
+        os.environ.setdefault(key.strip(), val.strip().strip('"').strip("'"))
+
+
+_load_dotenv()
+
+
 class ModelCallRecord(BaseModel):
     provider: str
     model: str

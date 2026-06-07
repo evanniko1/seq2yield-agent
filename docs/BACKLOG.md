@@ -34,9 +34,9 @@ Living list. Every caveat/finding from [CRITIQUE.md](CRITIQUE.md) is tracked her
 |---|---|---|---|---|
 | **C8/S3** | Improve reviewer discrimination / chair judgment (largely needs authority providers) | reviewer scores cluster on local 14B ⇒ chair rubber-stamps `overall`+bonus | M | no |
 | **C9** | Exercise the `human_review_required` gate for conditional-protected changes | path exists but never used (protected edits are developer edits) | M | no |
-| **C10** | Set authority API keys (Anthropic/OpenAI) so authority≠diversity is real | all roles fall back to one local model today | S (user) | no |
+| **C10** | Set authority API keys (Anthropic/OpenAI) — **copy `.env.example` → `.env` and fill in** (loader + gitignore ready) | all roles fall back to one local model today | S (user) | no |
 | **S1** | Make the ML-Engineer patch meaningful for non-HPO axes, or skip it | patch is decorative except for `training_procedure` (inert kept configs) | M | no |
-| **S2** | Make the chair's data_efficiency bonus configurable / remove | injected preference, not pure peer merit | S | no |
+| ~~S2~~ | ✅ **DONE** — chair selection bonus is now `configs/council_policy.yaml` `selection_bonuses` (default data_efficiency 0.5; 0 = pure merit) | hidden thumb on the scale | S | DECISIONS #34 |
 | **S4** | Tighten generator so free-text hypotheses match the structured fields | occasional incoherent hypotheses (e.g. "GBM" for rf-vs-cnn) | S | no |
 
 ## Remaining — context engineering

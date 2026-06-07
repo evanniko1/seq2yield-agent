@@ -1,0 +1,16 @@
+# Council selection policy.
+#
+# selection_bonuses: an additive bonus to a proposal's chair `overall` score, keyed by
+# intervention_type. This steers EXPLORATION only — it does NOT affect scientific validity
+# (the harness still judges every run with a paired bootstrap + BH-FDR correction).
+#
+# Rationale for the default: data-efficiency is the paper's central theme ("Accuracy AND data
+# efficiency..."), so sweeps get a small nudge. This is a DECLARED, tunable knob — set every
+# value to 0.0 for pure peer-review merit (no thumb on the scale). See CRITIQUE.md S2.
+selection_bonuses:
+  data_efficiency: 0.5
+  # model_architecture: 0.0
+  # feature_representation: 0.0
+  # sampling_design: 0.0
+  # feature_scaling: 0.0
+  # training_procedure: 0.0

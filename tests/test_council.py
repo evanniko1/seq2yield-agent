@@ -23,7 +23,7 @@ def test_mean_scores_overall_and_sound():
         "p2": [_review("c", 4, 4, 1, 4), _review("d", 4, 4, 2, 4)],   # confounded -> not sound
         "p3": [_review("e", 4, 5, 5, 5, reject="leakage")],          # reject vote -> not sound
     }
-    agg = Council._mean_scores(reviews)
+    agg = Council(allow_local_fallback=True)._mean_scores(reviews)   # no proposals -> no bonus
     assert agg["p1"]["sound"] is True
     assert agg["p2"]["sound"] is False          # mean confoundedness 1.5 < 3
     assert agg["p3"]["sound"] is False          # has a reject vote

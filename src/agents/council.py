@@ -37,6 +37,16 @@ _SAME_MODEL_BASELINE = {"feature_representation", "sampling_design", "training_p
 BASELINE_RUN_ID = "2026-06-04-full56"
 
 
+def _selection_bonuses() -> dict:
+    """Chair selection bonuses by intervention_type (configs/council_policy.yaml). Declared +
+    tunable; {} or all-0 => pure peer-review merit (CRITIQUE S2)."""
+    f = ROOT / "configs" / "council_policy.yaml"
+    if not f.exists():
+        return {}
+    cfg = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
+    return cfg.get("selection_bonuses", {}) or {}
+
+
 def tested_pairs(records: list[dict]) -> set[tuple[str, str]]:
     """(candidate_model, baseline_model) pairs already evaluated (for display)."""
     return {(r.get("candidate_model"), r.get("baseline_model")) for r in records
@@ -142,6 +152,7 @@ class Council:
         self.router = Router()
         self.fallback = allow_local_fallback
         self.use_planner = use_planner
+        self.selection_bonuses = _selection_bonuses()
 
     def _ask(self, role: str, system: str, user: str, schema, **kw):
         client = self.router.resolve(role, allow_local_fallback=self.fallback)
@@ -190,11 +201,13 @@ class Council:
             out[p.proposal_id] = items
         return out
 
-    @staticmethod
-    def _mean_scores(reviews, proposals=None):
-        # data-efficiency sweeps interrogate "at what data size does this change?" — the
-        # paper's central theme — so they get a modest strategic bonus when sound.
+    def _mean_scores(self, reviews, proposals=None):
+        # Selection bonuses (configs/council_policy.yaml) additively steer EXPLORATION by
+        # intervention_type — a DECLARED, tunable knob (set 0 for pure peer-review merit), not a
+        # hidden constant (CRITIQUE S2). It does not affect validity: the harness still judges
+        # with bootstrap + FDR.
         itype = {p.proposal_id: p.intervention_type for p in (proposals or [])}
+        bonuses = getattr(self, "selection_bonuses", {})
         agg = {}
         for pid, items in reviews.items():
             n = len(items) or 1
@@ -203,14 +216,14 @@ class Council:
             clean = sum(i.score_confoundedness for i in items) / n  # 5 = clean, 1 = confounded
             repro = sum(i.score_reproducibility for i in items) / n
             rejects = sum(1 for i in items if i.reject_reason)
-            bonus = 1.0 if itype.get(pid) == "data_efficiency" else 0.0
+            bonus = float(bonuses.get(itype.get(pid), 0.0))
             agg[pid] = {
                 "feasibility": round(feas, 2),
                 "scientific_value": round(value, 2),
                 "confoundedness": round(clean, 2),
                 "reproducibility": round(repro, 2),
                 "n_reject_votes": rejects,
-                "data_efficiency_bonus": bonus,
+                "selection_bonus": bonus,
                 # precomputed to remove scale-interpretation burden from the chair:
                 "overall": round(feas + value + clean + repro + bonus, 2),  # higher is better
                 "sound": bool(clean >= 3 and feas >= 3 and rejects == 0),

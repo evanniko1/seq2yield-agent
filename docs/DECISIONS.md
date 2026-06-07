@@ -413,6 +413,16 @@ bin) so it spans the whole target range at every train size — the representati
 Implementation is torch/sklearn (the deposit notebooks are Keras; we reimplement). Tests:
 val split spans the full range on ordered data, disjoint, ~val_frac. 113 passing.
 
+## #34 — S2: configurable chair selection bonus + .env key loading
+**S2.** The chair's hidden `+1.0` data-efficiency bonus is now a declared, tunable knob:
+`configs/council_policy.yaml` `selection_bonuses` (per intervention_type), loaded in `Council`
+and applied in `_mean_scores` (key `selection_bonus`). Default `data_efficiency: 0.5`
+(documented rationale: the paper's theme); set all to 0.0 for pure peer-review merit. It steers
+EXPLORATION only — validity is still bootstrap + FDR. **Keys.** API keys load from a gitignored
+`.env` (copy `.env.example` → `.env`) via `_load_dotenv` in the provider base (real env vars take
+precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never secrets.
+114 tests passing.
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that
