@@ -52,6 +52,7 @@ Living list. Every caveat/finding from [CRITIQUE.md](CRITIQUE.md) is tracked her
 | **K1** | Wire yeast into the council/coverage (generalize the dataset dimension) | yeast is a standalone benchmark today; council can't propose yeast/transfer questions | L | no |
 | **K2** | Tier 2 — frozen/fine-tuned DNA & protein foundation-model embeddings; active learning | highest science value | L | no |
 | **K3** | Tier 3 — frontier-API embeddings; quantum-inspired adapters | exploratory | L | no |
+| **K4** | **Diagnostics + methodology red-team** — pipeline instrumentation (train/val/test distribution drift, leakage detectors, overfit/generalization-gap, learning curves, calibration, residuals) feeding a "methodology critic" agent + a curated pitfalls KB, so deep methodological flaws (e.g. unrepresentative val split) become *observable signals* the council can question. Surfaces the class of issues that currently need a domain expert. | the council can't discover what it can't observe | L | no |
 
 ## Suggested ordering
 Rigor first (these gate the validity of any future claim): **C1 → C4 → C5 → C2**, then
