@@ -33,7 +33,10 @@ def test_rank_targets_inconclusive_after_untested():
     assert inc in ids and ids.index(inc) > 0   # appears, after untested cells
 
 
-def test_pi_plan_falls_back_without_authority_provider():
-    # no API keys + allow_local_fallback=False -> authority unavailable -> deterministic
+def test_pi_plan_falls_back_without_authority_provider(monkeypatch):
+    # Genuinely simulate "no authority provider": clear keys so the test is independent of
+    # whether a real .env is present. allow_local_fallback=False -> deterministic plan.
+    for var in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY"):
+        monkeypatch.setenv(var, "")
     focus, rationale, who = planner.pi_plan([], allow_local_fallback=False)
     assert focus == planner.INTERVENTIONS and who == "deterministic"

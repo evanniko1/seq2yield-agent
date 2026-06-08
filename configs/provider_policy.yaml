@@ -10,18 +10,20 @@ defaults:
 
 providers:
   # --- authority providers (direct; structured outputs required) ---
+  # NOTE: set `authority`/`reviewer` to model IDs your account actually exposes. Defaults are
+  # real, cost-effective IDs; `reviewer` is the cheaper model used for verification + reviewers.
   anthropic:
     enabled: true
     api_key_env: ANTHROPIC_API_KEY
     models:
-      authority: "claude-opus-4-8"   # chair, methodology, patch reviewer, ml engineer
-      reviewer:  "claude-sonnet-4-6"
+      authority: "claude-sonnet-4-6"           # chair, methodology, patch reviewer, ml engineer
+      reviewer:  "claude-haiku-4-5-20251001"   # cheap: reviewers + key verification
   openai:
     enabled: true
     api_key_env: OPENAI_API_KEY
     models:
-      authority: "gpt-5.1"           # set to the configured OpenAI frontier model
-      reviewer:  "gpt-5.1-mini"
+      authority: "gpt-4.1"
+      reviewer:  "gpt-4.1-nano"                # cheap: reviewers + key verification
 
   # --- diversity providers ---
   ollama:                            # local, already installed on the dev machine

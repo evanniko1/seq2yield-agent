@@ -32,9 +32,9 @@ Living list. Every caveat/finding from [CRITIQUE.md](CRITIQUE.md) is tracked her
 ## Remaining — agentic AI
 | ID | Item | Why | Effort | Protected? |
 |---|---|---|---|---|
-| **C8/S3** | Improve reviewer discrimination / chair judgment (largely needs authority providers) | reviewer scores cluster on local 14B ⇒ chair rubber-stamps `overall`+bonus | M | no |
+| ~~C8/S3~~ | ✅ **DONE** — anchored 1-5 reviewer rubric (default=3, same-model-baseline confound rule) + justified chair (tie-break on confoundedness, runner-up + required ablation). Live-validated on Anthropic authority. | reviewer scores clustered at 4 ⇒ chair rubber-stamped `overall`+bonus | M | DECISIONS #36 |
 | **C9** | Exercise the `human_review_required` gate for conditional-protected changes | path exists but never used (protected edits are developer edits) | M | no |
-| **C10** | Set authority API keys (Anthropic/OpenAI) — **copy `.env.example` → `.env` and fill in** (loader + gitignore ready) | all roles fall back to one local model today | S (user) | no |
+| ~~C10~~ | ✅ **DONE** — `scripts/verify_keys.py`; **Anthropic verified live** (sonnet-4-6/haiku-4-5); **OpenAI** key valid but `insufficient_quota` (needs billing credit); `.env` empty-var loader fix | all roles fell back to one local model | S (user) | DECISIONS #36 |
 | ~~S1~~ | ✅ **DONE** — patch loop runs ONLY for training_procedure; other axes are no-patch | inert kept configs | M | DECISIONS #35 |
 | ~~S2~~ | ✅ **DONE** — chair selection bonus is now `configs/council_policy.yaml` `selection_bonuses` (default data_efficiency 0.5; 0 = pure merit) | hidden thumb on the scale | S | DECISIONS #34 |
 | ~~S4~~ | ✅ **DONE** — incoherent/hallucinated-model hypotheses replaced with field-consistent canonical text | free-text slop | S | DECISIONS #35 |

@@ -69,11 +69,35 @@ def generator_prompt(n: int, prior: str = "", targets=None) -> tuple[str, str]:
     return sys, user
 
 
+# Anchored rubric (C8/S3): without explicit anchors reviewers cluster every score at 4,
+# the chair's 'overall' loses discriminating power, and selection collapses to the bonus.
+_RUBRIC = (
+    "SCORING RUBRIC — use the FULL 1-5 range; the default is 3, not 4. Reserve 5 for the "
+    "exceptional and 1-2 for real deficiencies. Do not give the same number to every "
+    "dimension unless genuinely warranted.\n"
+    "  feasibility       1=cannot run as specified · 3=runs but with caveats · 5=runs cleanly "
+    "on the existing harness with no missing pieces.\n"
+    "  scientific_value  1=question already answered in memory or trivially yes/no · 3=mild "
+    "increment · 5=resolves a genuinely open, decision-relevant question for THIS benchmark.\n"
+    "  confoundedness    1=candidate and baseline differ on >1 axis (e.g. model AND data size "
+    "AND features) so the contrast is uninterpretable · 3=one minor uncontrolled nuisance · "
+    "5=changes exactly ONE knob; everything else (splits, train size, scaling, scope) held "
+    "fixed. For feature/sampling/scaling/training_procedure studies the comparator MUST be the "
+    "same model_family — flag confoundedness<=2 if it is not.\n"
+    "  reproducibility   1=stochastic/under-specified · 3=seeded but thin · 5=fixed splits, "
+    "seeded, enough MC-CV repeats to support a bootstrap CI.")
+
+
 def reviewer_prompt(role: str, proposal: dict) -> tuple[str, str]:
     sys = roles.persona(role) + "\n\n" + _CONTEXT
-    user = ("Review this proposal. Score 1-5 each: feasibility, scientific_value, "
-            "confoundedness (1=badly confounded, 5=clean), reproducibility. List "
-            "required_changes; set reject_reason only if it should be rejected.\n\n"
+    user = ("Critically review ONE proposal. Be a discriminating skeptic, not a rubber stamp.\n\n"
+            f"{_RUBRIC}\n\n"
+            "Then output the four integer scores (score_feasibility, score_scientific_value, "
+            "score_confoundedness, score_reproducibility). In required_changes, name the SINGLE "
+            "most important concrete fix that would raise your lowest score (be specific to this "
+            "proposal — cite the knob, the comparator, or the missing control). Set reject_reason "
+            "ONLY if the design is fatally confounded or infeasible (i.e. you scored "
+            "feasibility<=2 or confoundedness<=2 with no salvaging change).\n\n"
             f"role: {role}\nproposal:\n{json.dumps(proposal, indent=2)}")
     return sys, user
 
@@ -83,9 +107,15 @@ def chair_prompt(proposals: list[dict], reviews: dict) -> tuple[str, str]:
     user = ("Each proposal below has precomputed review fields: 'overall' (higher is better) "
             "and 'sound' (true = feasible, not confounded, no reject votes). Decision rule: "
             "if ANY proposal has sound=true, you MUST set status='approve_for_execution' and "
-            "chosen_proposal_id to the sound proposal with the HIGHEST 'overall'. Only set "
-            "status='reject' (chosen_proposal_id=null) if EVERY proposal has sound=false. "
-            "Give a short rationale and a runtime budget in minutes.\n\n"
+            "chosen_proposal_id to the sound proposal with the HIGHEST 'overall'; break exact "
+            "ties by preferring the LESS confounded design (higher score_confoundedness), then "
+            "the more novel question. Only set status='reject' (chosen_proposal_id=null) if "
+            "EVERY proposal has sound=false.\n"
+            "In rationale, do not merely restate the rule: name the chosen proposal, the "
+            "runner-up, why the winner's 'overall' is higher, and the ONE required_ablation "
+            "the executor must run to keep the contrast clean (e.g. hold train size/scaling "
+            "fixed; ensure same-model baseline for feature/sampling/scaling studies). Set a "
+            "runtime budget in minutes.\n\n"
             f"proposals:\n{json.dumps(proposals, indent=2)}\n\n"
             f"review_scores (with overall + sound):\n{json.dumps(reviews, indent=2)}")
     return sys, user

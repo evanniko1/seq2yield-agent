@@ -439,6 +439,31 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
 - **Env:** `import os` fix in the provider base (the .env loader referenced it; only triggered
   once a real `.env` existed). 118 tests passing.
 
+## #36 — C10 verified + C8/S3 anchored review rubric (authority providers live)
+- **C10 (authority keys verified):** `scripts/verify_keys.py` — free key-presence report (names +
+  lengths, never secrets) plus ONE cheap structured call per keyed provider (the `reviewer`
+  model, tiny schema, `max_tokens` capped). Findings on the user's `.env`:
+  - **Anthropic ✅** verified live (`claude-haiku-4-5` returned a valid `ExperimentIdea`). The
+    account exposes `claude-{opus-4-8,sonnet-4-6,haiku-4-5}`-class IDs; `provider_policy.yaml`
+    authority/reviewer updated to `claude-sonnet-4-6` / `claude-haiku-4-5-20251001` (the
+    placeholder `claude-3-5-*-latest` aliases 404 on this account).
+  - **OpenAI** — key authenticates (lists 112 models) but completions return `429
+    insufficient_quota`: valid key, **no billing credit**. authority/reviewer set to
+    `gpt-4.1` / `gpt-4.1-nano`; dormant until the account is funded. `provider_class_map.authority`
+    is `["anthropic","openai"]`, so the council runs fully on Anthropic today and uses OpenAI only
+    as failover once it has quota.
+  - **`.env` loader fix:** the shell had a present-but-EMPTY `ANTHROPIC_API_KEY`, and `setdefault`
+    kept the empty string. Loader now fills a key when unset OR present-but-empty; a real non-empty
+    env var still wins over `.env`.
+- **C8/S3 (real council judgment):** reviewer/chair prompts were causing scores to cluster at 4
+  (the chair then rubber-stamped `overall`+bonus). Added an **anchored 1-5 rubric** (default=3,
+  5 reserved for exceptional) per dimension, with the same-model-baseline confound rule surfaced
+  for feature/sampling/scaling/training_procedure studies; reviewers must name the single concrete
+  fix that would raise their lowest score. Chair prompt adds a confoundedness tie-break and
+  requires a non-trivial rationale (winner, runner-up, one required ablation). Schema unchanged.
+- Tests: `tests/test_prompting.py` (rubric anchors + chair justification). Frugal-by-design: no
+  expensive loops; verification capped at one cheap call per provider.
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that
