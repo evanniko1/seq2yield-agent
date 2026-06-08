@@ -108,43 +108,50 @@ def cycle(fb: bool, n_proposals: int = 4) -> dict:
     (run_dir / "proposal.json").write_text(json.dumps(proposal, indent=2), encoding="utf-8")
     (run_dir / "run_spec.json").write_text(spec.model_dump_json(indent=2), encoding="utf-8")
 
-    print("STATE: PATCH_PROPOSED")
-    plan, variant, eng_who = ml_engineer.propose(proposal, spec.run_id, allow_local_fallback=fb)
-    (run_dir / "patch_plan.json").write_text(plan.model_dump_json(indent=2), encoding="utf-8")
-    print(f"  engineer {eng_who}: {plan.summary}")
-    # HPO consumption: ONLY a training_procedure intervention actually applies the engineer's
-    # hyperparameters to training (other axes keep defaults so the comparison stays controlled).
+    # S1: only training_procedure (HPO) needs a code/config patch (the engineer's hyperparameters
+    # actually drive training). Every other axis is fully specified by the RunSpec, so it is a
+    # NO-PATCH experiment — we skip the ML-Engineer + patch-reviewer entirely (no inert configs,
+    # fewer authority-model calls).
+    undo, changed = None, []
     if proposal.get("intervention_type") == "training_procedure":
+        print("STATE: PATCH_PROPOSED")
+        plan, variant, eng_who = ml_engineer.propose(proposal, spec.run_id, allow_local_fallback=fb)
+        (run_dir / "patch_plan.json").write_text(plan.model_dump_json(indent=2), encoding="utf-8")
         spec.hyperparameters = dict(variant.hyperparameters or {})
         (run_dir / "run_spec.json").write_text(spec.model_dump_json(indent=2), encoding="utf-8")
-        print(f"  HPO: applying tuned hyperparameters {spec.hyperparameters}")
+        print(f"  engineer {eng_who}: {plan.summary}; HPO hyperparameters {spec.hyperparameters}")
 
-    print("STATE: PATCH_REVIEWED")
-    rv, rev_who = review_patch(plan, allowed_files=spec.allowed_files,
-                              guard_summary={"note": "harness re-checks"},
-                              allow_local_fallback=fb)
-    (run_dir / "patch_review.json").write_text(rv.model_dump_json(indent=2), encoding="utf-8")
-    print(f"  reviewer {rev_who}: {'APPROVED' if rv.approved else 'REJECTED'}")
-    if not rv.approved:
-        print("  loop ends: patch rejected by reviewer.")
-        return {"approved": False, "status": None}
+        print("STATE: PATCH_REVIEWED")
+        rv, rev_who = review_patch(plan, allowed_files=spec.allowed_files,
+                                  guard_summary={"note": "harness re-checks"},
+                                  allow_local_fallback=fb)
+        (run_dir / "patch_review.json").write_text(rv.model_dump_json(indent=2), encoding="utf-8")
+        print(f"  reviewer {rev_who}: {'APPROVED' if rv.approved else 'REJECTED'}")
+        if not rv.approved:
+            print("  loop ends: patch rejected by reviewer.")
+            return {"approved": False, "status": None}
+        undo = patch_manager.apply(plan)
+        changed = patch_manager.planned_paths(plan)
+    else:
+        eng_who = rev_who = "n/a (no-patch axis)"
+        print("STATE: PATCH skipped (no-patch axis — RunSpec fully specifies the experiment)")
 
-    undo = patch_manager.apply(plan)
     print("STATE: EXECUTED -> EVALUATED (harness: guard -> tests -> train -> compare)")
     try:
-        verdict = execution_harness.run(spec, changed_files=patch_manager.planned_paths(plan),
-                                        run_tests=True)
+        verdict = execution_harness.run(spec, changed_files=changed, run_tests=True)
     except Exception as e:
-        patch_manager.revert(undo)
+        if undo:
+            patch_manager.revert(undo)
         print(f"  harness error; patch reverted: {e}")
         return {"approved": True, "status": "error", "cell_id": cid, "revisit": revisit}
 
     status = verdict["status"]
-    if status == "accepted":
-        print(f"  KEEP patch ({patch_manager.planned_paths(plan)})")
-    else:
-        patch_manager.revert(undo)
-        print("  REVERT patch (not accepted)")
+    if undo is not None:
+        if status == "accepted":
+            print(f"  KEEP patch ({changed})")
+        else:
+            patch_manager.revert(undo)
+            print("  REVERT patch (not accepted)")
 
     cmp = verdict.get("comparison", {})
     print(f"STATE: {status.upper()}  ΔR²={cmp.get('mean_delta')} CI={cmp.get('paired_bootstrap_ci')}")

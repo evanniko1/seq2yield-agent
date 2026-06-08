@@ -16,6 +16,11 @@ def set_seed(seed: int) -> None:
         torch.manual_seed(seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
+        # C6: reduce CNN/Transformer run-to-run variance. cudnn.deterministic + no autotune is
+        # safe (won't error); full use_deterministic_algorithms is avoided because some ops
+        # (e.g. adaptive pooling backward) lack deterministic kernels and would raise.
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
     except ImportError:
         pass
 

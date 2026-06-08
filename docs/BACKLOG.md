@@ -19,15 +19,15 @@ Living list. Every caveat/finding from [CRITIQUE.md](CRITIQUE.md) is tracked her
 |---|---|---|---|---|
 | ~~C1~~ | ✅ **DONE** — BH-FDR/Bonferroni over the claim registry (bootstrap p-value → `multiple_comparisons.py` → `show_claims.py` + dashboard card) | family-wise false positives | M | DECISIONS #29 |
 | ~~C2~~ | ✅ **DONE** — loop uses 5 MC-CV repeats (symmetric with registry); + target-stratified torch val split (representative, no tail-slice) | candidate 3 vs registry 5 asymmetry | S | DECISIONS #33 |
-| **C3** | Reconcile/clearly fence the two bootstrap units (E. coli series-level vs yeast sequence-level) | CIs not directly comparable across datasets | S–M | conditional (compare.py) |
-| **C7** | Justify or parameterize `min_delta_r2=0.02` practical-significance threshold | currently an arbitrary choice | S | conditional (configs/metrics) |
+| ~~C3~~ | ✅ **DONE** — comparisons + claims record `bootstrap_unit` (series vs sequence); no silent cross-claims | CIs not comparable across units | S–M | DECISIONS #35 |
+| ~~C7~~ | ✅ **DONE** — `min_delta_r2` sourced + documented in configs/metrics.yaml (≈ registry inter-model spacing) | was an arbitrary constant | S | DECISIONS #35 |
 
 ## Remaining — ML / DL methodology
 | ID | Item | Why | Effort | Protected? |
 |---|---|---|---|---|
 | ~~C4~~ | ✅ **DONE** — MinMax (train-fit, paper-aligned) flat scaling + `feature_scaling` axis + isolated in-run baselines (mlp+kmer 0.27→0.44) | unscaled features under-credited scale-sensitive models | M | DECISIONS #30 |
 | ~~C5~~ | ✅ **DONE** — param counts (torch) + val-split/early-stopping; harness logs param_ratio/fairness. Plus **vetted multi-scaler registry + data-tailored `auto`** (DECISIONS #31/#32) | arch comparisons not capacity/training-controlled; scaling too narrow | M | done |
-| **C6** | Force deterministic CNN (cuDNN deterministic algorithms) | manual_seed set but run-to-run variance possible | S | no |
+| ~~C6~~ | ✅ **DONE** — set_seed sets cudnn.deterministic + disables autotune | run-to-run variance | S | DECISIONS #35 |
 
 ## Remaining — agentic AI
 | ID | Item | Why | Effort | Protected? |
@@ -35,9 +35,9 @@ Living list. Every caveat/finding from [CRITIQUE.md](CRITIQUE.md) is tracked her
 | **C8/S3** | Improve reviewer discrimination / chair judgment (largely needs authority providers) | reviewer scores cluster on local 14B ⇒ chair rubber-stamps `overall`+bonus | M | no |
 | **C9** | Exercise the `human_review_required` gate for conditional-protected changes | path exists but never used (protected edits are developer edits) | M | no |
 | **C10** | Set authority API keys (Anthropic/OpenAI) — **copy `.env.example` → `.env` and fill in** (loader + gitignore ready) | all roles fall back to one local model today | S (user) | no |
-| **S1** | Make the ML-Engineer patch meaningful for non-HPO axes, or skip it | patch is decorative except for `training_procedure` (inert kept configs) | M | no |
+| ~~S1~~ | ✅ **DONE** — patch loop runs ONLY for training_procedure; other axes are no-patch | inert kept configs | M | DECISIONS #35 |
 | ~~S2~~ | ✅ **DONE** — chair selection bonus is now `configs/council_policy.yaml` `selection_bonuses` (default data_efficiency 0.5; 0 = pure merit) | hidden thumb on the scale | S | DECISIONS #34 |
-| **S4** | Tighten generator so free-text hypotheses match the structured fields | occasional incoherent hypotheses (e.g. "GBM" for rf-vs-cnn) | S | no |
+| ~~S4~~ | ✅ **DONE** — incoherent/hallucinated-model hypotheses replaced with field-consistent canonical text | free-text slop | S | DECISIONS #35 |
 
 ## Remaining — context engineering
 | ID | Item | Why | Effort | Protected? |

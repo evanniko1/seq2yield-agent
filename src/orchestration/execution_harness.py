@@ -153,6 +153,10 @@ def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
     cmp["baseline_model"] = pol.baseline_model
     cmp["candidate_model"] = spec.model_family
     cmp["baseline_source"] = baseline_source
+    # C3: label the bootstrap UNIT. E. coli comparisons resample per-series R² (the unit is a
+    # mutational series); the yeast benchmark resamples test sequences. CIs across different
+    # units are NOT directly comparable — recording the unit prevents silent cross-claims.
+    cmp["bootstrap_unit"] = "series"
     # capacity transparency: parameter counts for torch models (None for sklearn). Flags
     # un-controlled-capacity architecture comparisons (CRITIQUE C5).
     from seq2yield.models import registry as _reg

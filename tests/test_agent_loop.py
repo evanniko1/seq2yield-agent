@@ -115,3 +115,17 @@ def test_chair_selection_bonus_is_configurable():
     c.selection_bonuses = {}                                            # pure peer merit
     s2 = c._mean_scores(reviews, [de, ma])
     assert s2["de"]["overall"] == s2["ma"]["overall"] == 16.0
+
+
+def test_s4_hypothesis_coherence():
+    from agents.council import coherent_hypothesis, canonical_hypothesis
+    p = _prop("cnn", "rf")
+    p.scientific_hypothesis = "A CNN captures non-local motifs better than random forest."
+    assert coherent_hypothesis(p)                       # mentions candidate, no foreign model
+    p.scientific_hypothesis = "GBM will outperform the others on protein expression."
+    assert not coherent_hypothesis(p)                   # 'GBM' is a hallucinated/foreign model
+    p.scientific_hypothesis = "The model improves predictions."
+    assert not coherent_hypothesis(p)                   # never names the candidate
+    # canonical fallback is field-consistent
+    sweep = _prop("transformer", "cnn", itype="data_efficiency")
+    assert "transformer" in canonical_hypothesis(sweep) and "cnn" in canonical_hypothesis(sweep)

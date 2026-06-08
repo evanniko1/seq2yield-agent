@@ -423,6 +423,22 @@ EXPLORATION only — validity is still bootstrap + FDR. **Keys.** API keys load 
 precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never secrets.
 114 tests passing.
 
+## #35 — Cheap rigor/agentic chain: S4, S1, C6, C7, C3
+- **S4 (generator coherence):** `coherent_hypothesis`/`canonical_hypothesis` — proposals whose
+  free-text names a hallucinated model (e.g. "GBM") or omits the candidate are replaced with a
+  deterministic, field-consistent hypothesis; `hypotheses_normalized` reported.
+- **S1 (no inert patches):** the ML-Engineer patch loop now runs ONLY for `training_procedure`
+  (where hyperparameters actually drive training). Every other axis is a NO-PATCH experiment
+  (`changed_files=[]`) — removes decorative configs and saves authority-model calls.
+- **C6 (determinism):** `set_seed` sets cudnn deterministic + disables autotune (safe; full
+  `use_deterministic_algorithms` avoided — adaptive-pool backward lacks a deterministic kernel).
+- **C7 (threshold):** `min_delta_r2` sourced from `configs/metrics.yaml` with a documented
+  rationale (≈ registry inter-model spacing); `compile_runspec` reads it.
+- **C3 (bootstrap-unit fence):** comparisons + claims record `bootstrap_unit` ("series" for
+  E. coli per-series; yeast is "sequence") so CIs across units are never silently cross-claimed.
+- **Env:** `import os` fix in the provider base (the .env loader referenced it; only triggered
+  once a real `.env` existed). 118 tests passing.
+
 ## #8 — Quantum reference flagged as unverified
 **Context.** Proposal cited `arXiv:2605.05914` for quantum-inspired adapters — a malformed/
 future-dated ID. **Decision.** Keep quantum strictly Tier 3, out of MVP; do not rely on that

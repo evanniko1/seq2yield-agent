@@ -17,6 +17,14 @@ metrics:
     - { name: data_efficiency_auc, higher_is_better: true }
     - { name: generalization_gap, higher_is_better: false }
 
+# Acceptance thresholds (C7). min_delta_r2 is the PRACTICAL-significance bar a candidate must
+# clear (on top of statistical significance via the bootstrap CI). 0.02 R² ≈ the spacing
+# between adjacent models in the baseline registry (CNN 0.740 / RF 0.717 / MLP 0.638 @N=2000),
+# i.e. about the smallest gap that is both reliably measurable here and scientifically
+# meaningful. Tunable; the council compiles RunSpecs with this default.
+acceptance:
+  min_delta_r2: 0.02
+
 forbidden_without_human_review:
   - replace_primary_metric
   - change_target_normalization_post_hoc

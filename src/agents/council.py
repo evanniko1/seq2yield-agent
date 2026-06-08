@@ -37,6 +37,47 @@ _SAME_MODEL_BASELINE = {"feature_representation", "sampling_design", "training_p
 BASELINE_RUN_ID = "2026-06-04-full56"
 
 
+# --- S4: keep free-text hypotheses coherent with the structured fields ----------------------
+# Tokens for hallucinated models NOT in our registry (the real slop, e.g. "GBM" for an rf run).
+_FOREIGN_MODEL_TOKENS = ["gbm", "gradient boost", "xgboost", "lightgbm", "catboost", "lstm",
+                         "gru", "rnn", "knn", "k-nearest", "logistic", "naive bayes", "bert",
+                         "gpt", "autoencoder", "vae", "gan"]
+_MODEL_ALIASES = {
+    "cnn": ["cnn", "convolution"], "rf": ["rf", "random forest", "forest"],
+    "mlp": ["mlp", "multi-layer", "multilayer", "perceptron", "neural net"],
+    "svr": ["svr", "support vector"], "ridge": ["ridge"],
+    "transformer": ["transformer", "attention", "self-attention"],
+}
+
+
+def coherent_hypothesis(p) -> bool:
+    """True if the free-text hypothesis is consistent with the structured fields: it must not
+    name a model outside our registry and must reference the candidate model."""
+    h = (p.scientific_hypothesis or "").lower()
+    if any(tok in h for tok in _FOREIGN_MODEL_TOKENS):
+        return False
+    return any(a in h for a in _MODEL_ALIASES.get(p.model_family, [p.model_family]))
+
+
+def canonical_hypothesis(p) -> str:
+    """A deterministic, field-consistent hypothesis used when the LLM's text is incoherent."""
+    it = p.intervention_type
+    if it == "feature_representation":
+        return (f"The {p.feature_set} feature representation improves {p.model_family} R² over "
+                f"one-hot on fixed per-series splits.")
+    if it == "sampling_design":
+        return (f"{p.sampling_policy} training-set selection improves {p.model_family} R² over "
+                f"random sampling at fixed size.")
+    if it == "feature_scaling":
+        return f"Data-tailored feature scaling improves {p.model_family} R² over unscaled features."
+    if it == "training_procedure":
+        return f"Tuned hyperparameters improve {p.model_family} R² over its defaults."
+    if it == "data_efficiency":
+        return (f"{p.model_family} closes the R² gap to {p.comparator_model} as training-set "
+                f"size increases.")
+    return f"{p.model_family} achieves higher held-out R² than {p.comparator_model}."
+
+
 def _selection_bonuses() -> dict:
     """Chair selection bonuses by intervention_type (configs/council_policy.yaml). Declared +
     tunable; {} or all-0 => pure peer-review merit (CRITIQUE S2)."""
@@ -45,6 +86,15 @@ def _selection_bonuses() -> dict:
         return {}
     cfg = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
     return cfg.get("selection_bonuses", {}) or {}
+
+
+def _min_delta_r2() -> float:
+    """Practical-significance threshold from configs/metrics.yaml (C7; documented rationale)."""
+    f = ROOT / "configs" / "metrics.yaml"
+    if f.exists():
+        cfg = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
+        return float((cfg.get("acceptance") or {}).get("min_delta_r2", 0.02))
+    return 0.02
 
 
 def tested_pairs(records: list[dict]) -> set[tuple[str, str]]:
@@ -176,12 +226,17 @@ class Council:
         batch, who = self._ask("proposal_generator", sys, user, ProposalBatch,
                                temperature=0.6, max_tokens=1800)
         kept, dropped = filter_unsettled(batch.proposals, settled)
+        n_normalized = 0
         for i, p in enumerate(kept):
             p.proposal_id = p.proposal_id or f"H{i+1:03d}"
+            if not coherent_hypothesis(p):           # S4: fix incoherent free-text vs fields
+                p.scientific_hypothesis = canonical_hypothesis(p)
+                n_normalized += 1
         self.last_novelty = {"coverage": question_space.summarize(prior),
                              "pi_focus": focus, "pi_rationale": pi_rationale, "pi": pi_who,
                              "n_untested": len(question_space.uncovered(prior)),
-                             "dropped": dropped, "kept_cells": [proposal_cell_id(p) for p in kept]}
+                             "dropped": dropped, "hypotheses_normalized": n_normalized,
+                             "kept_cells": [proposal_cell_id(p) for p in kept]}
         return kept, who
 
     def review(self, proposals):
@@ -268,6 +323,7 @@ class Council:
         spec.acceptance_policy.track = "performance"
         spec.acceptance_policy.baseline_run_id = BASELINE_RUN_ID
         spec.acceptance_policy.baseline_model = baseline_model
+        spec.acceptance_policy.min_delta_r2 = _min_delta_r2()   # C7: documented, config-sourced
         # verdict at the largest swept size (where data-hungry models have the best chance)
         spec.acceptance_policy.comparison_train_size = max(sizes)
         return spec
