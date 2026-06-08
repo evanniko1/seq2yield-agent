@@ -439,6 +439,24 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
 - **Env:** `import os` fix in the provider base (the .env loader referenced it; only triggered
   once a real `.env` existed). 118 tests passing.
 
+## #37 — C11/C12 context engineering: versioned templates + trimmed prompt blobs
+- **C11 (versioned templates):** `prompting.TEMPLATE_VERSIONS` assigns each prompt a template id
+  + version; builders now return a `Prompt(system, user, template, version)` namedtuple and
+  `prompting.meta()` packages the pair into `metadata`. `ModelCallRecord` gained
+  `prompt_template`/`prompt_version`, populated on every call (success + failure paths). The audit
+  trail can now tell an intentional prompt revision (version bump) from silent drift — `prompt_hash`
+  alone changes on any edit and can't. reviewer/chair bumped to v2 (C8/S3 rubric), postmortem v2.
+- **C12 (trim JSON blobs):** `compact_json` drops null/empty fields and collapses pretty-print
+  whitespace; `_select` keeps only decision-relevant fields (`_REVIEW_FIELDS` for reviewer/
+  postmortem, `_CHAIR_FIELDS` for the chair, which already gets precomputed scores). Applied to
+  reviewer, chair, postmortem, planner, and patch-reviewer prompts. Measured ~23% smaller on one
+  proposal blob; the win grows with memory size and schema fields. Numeric 0 / `False` are kept
+  (real signal); only None/`[]`/`{}`/`""` are stripped.
+- Validated free (local Ollama): the trimmed reviewer prompt still produces a valid
+  `CouncilReviewItem`, and the recorded call carries `prompt_template=reviewer, prompt_version=2`.
+- Tests: `tests/test_prompting.py` (template/version carried + recorded; compaction strips empties,
+  selects fields, preserves 0/False, is smaller than the full dump). 122 passing.
+
 ## #36 — C10 verified + C8/S3 anchored review rubric (authority providers live)
 - **C10 (authority keys verified):** `scripts/verify_keys.py` — free key-presence report (names +
   lengths, never secrets) plus ONE cheap structured call per keyed provider (the `reviewer`

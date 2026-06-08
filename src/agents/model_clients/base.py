@@ -43,6 +43,8 @@ class ModelCallRecord(BaseModel):
     model: str
     role: str
     prompt_hash: str
+    prompt_template: str | None = None   # C11: which versioned template produced this call
+    prompt_version: str | None = None    # C11: template version (drift vs intentional revision)
     schema_name: str
     raw_text: str | None = None
     parsed: dict | None = None
@@ -100,6 +102,9 @@ class BaseStructuredClient:
                             role: str = "unknown", metadata: dict | None = None,
                             log_path: str | Path = DEFAULT_LOG) -> BaseModel:
         ph = prompt_hash(system, user)
+        meta = metadata or {}
+        tmpl = meta.get("prompt_template")
+        tver = meta.get("prompt_version")
         last_err = None
         raw_text = None
         t0 = time.perf_counter()
@@ -112,6 +117,7 @@ class BaseStructuredClient:
                 obj = schema.model_validate(data)
                 rec = ModelCallRecord(
                     provider=self.provider, model=self.model, role=role, prompt_hash=ph,
+                    prompt_template=tmpl, prompt_version=tver,
                     schema_name=schema.__name__, raw_text=raw_text, parsed=obj.model_dump(),
                     token_usage=usage, latency_sec=round(time.perf_counter() - t0, 3),
                     retries=attempt, success=True,
@@ -121,6 +127,7 @@ class BaseStructuredClient:
             except ProviderUnavailable as e:
                 rec = ModelCallRecord(
                     provider=self.provider, model=self.model, role=role, prompt_hash=ph,
+                    prompt_template=tmpl, prompt_version=tver,
                     schema_name=schema.__name__, success=False, error=str(e)[:500],
                     latency_sec=round(time.perf_counter() - t0, 3),
                     ts=datetime.now(timezone.utc).isoformat())
@@ -133,6 +140,7 @@ class BaseStructuredClient:
                         f"Previous error: {str(e)[:300]}")
         rec = ModelCallRecord(
             provider=self.provider, model=self.model, role=role, prompt_hash=ph,
+                    prompt_template=tmpl, prompt_version=tver,
             schema_name=schema.__name__, raw_text=raw_text, parsed=None,
             latency_sec=round(time.perf_counter() - t0, 3),
             retries=self.max_retries, success=False, error=str(last_err)[:500],

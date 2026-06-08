@@ -1,9 +1,63 @@
-"""Role -> prompt templates (docs/AGENTS.md). Each builder returns (system, user)."""
+"""Role -> prompt templates (docs/AGENTS.md). Each builder returns a `Prompt`.
+
+C11: templates are versioned (`TEMPLATE_VERSIONS`); the builder tags each prompt with its
+template id + version and the client records them on the ModelCallRecord, so the audit trail
+distinguishes an intentional prompt revision from silent drift (prompt_hash alone cannot).
+C12: `compact_json` strips null/empty fields (and pretty-print whitespace) and `_select`
+keeps only decision-relevant fields, so JSON blobs dumped into prompts stay small as memory
+and proposal schemas grow — less token cost, less attention dilution.
+"""
 from __future__ import annotations
 
 import json
+from collections import namedtuple
 
 from . import roles
+
+Prompt = namedtuple("Prompt", "system user template version")
+
+# Bump a version when the wording changes materially; the new value lands in the call log.
+TEMPLATE_VERSIONS = {
+    "generator": "2",        # coverage-target block + full intervention catalogue
+    "reviewer": "2",         # anchored 1-5 rubric (C8/S3)
+    "chair": "2",            # confoundedness tie-break + justified rationale (C8/S3)
+    "postmortem": "2",       # run-facts-only + compact proposal (C12)
+    "planner": "1",
+    "patch_reviewer": "1",
+}
+
+
+def meta(name: str) -> dict:
+    """metadata payload for complete_structured -> ModelCallRecord (C11 audit)."""
+    return {"prompt_template": name, "prompt_version": TEMPLATE_VERSIONS.get(name, "1")}
+
+
+def _strip_empty(o):
+    if isinstance(o, dict):
+        return {k: _strip_empty(v) for k, v in o.items() if v not in (None, [], {}, "")}
+    if isinstance(o, list):
+        return [_strip_empty(x) for x in o]
+    return o
+
+
+def compact_json(obj, indent=None) -> str:
+    """C12: drop null/empty fields + collapse whitespace before a blob enters a prompt."""
+    sep = (",", ":") if indent is None else (",", ": ")
+    return json.dumps(_strip_empty(obj), indent=indent, separators=sep, ensure_ascii=False)
+
+
+# Decision-relevant proposal fields a reviewer/postmortem actually needs (everything else is
+# prompt noise); the chair already receives precomputed scores so it only needs the knobs.
+_REVIEW_FIELDS = ("proposal_id", "title", "maturity_tier", "intervention_type",
+                  "scientific_hypothesis", "model_family", "comparator_model", "feature_set",
+                  "sampling_policy", "feature_scaling", "train_sizes", "scope",
+                  "required_controls", "expected_failure_modes")
+_CHAIR_FIELDS = ("proposal_id", "intervention_type", "model_family", "comparator_model",
+                 "feature_set", "sampling_policy", "train_sizes", "scope")
+
+
+def _select(p: dict, fields) -> dict:
+    return _strip_empty({k: p.get(k) for k in fields})
 
 _CONTEXT = (
     "Project: bounded agentic ML workflow reproducing Nikolados et al. (2022), predicting "
@@ -18,7 +72,7 @@ _CONTEXT = (
 )
 
 
-def generator_prompt(n: int, prior: str = "", targets=None) -> tuple[str, str]:
+def generator_prompt(n: int, prior: str = "", targets=None) -> Prompt:
     sys = roles.persona("proposal_generator") + "\n\n" + _CONTEXT
     prior_block = ""
     if prior:
@@ -66,7 +120,7 @@ def generator_prompt(n: int, prior: str = "", targets=None) -> tuple[str, str]:
             "'feature_representation' study. Vary the intervention_type across proposals. "
             "Return JSON: {\"proposals\": [ ... ]}."
             + prior_block)
-    return sys, user
+    return Prompt(sys, user, "generator", TEMPLATE_VERSIONS["generator"])
 
 
 # Anchored rubric (C8/S3): without explicit anchors reviewers cluster every score at 4,
@@ -88,7 +142,7 @@ _RUBRIC = (
     "seeded, enough MC-CV repeats to support a bootstrap CI.")
 
 
-def reviewer_prompt(role: str, proposal: dict) -> tuple[str, str]:
+def reviewer_prompt(role: str, proposal: dict) -> Prompt:
     sys = roles.persona(role) + "\n\n" + _CONTEXT
     user = ("Critically review ONE proposal. Be a discriminating skeptic, not a rubber stamp.\n\n"
             f"{_RUBRIC}\n\n"
@@ -98,11 +152,11 @@ def reviewer_prompt(role: str, proposal: dict) -> tuple[str, str]:
             "proposal — cite the knob, the comparator, or the missing control). Set reject_reason "
             "ONLY if the design is fatally confounded or infeasible (i.e. you scored "
             "feasibility<=2 or confoundedness<=2 with no salvaging change).\n\n"
-            f"role: {role}\nproposal:\n{json.dumps(proposal, indent=2)}")
-    return sys, user
+            f"role: {role}\nproposal:\n{compact_json(_select(proposal, _REVIEW_FIELDS), indent=2)}")
+    return Prompt(sys, user, "reviewer", TEMPLATE_VERSIONS["reviewer"])
 
 
-def chair_prompt(proposals: list[dict], reviews: dict) -> tuple[str, str]:
+def chair_prompt(proposals: list[dict], reviews: dict) -> Prompt:
     sys = roles.persona("chair") + "\n\n" + _CONTEXT
     user = ("Each proposal below has precomputed review fields: 'overall' (higher is better) "
             "and 'sound' (true = feasible, not confounded, no reject votes). Decision rule: "
@@ -116,6 +170,6 @@ def chair_prompt(proposals: list[dict], reviews: dict) -> tuple[str, str]:
             "the executor must run to keep the contrast clean (e.g. hold train size/scaling "
             "fixed; ensure same-model baseline for feature/sampling/scaling studies). Set a "
             "runtime budget in minutes.\n\n"
-            f"proposals:\n{json.dumps(proposals, indent=2)}\n\n"
-            f"review_scores (with overall + sound):\n{json.dumps(reviews, indent=2)}")
-    return sys, user
+            f"proposals:\n{compact_json([_select(p, _CHAIR_FIELDS) for p in proposals])}\n\n"
+            f"review_scores (with overall + sound):\n{compact_json(reviews)}")
+    return Prompt(sys, user, "chair", TEMPLATE_VERSIONS["chair"])

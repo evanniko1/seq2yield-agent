@@ -204,11 +204,14 @@ class Council:
         self.use_planner = use_planner
         self.selection_bonuses = _selection_bonuses()
 
-    def _ask(self, role: str, system: str, user: str, schema, **kw):
+    def _ask(self, role: str, prompt, schema, **kw):
+        # prompt is a prompting.Prompt(system, user, template, version); thread template+version
+        # into the call record (C11) so the audit trail shows which prompt produced the call.
         client = self.router.resolve(role, allow_local_fallback=self.fallback)
         used = getattr(client, "local_fallback_for", None)
-        obj = client.complete_structured(system=system, user=user, schema=schema,
-                                         role=role, **kw)
+        obj = client.complete_structured(
+            system=prompt.system, user=prompt.user, schema=schema, role=role,
+            metadata=prompting.meta(prompt.template), **kw)
         return obj, f"{client.provider}:{client.model}" + (" (local-fallback)" if used else "")
 
     def generate(self, n: int):
@@ -221,9 +224,9 @@ class Council:
         else:
             focus, pi_rationale, pi_who = planner.INTERVENTIONS, "planner disabled", "none"
         targets = planner.rank_targets(prior, focus_types=focus)
-        sys, user = prompting.generator_prompt(n, prior_summary(prior) if prior else "",
-                                               targets=targets)
-        batch, who = self._ask("proposal_generator", sys, user, ProposalBatch,
+        prompt = prompting.generator_prompt(n, prior_summary(prior) if prior else "",
+                                            targets=targets)
+        batch, who = self._ask("proposal_generator", prompt, ProposalBatch,
                                temperature=0.6, max_tokens=1800)
         kept, dropped = filter_unsettled(batch.proposals, settled)
         n_normalized = 0
@@ -244,9 +247,9 @@ class Council:
         for p in proposals:
             items = []
             for r in roles.reviewers():
-                sys, user = prompting.reviewer_prompt(r, p.model_dump())
+                prompt = prompting.reviewer_prompt(r, p.model_dump())
                 try:
-                    item, _ = self._ask(r, sys, user, CouncilReviewItem,
+                    item, _ = self._ask(r, prompt, CouncilReviewItem,
                                         temperature=0.2, max_tokens=600)
                     items.append(item)
                 except Exception as e:  # one reviewer failing must not sink the round
@@ -286,8 +289,8 @@ class Council:
         return agg
 
     def chair(self, proposals, mean_scores):
-        sys, user = prompting.chair_prompt([p.model_dump() for p in proposals], mean_scores)
-        decision, who = self._ask("chair", sys, user, ChairDecision,
+        prompt = prompting.chair_prompt([p.model_dump() for p in proposals], mean_scores)
+        decision, who = self._ask("chair", prompt, ChairDecision,
                                   temperature=0.1, max_tokens=600)
         return decision, who
 

@@ -42,9 +42,9 @@ Living list. Every caveat/finding from [CRITIQUE.md](CRITIQUE.md) is tracked her
 ## Remaining — context engineering
 | ID | Item | Why | Effort | Protected? |
 |---|---|---|---|---|
-| **C11** | Template + version prompts (not f-string concatenation) | drift risk; only loosely captured by prompt_hash | M | no |
-| **C12** | Trim/summarize JSON blobs dumped into prompts | token-cost + attention dilution as memory grows | S | no |
-| **S5** | Re-source placeholder provider prices with real rates | cost is $0 (Ollama); $ figures untested | S (user) | no |
+| ~~C11~~ | ✅ **DONE** — versioned templates (`prompting.TEMPLATE_VERSIONS`); each prompt carries `template`+`version`, recorded on `ModelCallRecord.prompt_template/_version` (audit distinguishes revision from drift) | drift risk; only loosely captured by prompt_hash | M | DECISIONS #37 |
+| ~~C12~~ | ✅ **DONE** — `compact_json` (strip null/empty, collapse whitespace) + field-select (`_REVIEW_FIELDS`/`_CHAIR_FIELDS`) on reviewer/chair/postmortem/planner/patch blobs (~23%+ smaller per proposal; grows with memory) | token-cost + attention dilution as memory grows | S | DECISIONS #37 |
+| **S5** | Re-source placeholder provider prices with real rates **+ fix Anthropic `token_usage` logging as 0** | cost is $0 (Ollama); $ figures untested; cost tracker blind to Anthropic tokens | S (user) | no |
 
 ## Remaining — capability / scope
 | ID | Item | Why | Effort | Protected? |

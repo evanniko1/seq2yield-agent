@@ -7,10 +7,10 @@ uncovered (then inconclusive-to-revisit) cells. Degrades gracefully to "explore 
 """
 from __future__ import annotations
 
-import json
 from collections import defaultdict, deque
 
 from . import question_space, roles
+from .prompting import compact_json, meta
 from .router import Router
 from .schemas import PlannerPlan
 
@@ -59,13 +59,13 @@ def pi_plan(records: list[dict], *, allow_local_fallback: bool = False):
     sys = roles.persona("principal_investigator")
     user = ("Choose which intervention_types to prioritize NEXT to maximize insight per "
             "experiment. Prefer axes with unexplored questions; ensure breadth. Options: "
-            f"{INTERVENTIONS}.\n\ncoverage_summary: {json.dumps(summ)}\n"
-            f"untested_cells_by_type: {json.dumps(untested_by_type)}")
+            f"{INTERVENTIONS}.\n\ncoverage_summary: {compact_json(summ)}\n"
+            f"untested_cells_by_type: {compact_json(dict(untested_by_type))}")
     try:
         client = Router().resolve("principal_investigator", allow_local_fallback=allow_local_fallback)
         plan: PlannerPlan = client.complete_structured(
             system=sys, user=user, schema=PlannerPlan, role="principal_investigator",
-            temperature=0.2, max_tokens=400)
+            metadata=meta("planner"), temperature=0.2, max_tokens=400)
         focus = [t for t in plan.focus_intervention_types if t in INTERVENTIONS] or INTERVENTIONS
         who = f"{client.provider}:{client.model}" + (
             " (local-fallback)" if getattr(client, "local_fallback_for", None) else "")

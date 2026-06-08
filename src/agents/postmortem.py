@@ -5,9 +5,8 @@ A claim is only allowed when the harness accepted the run (run-card evidence; AG
 """
 from __future__ import annotations
 
-import json
-
 from . import roles
+from .prompting import _REVIEW_FIELDS, _select, compact_json, meta
 from .router import Router
 from .schemas import Postmortem
 
@@ -46,11 +45,11 @@ def synthesize(proposal: dict, verdict: dict, *, curve: list | None = None,
             "Set claim_allowed to a one-sentence claim ONLY if verdict=='accepted' (else null). "
             "This was a bounded run; be honest about statistical power and confounds. "
             + sweep_hint + "\n\n"
-            f"proposal:\n{json.dumps(proposal, indent=2)}\n\n"
-            f"run_facts:\n{json.dumps(facts, indent=2)}")
+            f"proposal:\n{compact_json(_select(proposal, _REVIEW_FIELDS), indent=2)}\n\n"
+            f"run_facts:\n{compact_json(facts, indent=2)}")
     client = Router().resolve("postmortem_synthesizer", allow_local_fallback=allow_local_fallback)
     pm: Postmortem = client.complete_structured(system=sys, user=user, schema=Postmortem,
-                                                role="postmortem_synthesizer",
+                                                role="postmortem_synthesizer", metadata=meta("postmortem"),
                                                 temperature=0.3, max_tokens=700)
     # enforce the invariant regardless of what the model returns
     if verdict.get("status") != "accepted":
