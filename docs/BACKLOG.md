@@ -49,7 +49,7 @@ Living list. Every caveat/finding from [CRITIQUE.md](CRITIQUE.md) is tracked her
 ## Remaining — capability / scope
 | ID | Item | Why | Effort | Protected? |
 |---|---|---|---|---|
-| **K1** | Wire yeast into the council/coverage (generalize the dataset dimension) | yeast is a standalone benchmark today; council can't propose yeast/transfer questions | L | no |
+| ~~K1~~ | ✅ **DONE** — `dataset` dimension (ecoli\|yeast) across question-space/RunSpec; reusable `yeast_runner` (pooled, sequence-level bootstrap) wired into the harness; `transfer_generalization` intervention = replicate a settled E. coli finding on yeast with a `transfer.concordance` verdict (concordant/discordant/inconclusive; never pools CIs across organisms). Council compiles direct-yeast + transfer proposals; source run auto-resolved from memory. | yeast was a standalone benchmark; council couldn't ask yeast/transfer questions | L | DECISIONS #40 |
 | **K2** | Tier 2 — frozen/fine-tuned DNA & protein foundation-model embeddings; active learning | highest science value | L | no |
 | **K3** | Tier 3 — frontier-API embeddings; quantum-inspired adapters | exploratory | L | no |
 | **K5** | **Interactive app (writable config)** — promote the read-only dashboard to an app that EDITS config: `selection_bonuses`, budget caps, provider/model picks, tier unlock, and run/approve controls (spec Phase 4). Today config is YAML-only; the dashboard is read-only. | operator control without editing YAML | L | no |

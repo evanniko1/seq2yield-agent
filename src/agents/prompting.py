@@ -18,7 +18,7 @@ Prompt = namedtuple("Prompt", "system user template version")
 
 # Bump a version when the wording changes materially; the new value lands in the call log.
 TEMPLATE_VERSIONS = {
-    "generator": "2",        # coverage-target block + full intervention catalogue
+    "generator": "3",        # + dataset dimension (ecoli|yeast) + transfer_generalization (K1)
     "reviewer": "2",         # anchored 1-5 rubric (C8/S3)
     "chair": "2",            # confoundedness tie-break + justified rationale (C8/S3)
     "postmortem": "2",       # run-facts-only + compact proposal (C12)
@@ -110,6 +110,15 @@ def generator_prompt(n: int, prior: str = "", targets=None) -> Prompt:
             "  - 'feature_scaling': does a DATA-TAILORED feature scaler (auto-selected from the "
             "feature distribution: robust/quantile/standard/minmax) beat unscaled features for a "
             "flat model (rf/mlp)? Set comparator_model = model_family (baseline = same, unscaled).\n"
+            "  - 'transfer_generalization': does a finding ESTABLISHED on E. coli REPLICATE on the "
+            "yeast benchmark (80nt promoters -> YFP, pooled)? This is cross-organism transfer OF "
+            "CONCLUSIONS (NOT weight transfer — the input sizes differ). Set model_family/"
+            "comparator_model (and any feature/sampling/scaling knob) to the E. coli comparison you "
+            "want to re-test; the harness runs it on yeast and reports whether the trend is "
+            "concordant/discordant/inconclusive vs the E. coli result.\n"
+            "DATASET dimension: set dataset='ecoli' (default, 96nt per-series) or dataset='yeast' "
+            "(80nt pooled, sequence-level bootstrap) to ask a DIRECT question on either organism. "
+            "Use transfer_generalization to REPLICATE a known E. coli finding on yeast.\n"
             "train_sizes is a list drawn from [250,500,1000,2000].\n"
             "scope: 'global' (default; one model per series, judged by mean across series — "
             "per-series heterogeneity is always reported) or 'pooled' (train ONE model across "

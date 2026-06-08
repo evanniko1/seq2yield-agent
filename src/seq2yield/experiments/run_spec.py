@@ -31,7 +31,11 @@ class RunSpec(BaseModel):
     split_id: str = "provided"
     split_hash: str | None = None
 
+    dataset: str = "ecoli"              # ecoli (96nt->sfGFP, per-series) | yeast (80nt->YFP, pooled)
     intervention_type: str = "model_architecture"   # which knob this experiment varies
+    # transfer_generalization links to a settled finding on another dataset (replication):
+    transfer_of_run_id: str | None = None    # the source run/claim being replicated
+    transfer_source_dataset: str | None = None  # dataset the source finding came from (e.g. ecoli)
     model_family: str
     feature_set: str = "one_hot"
     sampling_policy: str = "random"
@@ -87,14 +91,23 @@ def validate_runspec(spec: RunSpec, *, unlocked_tier: str, primary_metric: str =
     if overlap:
         errors.append(f"allowed_files intersect protected_files: {sorted(overlap)}")
 
-    if spec.acceptance_policy.requires_repeated_seed and len(spec.iterations) < 2:
-        errors.append("acceptance_policy.requires_repeated_seed but <2 iterations (repeats)")
+    if spec.dataset not in ("ecoli", "yeast"):
+        errors.append(f"unknown dataset '{spec.dataset}' (expected ecoli|yeast)")
+
+    # transfer_generalization is a replication: it MUST reference the source finding it replicates.
+    if spec.intervention_type == "transfer_generalization" and not spec.transfer_of_run_id:
+        errors.append("transfer_generalization requires transfer_of_run_id (the source finding)")
+
+    # E. coli uses per-series MC-CV repeats; yeast uses ONE per-gene-stratified holdout with a
+    # SEQUENCE-LEVEL bootstrap (its CIs come from resampling test sequences, not repeats).
+    if spec.dataset == "ecoli":
+        if spec.acceptance_policy.requires_repeated_seed and len(spec.iterations) < 2:
+            errors.append("acceptance_policy.requires_repeated_seed but <2 iterations (repeats)")
+        if len(spec.iterations) < min_seeds_for_repeats:
+            warnings.append(f"only {len(spec.iterations)} repeats (<{min_seeds_for_repeats}); "
+                            "primary R² less stable than the paper's 5-repeat protocol")
 
     if spec.acceptance_policy.track == "performance" and not spec.acceptance_policy.baseline_run_id:
         errors.append("performance track requires acceptance_policy.baseline_run_id")
-
-    if len(spec.iterations) < min_seeds_for_repeats:
-        warnings.append(f"only {len(spec.iterations)} repeats (<{min_seeds_for_repeats}); "
-                        "primary R² less stable than the paper's 5-repeat protocol")
 
     return ValidationResult(ok=not errors, errors=errors, warnings=warnings)

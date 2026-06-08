@@ -50,7 +50,13 @@ class CouncilProposal(BaseModel):
     title: str
     maturity_tier: Tier
     intervention_type: Literal["model_architecture", "training_procedure", "data_efficiency",
-                               "feature_representation", "sampling_design", "feature_scaling"]
+                               "feature_representation", "sampling_design", "feature_scaling",
+                               "transfer_generalization"]
+    # transfer_generalization = REPLICATE a settled E. coli finding on yeast (cross-organism
+    # transfer-of-conclusions; the compiler resolves the source run + forces dataset=yeast).
+    # dataset selects the organism for a DIRECT (non-transfer) question. E. coli = 96 nt
+    # per-series; yeast = 80 nt pooled (sequence-level bootstrap).
+    dataset: Literal["ecoli", "yeast"] = "ecoli"
     scientific_hypothesis: str
     model_family: ModelFamily
     comparator_model: RegistryModel        # must exist in the baseline registry to compare

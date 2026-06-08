@@ -35,6 +35,35 @@ _ALLOWED = {
 _SAME_MODEL_BASELINE = {"feature_representation", "sampling_design", "training_procedure",
                         "feature_scaling"}
 BASELINE_RUN_ID = "2026-06-04-full56"
+YEAST_BASELINE_RUN_ID = "yeast-baseline"     # marker; the yeast harness path uses an in-run baseline
+
+
+def _transfer_underlying(p) -> str:
+    """Infer the real intervention a transfer proposal replicates, from its non-default knobs."""
+    if p.feature_set != "one_hot":
+        return "feature_representation"
+    if p.sampling_policy != "random":
+        return "sampling_design"
+    if p.feature_scaling not in (None, "none"):
+        return "feature_scaling"
+    if len(set(p.train_sizes)) > 1:
+        return "data_efficiency"
+    return "model_architecture"
+
+
+def _resolve_transfer_source(records: list[dict], underlying: str, p) -> str | None:
+    """Find the most recent SETTLED E. coli run whose cell matches the comparison being replicated,
+    so concordance compares against a real prior finding (never a hallucinated run_id)."""
+    want = question_space.cell_id_for(
+        underlying, p.model_family, p.comparator_model, p.feature_set, p.sampling_policy,
+        getattr(p, "scope", "global"), dataset="ecoli")
+    found = None
+    for r in records:
+        if r.get("dataset", "ecoli") != "ecoli" or r.get("status") not in ("accepted", "rejected"):
+            continue
+        if question_space.record_cell_id(r) == want:
+            found = r.get("run_id")                 # keep scanning -> latest wins
+    return found
 
 
 # --- S4: keep free-text hypotheses coherent with the structured fields ----------------------
@@ -296,17 +325,31 @@ class Council:
 
     def compile_runspec(self, proposal, decision) -> RunSpec:
         dh, sh = _registry_hashes()
-        allowed = _ALLOWED.get(proposal.intervention_type, ["src/seq2yield/models/"])
         sizes = sorted(set(proposal.train_sizes)) or [500]
         itype = proposal.intervention_type
+        dataset = getattr(proposal, "dataset", "ecoli")
+        transfer_src = transfer_src_ds = None
+
+        # transfer_generalization: REPLICATE a settled E. coli finding on yeast. Translate to the
+        # underlying intervention (so the harness builds the right controlled baseline) + resolve
+        # the source run from memory (real run_id -> concordance is computed; else direct yeast Q).
+        if itype == "transfer_generalization":
+            itype = _transfer_underlying(proposal)
+            dataset = "yeast"
+            transfer_src = _resolve_transfer_source(memory.load(), itype, proposal)
+            transfer_src_ds = "ecoli"
+
+        allowed = _ALLOWED.get(itype, ["src/seq2yield/models/"])
         same_model = itype in _SAME_MODEL_BASELINE
         baseline_model = proposal.model_family if same_model else proposal.comparator_model
         tag = {"data_efficiency": "sweep", "feature_representation": f"{proposal.feature_set}-vs",
                "sampling_design": f"{proposal.sampling_policy}-vs",
                "feature_scaling": "minmax-vs"}.get(itype, "vs")
+        ds_tag = "" if dataset == "ecoli" else f"{dataset}-"
+        xfer_tag = "-xfer" if transfer_src else ""
         scope_tag = "" if proposal.scope == "global" else f"-{proposal.scope}"
-        run_id = (f"{datetime.now(timezone.utc):%Y-%m-%d}-council-{proposal.model_family}-"
-                  f"{tag}-{baseline_model}{scope_tag}")
+        run_id = (f"{datetime.now(timezone.utc):%Y-%m-%d}-council-{ds_tag}{proposal.model_family}-"
+                  f"{tag}-{baseline_model}{scope_tag}{xfer_tag}")
         # feature_scaling axis tests a DATA-TAILORED scaler (auto picks the sound transform for
         # the feature distribution) vs unscaled. Flat feature studies on scale-sensitive models
         # also default to auto so the representation comparison is fair (C4/C5 extra).
@@ -315,7 +358,8 @@ class Council:
             scaling = "auto"
         spec = RunSpec(
             run_id=run_id, proposal_id=proposal.proposal_id,
-            intervention_type=itype, maturity_tier=proposal.maturity_tier,
+            dataset=dataset, intervention_type=itype, maturity_tier=proposal.maturity_tier,
+            transfer_of_run_id=transfer_src, transfer_source_dataset=transfer_src_ds,
             dataset_manifest_hash=dh, split_hash=sh,
             model_family=proposal.model_family, feature_set=proposal.feature_set,
             sampling_policy=proposal.sampling_policy, feature_scaling=scaling,
@@ -324,7 +368,9 @@ class Council:
             max_runtime_minutes=decision.max_runtime_minutes,
         )
         spec.acceptance_policy.track = "performance"
-        spec.acceptance_policy.baseline_run_id = BASELINE_RUN_ID
+        # yeast has no per-series registry; its harness path uses an in-run baseline (marker id).
+        spec.acceptance_policy.baseline_run_id = (
+            YEAST_BASELINE_RUN_ID if dataset == "yeast" else BASELINE_RUN_ID)
         spec.acceptance_policy.baseline_model = baseline_model
         spec.acceptance_policy.min_delta_r2 = _min_delta_r2()   # C7: documented, config-sourced
         # verdict at the largest swept size (where data-hungry models have the best chance)

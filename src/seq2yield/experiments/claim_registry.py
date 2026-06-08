@@ -31,6 +31,8 @@ def record(*, run_id: str, proposal_id: str, status: str, comparison: dict,
         "ci_excludes_zero": comparison.get("ci_excludes_zero"),
         "p_value": comparison.get("p_value"),
         "bootstrap_unit": comparison.get("bootstrap_unit", "series"),   # C3: comparability fence
+        "dataset": comparison.get("dataset", "ecoli"),                  # K1: organism dimension
+        "transfer": (comparison.get("transfer") or {}).get("verdict"),  # K1: replication verdict
         "n_series": comparison.get("n_series"),
         "train_size": comparison.get("comparison_train_size"),
         # claim only survives if the harness accepted the run

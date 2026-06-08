@@ -40,7 +40,7 @@ def test_train_evaluate_honors_hyperparameters():
 
 def test_training_procedure_in_catalogue():
     ids = {c.cell_id for c in qs.enumerate_cells()}
-    assert "training_procedure|rf|rf|one_hot|random|global" in ids
+    assert "ecoli|training_procedure|rf|rf|one_hot|random|global" in ids
 
 
 def test_compile_training_procedure_baseline_is_same_model():

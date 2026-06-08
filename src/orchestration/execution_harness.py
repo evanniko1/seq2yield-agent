@@ -105,6 +105,8 @@ def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
 
     # 4. execute experiment
     audit_log.append(run_dir, "execute_start", {})
+    if spec.dataset == "yeast":                         # K1: pooled, sequence-level path
+        return _run_yeast(spec, run_dir, vres)
     result = run_runspec(spec)
     result["metrics"].to_csv(run_dir / "metrics.csv", index=False)
     audit_log.append(run_dir, "execute_done", {"n_rows": int(len(result["metrics"]))})
@@ -179,6 +181,76 @@ def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
         cmp["crossover"] = compare_mod.crossover_analysis(per_size)
     audit_log.append(run_dir, "compare", cmp)
 
+    return _verdict(run_dir, cmp["status"],
+                    {"run_id": spec.run_id, "stage": "complete", "comparison": cmp,
+                     "environment": environment(), "warnings": vres.warnings})
+
+
+def _run_yeast(spec: RunSpec, run_dir: Path, vres) -> dict:
+    """K1: pooled yeast path. Trains candidate + in-run baseline pooled, evaluates on a fixed
+    per-gene-stratified test set with a SEQUENCE-LEVEL paired bootstrap (bootstrap_unit=sequence,
+    C3 — never pooled with E. coli per-series CIs). If the run links a source finding
+    (transfer_of_run_id), attaches a cross-organism concordance verdict (replication)."""
+    import json
+
+    from seq2yield.experiments import transfer, yeast_runner
+    from seq2yield.statistics.bootstrap import paired_bootstrap_r2
+    from seq2yield.training import metrics as M
+
+    pol = spec.acceptance_policy
+    if pol.track != "performance":
+        return _verdict(run_dir, "inconclusive",
+                        {"run_id": spec.run_id, "stage": "compare",
+                         "reasons": [f"track '{pol.track}' not implemented for yeast"]})
+
+    cand = yeast_runner.run_yeast(spec)
+    base_spec = _baseline_spec(spec, pol.baseline_model)
+    base = yeast_runner.run_yeast(base_spec, model_family=base_spec.model_family)
+    y = cand["y_test"]
+    sizes = sorted(set(cand["preds"]) & set(base["preds"]))
+    audit_log.append(run_dir, "execute_done", {"n_test": int(len(y)), "sizes": sizes})
+
+    rows = []
+    for size in sizes:
+        rows.append({"dataset": "yeast", "train_size": size, "model": spec.model_family,
+                     "r2": M.r2(y, cand["preds"][size])})
+        rows.append({"dataset": "yeast", "train_size": size, "model": pol.baseline_model,
+                     "r2": M.r2(y, base["preds"][size])})
+    pd.DataFrame(rows).to_csv(run_dir / "metrics.csv", index=False)
+
+    per_size = []
+    for size in sizes:
+        pb = paired_bootstrap_r2(y, cand["preds"][size], base["preds"][size], seed=spec.seed)
+        status, reasons = compare_mod._decide(pb["mean_delta"], pb["excludes_zero"], pb["ci"], pol)
+        per_size.append({"train_size": int(size), "status": status,
+                         "candidate_mean": float(M.r2(y, cand["preds"][size])),
+                         "baseline_mean": float(M.r2(y, base["preds"][size])),
+                         "mean_delta": float(pb["mean_delta"]), "paired_bootstrap_ci": pb["ci"],
+                         "ci_excludes_zero": pb["excludes_zero"], "p_value": pb["p_value"],
+                         "reasons": reasons})
+
+    size = pol.comparison_train_size if pol.comparison_train_size in sizes else max(sizes)
+    cmp = dict(next(p for p in per_size if p["train_size"] == size))
+    cmp.update({"comparison_train_size": size, "candidate_model": spec.model_family,
+                "baseline_model": pol.baseline_model, "baseline_source": "in_run_yeast",
+                "bootstrap_unit": "sequence", "dataset": "yeast", "n_test": int(len(y))})
+    if len(per_size) > 1:
+        cmp["per_size"] = per_size
+        cmp["crossover"] = compare_mod.crossover_analysis(per_size)
+
+    # cross-organism transfer: replicate a prior (E. coli) finding and judge concordance
+    if spec.transfer_of_run_id:
+        src = ROOT / "experiments/runs" / spec.transfer_of_run_id / "verdict.json"
+        if src.exists():
+            source_cmp = json.loads(src.read_text(encoding="utf-8")).get("comparison", {})
+            cmp["transfer"] = transfer.concordance(source_cmp, cmp)
+            cmp["transfer"]["source_run_id"] = spec.transfer_of_run_id
+            cmp["transfer"]["source_dataset"] = spec.transfer_source_dataset or "ecoli"
+        else:
+            cmp["transfer"] = {"verdict": "inconclusive",
+                               "reason": f"source run {spec.transfer_of_run_id} not found"}
+
+    audit_log.append(run_dir, "compare", cmp)
     return _verdict(run_dir, cmp["status"],
                     {"run_id": spec.run_id, "stage": "complete", "comparison": cmp,
                      "environment": environment(), "warnings": vres.warnings})

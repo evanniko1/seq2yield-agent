@@ -79,7 +79,7 @@ def test_baseline_spec_resets_only_varied_knob():
 
 def test_feature_scaling_in_catalogue():
     ids = {c.cell_id for c in qs.enumerate_cells()}
-    assert "feature_scaling|mlp|mlp|one_hot|random|global" in ids
+    assert "ecoli|feature_scaling|mlp|mlp|one_hot|random|global" in ids
 
 
 def test_recommend_scaler_is_data_tailored_and_sound():

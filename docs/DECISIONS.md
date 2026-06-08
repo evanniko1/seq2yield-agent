@@ -439,6 +439,36 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
 - **Env:** `import os` fix in the provider base (the .env loader referenced it; only triggered
   once a real `.env` existed). 118 tests passing.
 
+## #40 — K1: dataset dimension + cross-organism transfer (conclusion-replication)
+- **Framing (the important part).** Direct weight transfer across organisms is impossible here
+  (E. coli 96 nt vs yeast 80 nt → different one-hot dims and sequence spaces). So "transfer" means
+  **transfer of conclusions**: does a finding ESTABLISHED on E. coli REPLICATE on yeast? That is
+  exactly the paper's generalizability question, and what `build_yeast` already showed for model
+  ranking (CNN>RF>MLP across both organisms, #27).
+- **Dataset dimension.** `dataset ∈ {ecoli, yeast}` added to `RunSpec` and the question-space
+  `Cell` (prepended to `cell_id`; scope kept last so `_valid_cell` still works). Old memory records
+  (no `dataset` key) default to `ecoli`, so existing coverage is unchanged; the catalogue now has an
+  ecoli + a yeast counterpart per cell. The user chose the broad scope: all intervention types are
+  transfer-testable AND direct yeast questions are enabled.
+- **Reusable yeast runner** (`experiments/yeast_runner.py`). Factors `build_yeast`'s pooled-train +
+  per-gene-stratified-holdout into a runner that honors model_family/feature_set/feature_scaling/
+  hyperparameters/train_size. The harness dispatches on `spec.dataset`: yeast uses a SEQUENCE-LEVEL
+  paired bootstrap (`bootstrap_unit="sequence"`, C3) with per-size verdicts + crossover.
+- **Transfer = a yeast run linked to a source.** `transfer_generalization` is a council-facing
+  intervention; `compile_runspec` translates it to the underlying real intervention (inferred from
+  the non-default knob), forces `dataset=yeast`, and AUTO-RESOLVES `transfer_of_run_id` from memory
+  (the latest settled E. coli run for that cell — never a hallucinated id). When set, the harness
+  attaches `transfer.concordance(source_cmp, yeast_cmp)`:
+  concordant (both significant, same sign), discordant (both significant, opposite sign), or
+  inconclusive (either CI includes 0). It compares SIGN + SIGNIFICANCE of two independently
+  estimated effects (and crossover-trend direction) — it NEVER pools CIs across the differing
+  bootstrap units.
+- **Validation.** yeast skips the per-series MC-CV repeat requirement (its CIs come from the
+  sequence bootstrap); `transfer_generalization` requires a resolvable source.
+- Demo `scripts/run_transfer_demo.py` runs it end to end (E. coli finding → yeast replication →
+  concordance verdict). Tests: `tests/test_transfer.py` (plumbing, validation, concordance branches,
+  council compile + source resolution). Existing cell_id-literal tests updated to the `ecoli|` prefix.
+
 ## #39 — S5: per-model cost pricing (real rates)
 - **Correction first.** The "Anthropic `token_usage` logs as 0" note in #36 was a false alarm —
   an ad-hoc tally script keyed on `input_tokens`/`output_tokens`, but clients log `input`/`output`

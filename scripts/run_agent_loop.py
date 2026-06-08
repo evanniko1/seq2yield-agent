@@ -202,7 +202,12 @@ def cycle(fb: bool, n_proposals: int = 4, approver: str | None = None) -> dict:
     memory.append({"run_id": spec.run_id, "proposal_id": proposal["proposal_id"],
                    "candidate_model": spec.model_family,
                    "baseline_model": spec.acceptance_policy.baseline_model,
-                   "intervention_type": proposal.get("intervention_type", "model_architecture"),
+                   # use the COMPILED spec (transfer_generalization is translated to the underlying
+                   # intervention; dataset distinguishes ecoli vs yeast cells) so coverage maps right
+                   "dataset": spec.dataset,
+                   "intervention_type": spec.intervention_type,
+                   "transfer_of_run_id": spec.transfer_of_run_id,
+                   "transfer": (cmp.get("transfer") or {}).get("verdict"),
                    "feature_set": spec.feature_set, "sampling_policy": spec.sampling_policy,
                    "scope": spec.scope, "train_sizes": spec.train_sizes, "revisit": revisit,
                    "n_series": spec.n_series, "n_repeats": len(spec.iterations),

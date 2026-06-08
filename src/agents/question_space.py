@@ -20,6 +20,9 @@ FEATURE_SETS = ["kmer", "mechanistic", "mixed"]
 SAMPLING_POLICIES = ["maximin_kmer", "expression_stratified"]
 
 
+DATASETS = ["ecoli", "yeast"]                          # K1: the dataset/organism dimension
+
+
 @dataclass(frozen=True)
 class Cell:
     intervention_type: str
@@ -28,47 +31,59 @@ class Cell:
     feature_set: str = "one_hot"
     sampling_policy: str = "random"
     scope: str = "global"
+    dataset: str = "ecoli"                              # ecoli (96nt) | yeast (80nt, pooled)
 
     @property
     def cell_id(self) -> str:
-        return "|".join([self.intervention_type, self.model_family, self.comparator_model,
-                         self.feature_set, self.sampling_policy, self.scope])
+        # dataset prepended, scope kept last (so _valid_cell's scope-strip still works)
+        return "|".join([self.dataset, self.intervention_type, self.model_family,
+                         self.comparator_model, self.feature_set, self.sampling_policy, self.scope])
 
     def describe(self) -> str:
         it = self.intervention_type
+        org = "" if self.dataset == "ecoli" else f" [{self.dataset}]"
         if it == "feature_representation":
-            return f"does {self.feature_set} beat one_hot for {self.model_family}?"
+            return f"does {self.feature_set} beat one_hot for {self.model_family}?{org}"
         if it == "sampling_design":
-            return f"does {self.sampling_policy} beat random for {self.model_family}?"
+            return f"does {self.sampling_policy} beat random for {self.model_family}?{org}"
         if it == "data_efficiency":
-            return f"does {self.model_family} catch up to {self.comparator_model} as N grows?"
-        return f"does {self.model_family} beat {self.comparator_model}?"
+            return f"does {self.model_family} catch up to {self.comparator_model} as N grows?{org}"
+        return f"does {self.model_family} beat {self.comparator_model}?{org}"
 
 
-def enumerate_cells() -> list[Cell]:
+def _cells_for_dataset(dataset: str) -> list[Cell]:
     cells: list[Cell] = []
     for cand in ALL_MODELS:                            # model_architecture + data_efficiency
         for comp in REGISTRY_MODELS:
             if cand == comp:
                 continue
-            cells.append(Cell("model_architecture", cand, comp))
-            cells.append(Cell("data_efficiency", cand, comp))
+            cells.append(Cell("model_architecture", cand, comp, dataset=dataset))
+            cells.append(Cell("data_efficiency", cand, comp, dataset=dataset))
     for m in FLAT_MODELS:                              # feature_representation (same model)
         for fs in FEATURE_SETS:
-            cells.append(Cell("feature_representation", m, m, feature_set=fs))
+            cells.append(Cell("feature_representation", m, m, feature_set=fs, dataset=dataset))
     for m in SAMPLING_MODELS:                          # sampling_design (same model)
         for sp in SAMPLING_POLICIES:
-            cells.append(Cell("sampling_design", m, m, sampling_policy=sp))
+            cells.append(Cell("sampling_design", m, m, sampling_policy=sp, dataset=dataset))
     for m in REGISTRY_MODELS:                          # training_procedure / HPO (same model)
-        cells.append(Cell("training_procedure", m, m))
+        cells.append(Cell("training_procedure", m, m, dataset=dataset))
     for m in FLAT_MODELS:                              # feature_scaling: does MinMax help? (flat)
-        cells.append(Cell("feature_scaling", m, m))
+        cells.append(Cell("feature_scaling", m, m, dataset=dataset))
+    return cells
+
+
+def enumerate_cells() -> list[Cell]:
+    """All catalogue cells across datasets (K1). Each ecoli cell has a yeast counterpart; a
+    transfer/replication run targets the yeast cell while linking back to its ecoli result."""
+    cells: list[Cell] = []
+    for ds in DATASETS:
+        cells.extend(_cells_for_dataset(ds))
     return cells
 
 
 def cell_id_for(intervention_type: str, model_family: str, comparator_model: str,
                 feature_set: str = "one_hot", sampling_policy: str = "random",
-                scope: str = "global") -> str:
+                scope: str = "global", dataset: str = "ecoli") -> str:
     # same-model interventions are canonicalized to comparator = model_family
     if intervention_type in ("feature_representation", "sampling_design", "training_procedure",
                              "feature_scaling"):
@@ -78,7 +93,7 @@ def cell_id_for(intervention_type: str, model_family: str, comparator_model: str
     if intervention_type != "sampling_design":
         sampling_policy = "random"
     return Cell(intervention_type, model_family, comparator_model,
-                feature_set, sampling_policy, scope).cell_id
+                feature_set, sampling_policy, scope, dataset=dataset).cell_id
 
 
 def record_cell_id(rec: dict) -> str:
@@ -86,7 +101,7 @@ def record_cell_id(rec: dict) -> str:
         rec.get("intervention_type", "model_architecture"),
         rec.get("candidate_model"), rec.get("baseline_model"),
         rec.get("feature_set", "one_hot"), rec.get("sampling_policy", "random"),
-        rec.get("scope", "global"))
+        rec.get("scope", "global"), dataset=rec.get("dataset", "ecoli"))
 
 
 def _valid_cell(cid: str) -> bool:

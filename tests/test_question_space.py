@@ -29,10 +29,10 @@ def test_catalogue_is_valid_and_nontrivial():
 def test_cell_id_canonicalizes_same_model_interventions():
     # feature study: comparator forced to model_family, sampling forced to random
     cid = qs.cell_id_for("feature_representation", "rf", "cnn", "kmer", "maximin_kmer")
-    assert cid == "feature_representation|rf|rf|kmer|random|global"
+    assert cid == "ecoli|feature_representation|rf|rf|kmer|random|global"
     # model_architecture: feature/sampling forced to defaults
     cid2 = qs.cell_id_for("model_architecture", "cnn", "rf", "kmer", "maximin_kmer")
-    assert cid2 == "model_architecture|cnn|rf|one_hot|random|global"
+    assert cid2 == "ecoli|model_architecture|cnn|rf|one_hot|random|global"
 
 
 def test_coverage_status_transitions():
@@ -43,8 +43,8 @@ def test_coverage_status_transitions():
          "feature_set": "kmer", "status": "inconclusive", "mean_delta": 0.0},
     ]
     cov = qs.coverage(recs)
-    assert cov["model_architecture|cnn|rf|one_hot|random|global"]["status"] == "settled"
-    assert cov["feature_representation|rf|rf|kmer|random|global"]["status"] == "inconclusive"
+    assert cov["ecoli|model_architecture|cnn|rf|one_hot|random|global"]["status"] == "settled"
+    assert cov["ecoli|feature_representation|rf|rf|kmer|random|global"]["status"] == "inconclusive"
 
 
 def test_offcatalogue_records_skipped():
@@ -60,4 +60,4 @@ def test_uncovered_excludes_settled():
     recs = [{"candidate_model": "cnn", "baseline_model": "rf",
              "intervention_type": "model_architecture", "status": "accepted"}]
     unc = qs.uncovered(recs)
-    assert all(c.cell_id != "model_architecture|cnn|rf|one_hot|random|global" for c in unc)
+    assert all(c.cell_id != "ecoli|model_architecture|cnn|rf|one_hot|random|global" for c in unc)
