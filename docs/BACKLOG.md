@@ -52,6 +52,7 @@ Living list. Every caveat/finding from [CRITIQUE.md](CRITIQUE.md) is tracked her
 | **K1** | Wire yeast into the council/coverage (generalize the dataset dimension) | yeast is a standalone benchmark today; council can't propose yeast/transfer questions | L | no |
 | **K2** | Tier 2 — frozen/fine-tuned DNA & protein foundation-model embeddings; active learning | highest science value | L | no |
 | **K3** | Tier 3 — frontier-API embeddings; quantum-inspired adapters | exploratory | L | no |
+| **K5** | **Interactive app (writable config)** — promote the read-only dashboard to an app that EDITS config: `selection_bonuses`, budget caps, provider/model picks, tier unlock, and run/approve controls (spec Phase 4). Today config is YAML-only; the dashboard is read-only. | operator control without editing YAML | L | no |
 | **K4** | **Diagnostics + methodology red-team** — pipeline instrumentation (train/val/test distribution drift, leakage detectors, overfit/generalization-gap, learning curves, calibration, residuals) feeding a "methodology critic" agent + a curated pitfalls KB, so deep methodological flaws (e.g. unrepresentative val split) become *observable signals* the council can question. Surfaces the class of issues that currently need a domain expert. | the council can't discover what it can't observe | L | no |
 
 ## Suggested ordering
