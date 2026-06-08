@@ -27,7 +27,11 @@ def main() -> int:
     ap.add_argument("--guard-worktree", action="store_true",
                     help="run the protected-file guard against the live working tree "
                          "(default: treat as a no-patch experiment)")
-    ap.add_argument("--human-review", action="store_true")
+    ap.add_argument("--human-review", action="store_true",
+                    help="(low-level) pass human_review=True to the guard directly")
+    ap.add_argument("--approve-conditional", metavar="APPROVER", default=None,
+                    help="name of the human authorizing conditional-protected edits (C9); "
+                         "runs the approval gate over the changed paths and logs the decision")
     ap.add_argument("--no-tests", action="store_true")
     args = ap.parse_args()
 
@@ -37,8 +41,21 @@ def main() -> int:
           f"(baseline {spec.acceptance_policy.baseline_run_id})")
 
     changed = None if args.guard_worktree else []   # [] = experiment introduces no patch
+    human_review = args.human_review
+    if args.approve_conditional is not None or changed:
+        from orchestration import approvals  # noqa: E402
+        paths = changed if changed is not None else []
+        decision = approvals.decide(spec.run_id, paths, approver=args.approve_conditional)
+        approvals.log(ROOT / "experiments/runs" / spec.run_id, decision)
+        if decision.conditional_paths or decision.strict_paths:
+            print(f"[gate] human-review -> {'GRANTED' if decision.granted else 'HALT'}: {decision.reason}")
+            if not decision.granted:
+                print("status: AWAITING_HUMAN_REVIEW (no run executed)")
+                return 1
+            human_review = True
+
     verdict = execution_harness.run(spec, changed_files=changed,
-                                    human_review=args.human_review,
+                                    human_review=human_review,
                                     run_tests=not args.no_tests)
 
     print("\n=== VERDICT ===")

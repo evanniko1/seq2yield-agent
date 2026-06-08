@@ -31,7 +31,7 @@ import pandas as pd  # noqa: E402
 from agents import memory, ml_engineer, postmortem, question_space  # noqa: E402
 from agents.council import Council  # noqa: E402
 from agents.patch_reviewer import review as review_patch  # noqa: E402
-from orchestration import execution_harness, patch_manager  # noqa: E402
+from orchestration import approvals, execution_harness, patch_manager  # noqa: E402
 from seq2yield.experiments import claim_registry  # noqa: E402
 from seq2yield.experiments.run_spec import RunSpec, validate_runspec  # noqa: E402
 from seq2yield.experiments.runner import per_series_r2  # noqa: E402
@@ -74,8 +74,13 @@ def _data_efficiency_curve(spec, run_dir) -> list:
     return curve
 
 
-def cycle(fb: bool, n_proposals: int = 4) -> dict:
-    """One full agentic cycle. Returns a summary dict (status / cell_id / revisit / run_id)."""
+def cycle(fb: bool, n_proposals: int = 4, approver: str | None = None) -> dict:
+    """One full agentic cycle. Returns a summary dict (status / cell_id / revisit / run_id).
+
+    approver: name of the human who has pre-authorized conditional-protected edits for this run
+    (C9). If a patch touches a conditional file and no approver is given, the run HALTS with
+    status='awaiting_human_review'. Strict-protected files are never approvable.
+    """
     print("STATE: DRAFT_PROPOSALS -> COUNCIL_REVIEWED -> CHAIR_APPROVED")
     council = Council(allow_local_fallback=fb)
     res = council.run(n_proposals=n_proposals)
@@ -112,7 +117,7 @@ def cycle(fb: bool, n_proposals: int = 4) -> dict:
     # actually drive training). Every other axis is fully specified by the RunSpec, so it is a
     # NO-PATCH experiment — we skip the ML-Engineer + patch-reviewer entirely (no inert configs,
     # fewer authority-model calls).
-    undo, changed = None, []
+    undo, changed, human_review = None, [], False
     if proposal.get("intervention_type") == "training_procedure":
         print("STATE: PATCH_PROPOSED")
         plan, variant, eng_who = ml_engineer.propose(proposal, spec.run_id, allow_local_fallback=fb)
@@ -130,15 +135,30 @@ def cycle(fb: bool, n_proposals: int = 4) -> dict:
         if not rv.approved:
             print("  loop ends: patch rejected by reviewer.")
             return {"approved": False, "status": None}
+
+        # C9: human-review gate BEFORE touching the tree. Conditional-protected paths need a
+        # named approver; strict paths are never approvable; default is DENY -> halt.
+        planned = patch_manager.planned_paths(plan)
+        decision = approvals.decide(spec.run_id, planned, approver=approver)
+        approvals.log(run_dir, decision)
+        if decision.conditional_paths or decision.strict_paths:
+            print(f"STATE: HUMAN_REVIEW_GATE -> {'GRANTED' if decision.granted else 'HALT'} "
+                  f"({decision.reason})")
+            if not decision.granted:
+                print("  loop ends: awaiting human review (no patch applied).")
+                return {"approved": False, "status": "awaiting_human_review",
+                        "cell_id": cid, "revisit": revisit}
+        human_review = bool(decision.conditional_paths)   # granted here; flag the harness guard
         undo = patch_manager.apply(plan)
-        changed = patch_manager.planned_paths(plan)
+        changed = planned
     else:
         eng_who = rev_who = "n/a (no-patch axis)"
         print("STATE: PATCH skipped (no-patch axis — RunSpec fully specifies the experiment)")
 
     print("STATE: EXECUTED -> EVALUATED (harness: guard -> tests -> train -> compare)")
     try:
-        verdict = execution_harness.run(spec, changed_files=changed, run_tests=True)
+        verdict = execution_harness.run(spec, changed_files=changed,
+                                        human_review=human_review, run_tests=True)
     except Exception as e:
         if undo:
             patch_manager.revert(undo)
@@ -205,8 +225,12 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--allow-local-fallback", action="store_true")
     ap.add_argument("--n", type=int, default=4)
+    ap.add_argument("--approve-conditional", metavar="APPROVER", default=None,
+                    help="name of the human authorizing conditional-protected edits this run "
+                         "(C9). Without it, a conditional-targeting patch halts for review; "
+                         "strict-protected files are never approvable.")
     args = ap.parse_args()
-    cycle(args.allow_local_fallback, n_proposals=args.n)
+    cycle(args.allow_local_fallback, n_proposals=args.n, approver=args.approve_conditional)
     return 0
 
 

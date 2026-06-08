@@ -439,6 +439,29 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
 - **Env:** `import os` fix in the provider base (the .env loader referenced it; only triggered
   once a real `.env` existed). 118 tests passing.
 
+## #38 — C9: human-review gate for conditional-protected changes made real
+- **Problem.** `git_guard` already classified strict/conditional/freely-modifiable and the
+  `human_review` boolean existed, but the end-to-end gate never fired: every conditional edit so
+  far was a developer edit, never an agent patch routed through an approval decision. The
+  "stop and ask a human" branch was a fire exit nobody had walked through.
+- **`orchestration/approvals.py` (new).** `decide(run_id, paths, approver=...)` returns an
+  auditable `ApprovalDecision`. Invariants: strict paths are NEVER approvable (forced DENY even
+  with an approver); conditional/`require_review` paths need an explicit NAMED approver; default
+  is DENY (no approver ⇒ halt). `log()` writes `approval_decision.json` + a `human_review_gate`
+  audit event.
+- **Loop wiring (`run_agent_loop.py`).** After the patch reviewer approves, the loop runs the gate
+  on `planned_paths` BEFORE touching the tree. Conditional/strict without approval ⇒ halt with
+  status `awaiting_human_review` (no patch applied). With `--approve-conditional <name>`, the
+  named human's approval is recorded and the patch proceeds with `human_review=True` threaded into
+  the harness guard. Freely-modifiable patches (today's only case) are unaffected — backward
+  compatible. `run_experiment.py` gained the same `--approve-conditional` surface.
+- **Safety belt.** The harness `git_guard` ALSO refuses strict paths even if `human_review=True`
+  is forced — the approval layer and the guard independently deny strict edits.
+- Tests: `tests/test_human_review_gate.py` (deny-without-approver, grant-with-approver + guard
+  passes, strict-never-approvable + guard refuses, mixed strict+conditional denied, free needs no
+  review, decision logged as artifact + audit event). Demonstrated end-to-end on a real
+  `compare.py`-targeting PatchPlan. 128 passing.
+
 ## #37 — C11/C12 context engineering: versioned templates + trimmed prompt blobs
 - **C11 (versioned templates):** `prompting.TEMPLATE_VERSIONS` assigns each prompt a template id
   + version; builders now return a `Prompt(system, user, template, version)` namedtuple and
