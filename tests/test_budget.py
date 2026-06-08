@@ -44,6 +44,36 @@ def test_summarize_groups_and_totals():
     assert s["by_role"]["chair"]["cost_usd"] == 4.5
 
 
+def test_per_model_pricing_splits_authority_from_reviewer():
+    # S5: sonnet (authority) and haiku (reviewer) must price apart, not at one provider rate.
+    mp = budget.DEFAULT_MODEL_PRICES
+    son = {"provider": "anthropic", "model": "claude-sonnet-4-6",
+           "token_usage": {"input": 1_000_000, "output": 0}}
+    hai = {"provider": "anthropic", "model": "claude-haiku-4-5-20251001",
+           "token_usage": {"input": 1_000_000, "output": 0}}
+    assert abs(budget.call_cost(son, model_prices=mp) - 3.0) < 1e-9
+    assert abs(budget.call_cost(hai, model_prices=mp) - 1.0) < 1e-9   # cheaper, as configured
+
+
+def test_longest_model_key_wins():
+    # "gpt-4.1-nano" must not be priced as "gpt-4.1"
+    nano = {"provider": "openai", "model": "gpt-4.1-nano-2025-04-14",
+            "token_usage": {"input": 1_000_000, "output": 0}}
+    assert abs(budget.call_cost(nano, model_prices=budget.DEFAULT_MODEL_PRICES) - 0.10) < 1e-9
+
+
+def test_unknown_model_falls_back_to_provider_rate():
+    rec = {"provider": "anthropic", "model": "claude",   # generic, no substring match
+           "token_usage": {"input": 1_000_000, "output": 0}}
+    assert abs(budget.call_cost(rec, PRICES, model_prices=budget.DEFAULT_MODEL_PRICES) - 3.0) < 1e-9
+
+
+def test_load_config_returns_three_tuple():
+    caps, prices, model_prices = budget.load_config()
+    assert "max_total_cost_usd" in caps and "anthropic" in prices
+    assert "claude-haiku" in model_prices and "gpt-4.1-nano" in model_prices
+
+
 def test_budget_tracker_over_and_under():
     under = budget.BudgetTracker({"max_total_cost_usd": 100, "max_total_tokens": 10**9,
                                   "max_calls": 100}, PRICES).status(RECS)

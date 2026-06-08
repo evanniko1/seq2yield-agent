@@ -14,9 +14,9 @@ from orchestration import budget  # noqa: E402
 
 
 def main() -> int:
-    caps, prices = budget.load_config()
+    caps, prices, model_prices = budget.load_config()
     records = budget.load_calls()
-    s = budget.summarize(records, prices)
+    s = budget.summarize(records, prices, model_prices)
     print(f"MODEL-CALL COST  ({s['n_calls']} calls, {s['n_failed']} failed)")
     print(f"  tokens: {s['input_tokens']:,} in + {s['output_tokens']:,} out = {s['total_tokens']:,}")
     print(f"  estimated cost: ${s['total_cost_usd']:.4f}  "
@@ -25,7 +25,7 @@ def main() -> int:
         print(f"\n  {dim.replace('by_', 'by ')}:")
         for name, d in sorted(s[dim].items(), key=lambda kv: -kv[1]["tokens"]):
             print(f"    {str(name):28s} calls={d['calls']:<4} tokens={d['tokens']:<9,} ${d['cost_usd']:.4f}")
-    st = budget.BudgetTracker(caps, prices).status(records)
+    st = budget.BudgetTracker(caps, prices, model_prices).status(records)
     print(f"\n  over_budget: {st['over_budget']}  {st['breaches'] or ''}")
     return 0
 

@@ -5,10 +5,24 @@ budget:
   max_total_cost_usd: 10.0
   max_calls: 5000
 
-# $ per 1,000,000 tokens (input, output). PLACEHOLDERS — set to your accounts' real rates.
-# Local Ollama is free.
+# $ per 1,000,000 tokens (input, output). PROVIDER-LEVEL fallback rates (used when a model is
+# not listed below). Published list prices — verify against your account/contract. Ollama is free.
 prices_usd_per_million:
   anthropic: {input: 3.0, output: 15.0}
-  openai: {input: 2.5, output: 10.0}
+  openai: {input: 2.0, output: 8.0}
   openrouter: {input: 1.0, output: 1.0}
   ollama: {input: 0.0, output: 0.0}
+
+# PER-MODEL list prices (USD per 1M tokens). Keys match the model id by SUBSTRING (longest key
+# wins), so dated ids resolve: "claude-haiku" -> claude-haiku-4-5-20251001. This prices the
+# authority(sonnet)/reviewer(haiku) split correctly instead of one flat per-provider rate.
+# These are published list prices as of authoring — adjust to your real rates.
+model_prices_usd_per_million:
+  claude-opus:   {input: 15.0, output: 75.0}
+  claude-sonnet: {input: 3.0,  output: 15.0}
+  claude-haiku:  {input: 1.0,  output: 5.0}
+  gpt-4.1-nano:  {input: 0.10, output: 0.40}
+  gpt-4.1-mini:  {input: 0.40, output: 1.60}
+  gpt-4.1:       {input: 2.0,  output: 8.0}
+  gpt-4o-mini:   {input: 0.15, output: 0.60}
+  gpt-4o:        {input: 2.5,  output: 10.0}

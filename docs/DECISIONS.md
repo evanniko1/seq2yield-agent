@@ -439,6 +439,22 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
 - **Env:** `import os` fix in the provider base (the .env loader referenced it; only triggered
   once a real `.env` existed). 118 tests passing.
 
+## #39 — S5: per-model cost pricing (real rates)
+- **Correction first.** The "Anthropic `token_usage` logs as 0" note in #36 was a false alarm —
+  an ad-hoc tally script keyed on `input_tokens`/`output_tokens`, but clients log `input`/`output`
+  (Anthropic, Ollama) or `prompt_tokens`/`completion_tokens` (OpenAI), and `budget._tokens`
+  already normalizes both. Real totals: 10 Anthropic calls = 15.4k tokens = **$0.073**.
+- **Per-model pricing.** Cost was a flat per-PROVIDER rate, so a cheap `claude-haiku` reviewer was
+  billed like a `claude-sonnet`/`opus` authority call — wrong after C10 split the roles by model.
+  Added `DEFAULT_MODEL_PRICES` + `model_prices_usd_per_million` in `experiment_budget.yaml`, matched
+  to the model id by SUBSTRING with longest-key-wins (so `gpt-4.1-nano` ≠ `gpt-4.1`, and dated ids
+  like `claude-haiku-4-5-20251001` resolve via `claude-haiku`). `_price_for()` falls back to the
+  provider rate for unlisted models. `load_config()` now returns `(caps, prices, model_prices)`;
+  `call_cost`/`summarize`/`BudgetTracker`/`show_cost.py` thread it through.
+- Rates are published LIST prices (documented as such); the user overrides with real contract rates
+  in the YAML. Tests: per-model split (sonnet 3.0 vs haiku 1.0), longest-key-wins, provider
+  fallback, 3-tuple config. 132 passing.
+
 ## #38 — C9: human-review gate for conditional-protected changes made real
 - **Problem.** `git_guard` already classified strict/conditional/freely-modifiable and the
   `human_review` boolean existed, but the end-to-end gate never fired: every conditional edit so

@@ -44,7 +44,7 @@ Living list. Every caveat/finding from [CRITIQUE.md](CRITIQUE.md) is tracked her
 |---|---|---|---|---|
 | ~~C11~~ | ✅ **DONE** — versioned templates (`prompting.TEMPLATE_VERSIONS`); each prompt carries `template`+`version`, recorded on `ModelCallRecord.prompt_template/_version` (audit distinguishes revision from drift) | drift risk; only loosely captured by prompt_hash | M | DECISIONS #37 |
 | ~~C12~~ | ✅ **DONE** — `compact_json` (strip null/empty, collapse whitespace) + field-select (`_REVIEW_FIELDS`/`_CHAIR_FIELDS`) on reviewer/chair/postmortem/planner/patch blobs (~23%+ smaller per proposal; grows with memory) | token-cost + attention dilution as memory grows | S | DECISIONS #37 |
-| **S5** | Re-source placeholder provider prices with real rates **+ fix Anthropic `token_usage` logging as 0** | cost is $0 (Ollama); $ figures untested; cost tracker blind to Anthropic tokens | S (user) | no |
+| ~~S5~~ | ✅ **DONE** — **per-model** pricing (published list rates; substring match, longest-key-wins) so authority(sonnet)/reviewer(haiku) price apart, not one flat provider rate. (Token logging was never broken — the earlier "0" was a bad ad-hoc tally key; `budget._tokens` reads Anthropic `input`/`output` correctly: 15.4k tok = $0.073.) Rates are list-price defaults; override in `configs/experiment_budget.yaml`. | $ figures were a flat per-provider guess | S | DECISIONS #39 |
 
 ## Remaining — capability / scope
 | ID | Item | Why | Effort | Protected? |
