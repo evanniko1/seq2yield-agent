@@ -21,6 +21,11 @@ _BUILDERS = {
 
 
 def build(feature_set: str, sequences, frame=None, length: int = 96):
+    # K2a: 'embed:<model>' loads cached foundation-model vectors (flat). Resolved dynamically so
+    # adding a model needs no edit here — just extract its cache and register the model name.
+    if feature_set.startswith("embed:"):
+        from .embeddings import embedding_features, parse_feature_set
+        return embedding_features(parse_feature_set(feature_set), sequences, length), "flat"
     if feature_set not in _BUILDERS:
         raise KeyError(f"unknown feature_set '{feature_set}'. available: {list(_BUILDERS)}")
     return _BUILDERS[feature_set](sequences, frame, length)

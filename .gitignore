@@ -3,6 +3,7 @@ data/raw/*
 data/extracted/*
 data/processed/*
 data/splits/*
+data/embeddings/*          # K2a: cached foundation-model embeddings (large, derived; extract locally)
 !data/**/.gitkeep
 !data/manifests/*.json
 !data/manifests/*.csv

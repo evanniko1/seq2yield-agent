@@ -439,6 +439,31 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
 - **Env:** `import os` fix in the provider base (the .env loader referenced it; only triggered
   once a real `.env` existed). 118 tests passing.
 
+## #42 — K2a: foundation-model embeddings framework (Tier 2, frozen + offline)
+- **Dataset-grounded model choice.** E. coli (96 nt coding) expression is dominated by mRNA
+  secondary structure + codon usage ([Cambray, Nat Biotechnol 2018](https://www.nature.com/articles/nbt.4238))
+  → DNA single-nt LMs + RNA-structure / 5′UTR / codon LMs; yeast (80 nt promoter) is regulatory
+  → DNA LMs ([Vaishnav, Nature 2022](https://www.nature.com/articles/s41586-022-04506-6)). Protein
+  LMs (ESM) are EXCLUDED — the E. coli variation is largely synonymous, so they are near-blind to
+  the signal. Registry (smallest→largest): hyenadna-tiny → nt-50m → utr-lm → rna-fm → codonbert →
+  dnabert2 → nt-250m → evo, each with citation + applicability.
+- **Architecture: heavy deps isolated to OFFLINE extraction.** `seq2yield/embeddings/`
+  (`registry` pure-data; `extract` lazily imports transformers; `cache` npz keyed by sequence,
+  numpy-only). `scripts/extract_embeddings.py` computes + caches once (GPU). The feature pipeline
+  (`features/embeddings.py`) only READS the cache → the harness/runtime never imports transformers
+  and stays deterministic. An embedding is just a flat `feature_set` `embed:<model>` (dataset
+  inferred from sequence length) plugged into the existing flat-model + bootstrap + diagnostics
+  machinery — so the council asks "does `embed:nt-50m` beat one_hot for rf?" as a normal
+  feature_representation study. Frozen extraction now; fine-tuning later.
+- **Council gating.** `CouncilProposal.feature_set` relaxed to str + validator (base sets ∪
+  `embed:<registered>`); the question-space only emits embed cells for models whose cache EXISTS,
+  so the loop never proposes an embedding that can't run. Cross-dataset note: a shared embedding
+  space is the substrate for REAL transfer (unlike one-hot's 96≠80 dims, K1).
+- Validated end-to-end on **hyenadna-tiny** (extract 300 E. coli seqs → cache (300,128) →
+  `embed:hyenadna-tiny` builds flat features → rf trains). Caches gitignored. Tests:
+  `tests/test_embeddings.py` (10, synthetic cache — no downloads). K2 split: K2a framework (done) +
+  K2a models (incremental) + K2b active learning. 171 passing.
+
 ## #41 — K4: diagnostics + methodology red-team (make flaws observable)
 - **Premise.** The council cannot question what it cannot observe; deep flaws (overfit,
   unrepresentative split, leakage, miscalibration) normally need a domain expert. K4 turns them

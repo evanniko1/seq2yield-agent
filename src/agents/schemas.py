@@ -6,9 +6,10 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 Tier = Literal["tier_0", "tier_1", "tier_2", "tier_3"]
+_BASE_FEATURE_SETS = {"one_hot", "kmer", "mechanistic", "mixed"}
 
 
 class ExperimentIdea(BaseModel):
@@ -60,9 +61,23 @@ class CouncilProposal(BaseModel):
     scientific_hypothesis: str
     model_family: ModelFamily
     comparator_model: RegistryModel        # must exist in the baseline registry to compare
-    feature_set: Literal["one_hot", "kmer", "mechanistic", "mixed"] = "one_hot"
+    # base flat features OR a foundation-model embedding token 'embed:<registered-model>' (K2a)
+    feature_set: str = "one_hot"
     sampling_policy: Literal["random", "maximin_kmer", "expression_stratified",
                              "series_balanced"] = "random"
+
+    @field_validator("feature_set")
+    @classmethod
+    def _valid_feature_set(cls, v: str) -> str:
+        if v in _BASE_FEATURE_SETS:
+            return v
+        if v.startswith("embed:"):
+            from seq2yield.embeddings.registry import EMBEDDERS
+            model = v.split(":", 1)[1]
+            if model in EMBEDDERS:
+                return v
+            raise ValueError(f"unknown embedding model '{model}'; registered: {list(EMBEDDERS)}")
+        raise ValueError(f"invalid feature_set '{v}'")
     feature_scaling: Literal["none", "auto", "minmax", "standard", "robust",
                              "maxabs", "quantile", "power"] = "none"
     train_sizes: list[TrainSize] = Field(default_factory=lambda: [500])

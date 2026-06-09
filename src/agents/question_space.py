@@ -51,6 +51,18 @@ class Cell:
         return f"does {self.model_family} beat {self.comparator_model}?{org}"
 
 
+def _embed_features_available(dataset: str) -> list[str]:
+    """K2a: foundation-model embedding feature_sets whose cache is EXTRACTED for this dataset, so
+    the council only proposes embeddings that can actually run."""
+    try:
+        from seq2yield.embeddings import cache as ec
+        from seq2yield.embeddings import registry as er
+        return [er.feature_name(m) for m in er.applicable(dataset)
+                if ec.cache_path(m, dataset).exists()]
+    except Exception:
+        return []
+
+
 def _cells_for_dataset(dataset: str) -> list[Cell]:
     cells: list[Cell] = []
     for cand in ALL_MODELS:                            # model_architecture + data_efficiency
@@ -62,6 +74,9 @@ def _cells_for_dataset(dataset: str) -> list[Cell]:
     for m in FLAT_MODELS:                              # feature_representation (same model)
         for fs in FEATURE_SETS:
             cells.append(Cell("feature_representation", m, m, feature_set=fs, dataset=dataset))
+    for emb in _embed_features_available(dataset):     # K2a: only models whose cache is extracted
+        for m in FLAT_MODELS:
+            cells.append(Cell("feature_representation", m, m, feature_set=emb, dataset=dataset))
     for m in SAMPLING_MODELS:                          # sampling_design (same model)
         for sp in SAMPLING_POLICIES:
             cells.append(Cell("sampling_design", m, m, sampling_policy=sp, dataset=dataset))
