@@ -58,6 +58,14 @@ Living list. Every caveat/finding from [CRITIQUE.md](CRITIQUE.md) is tracked her
 | ~~K4~~ | ✅ **DONE** (DECISIONS #41) — `seq2yield/diagnostics/` deterministic signals (gen-gap, calibration, residuals, split representativeness, sequence leakage, target extrapolation, learning-curve) → `configs/methodology_pitfalls.yaml` KB → rule-based flags, attached to every verdict (ADVISORY, never changes status). `methodology_critic` agent narrates flags; open flags feed back into the generator so the council proposes follow-up investigative experiments. | the council can't discover what it can't observe | L | done |
 | ~~K4-orig~~ | **Diagnostics + methodology red-team** — pipeline instrumentation (train/val/test distribution drift, leakage detectors, overfit/generalization-gap, learning curves, calibration, residuals) feeding a "methodology critic" agent + a curated pitfalls KB, so deep methodological flaws (e.g. unrepresentative val split) become *observable signals* the council can question. Surfaces the class of issues that currently need a domain expert. | the council can't discover what it can't observe | L | no |
 
+## Future extensions (assessed, deferred)
+| ID | Item | Assessment |
+|---|---|---|
+| ~~RL-trace~~ | ✅ **DONE** (DECISIONS #43) — decision-event trace makes the council RL-*ready*: `agents/trace.py` + `decision_events.jsonl`, ModelCallRecord join keys, instrumented routing/planning/selection/gate/escalate/outcome, `replay_trajectory.py`, offline `extract_training_rows`. No RL code. | high-leverage, low-cost observability; do regardless of RL |
+| **K2b (active learning)** | retrospective acquisition simulation (uncertainty vs random/maximin/stratified) on the labeled benchmark | **deferred** — data already fully labeled (no oracle); overlaps existing data_efficiency + DoE sampling; designed libraries risk null gains. Value is mainly the agentic-narrative. |
+| **RL / contextual bandits** | learn routing / template / chair policy from the trace | **deferred** — sparse, expensive, noisy reward (one trajectory = a full council+train+verdict); POC won't generate enough episodes. Most tractable first target = contextual bandit on ROUTING or TEMPLATE (dense per-call proxy reward), NOT council-policy RL. Trace now makes it *possible*. |
+| **K2a (models)** | utr-lm/rna-fm (multimolecule pin), codonbert (custom loader), evo (7B/quant) | kept as extensions; see K2a (models) row above |
+
 ## Suggested ordering
 Rigor first (these gate the validity of any future claim): **C1 → C4 → C5 → C2**, then
 **C6/C7/C3**. In parallel, cheap agentic/context wins: **C10/S5 (keys+prices) → S2 → S4 →

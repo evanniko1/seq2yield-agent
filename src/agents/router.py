@@ -71,12 +71,22 @@ class Router:
                 order = [p for p in order if p in rp["allowed_providers"]]
         return order
 
+    def _emit_routing(self, role, candidates, selected, policy, reason):
+        try:                                             # RL-trace (best-effort, never blocks)
+            from . import trace
+            trace.log_event("model_routing", candidate_actions=candidates,
+                            selected_action=selected, policy=policy, reason=reason,
+                            state={"role": role})
+        except Exception:
+            pass
+
     def resolve(self, role: str, *, require_available: bool = True,
                 allow_local_fallback: bool = False) -> ModelClient:
         providers = self.policy["providers"]
         pclass = self.provider_class(role)
+        candidates = self.candidates(role)
         errs = []
-        for provider in self.candidates(role):
+        for provider in candidates:
             pcfg = providers.get(provider, {})
             if not pcfg.get("enabled"):
                 errs.append(f"{provider}: disabled")
@@ -89,6 +99,8 @@ class Router:
             if require_available and not _available(provider, client):
                 errs.append(f"{provider}: unavailable (key/service)")
                 continue
+            self._emit_routing(role, candidates, f"{provider}:{model}", "first_available_v0",
+                               f"first enabled+available of {pclass} class; skipped: {errs}")
             return client
 
         # Offline/keyless DEV fallback: let an authority role borrow a local model when no
@@ -102,5 +114,8 @@ class Router:
                 client = _build(provider, model, pcfg)
                 if _available(provider, client):
                     client.local_fallback_for = role          # type: ignore[attr-defined]
+                    self._emit_routing(role, candidates, f"{provider}:{model}",
+                                       "local_fallback_v0",
+                                       f"no direct provider available; DEV local fallback for {role}")
                     return client
         raise ProviderUnavailable(f"no provider available for role '{role}': {errs}")

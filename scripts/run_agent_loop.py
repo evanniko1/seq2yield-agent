@@ -28,7 +28,7 @@ from datetime import datetime, timezone  # noqa: E402
 
 import pandas as pd  # noqa: E402
 
-from agents import memory, methodology_critic, ml_engineer, postmortem, question_space  # noqa: E402
+from agents import memory, methodology_critic, ml_engineer, postmortem, question_space, trace  # noqa: E402
 from agents.council import Council  # noqa: E402
 from agents.patch_reviewer import review as review_patch  # noqa: E402
 from orchestration import approvals, execution_harness, patch_manager  # noqa: E402
@@ -81,7 +81,10 @@ def cycle(fb: bool, n_proposals: int = 4, approver: str | None = None) -> dict:
     (C9). If a patch touches a conditional file and no approver is given, the run HALTS with
     status='awaiting_human_review'. Strict-protected files are never approvable.
     """
-    print("STATE: DRAFT_PROPOSALS -> COUNCIL_REVIEWED -> CHAIR_APPROVED")
+    # RL-trace: one trajectory id spans the WHOLE cycle (deliberation + execution + postmortem)
+    tid = trace.new_trajectory_id()
+    trace.set_context(tid)
+    print(f"STATE: DRAFT_PROPOSALS -> COUNCIL_REVIEWED -> CHAIR_APPROVED  (trajectory {tid})")
     council = Council(allow_local_fallback=fb)
     res = council.run(n_proposals=n_proposals)
     dec = res["chair_decision"]
@@ -96,10 +99,14 @@ def cycle(fb: bool, n_proposals: int = 4, approver: str | None = None) -> dict:
         proposal.get("intervention_type", "model_architecture"), proposal["model_family"],
         proposal["comparator_model"], proposal.get("feature_set", "one_hot"),
         proposal.get("sampling_policy", "random"), proposal.get("scope", "global"))
+    trace.set_context(tid, task_id=cid)              # RL-trace: now the task (cell) is known
     cov = question_space.coverage(memory.load())
     revisit = cov.get(cid, {}).get("status") == "inconclusive"
     if revisit:
         print(f"  REVISIT: cell {cid} is inconclusive -> escalating statistical power")
+        trace.log_event("escalate", candidate_actions=["run_normal", "run_high_power"],
+                        selected_action="run_high_power", policy="revisit_v1",
+                        reason=f"cell {cid} inconclusive in memory -> escalate statistical power")
 
     spec = _bound(RunSpec(**res["runspec"]), high_power=revisit)
     spec.run_id = f"{spec.run_id}{'-revisit' if revisit else ''}-{datetime.now(timezone.utc):%H%M%S}"
@@ -210,7 +217,8 @@ def cycle(fb: bool, n_proposals: int = 4, approver: str | None = None) -> dict:
     (run_dir / "postmortem.json").write_text(pm.model_dump_json(indent=2), encoding="utf-8")
     print(f"  postmortem {pm_who}: claim_allowed={pm.claim_allowed}")
 
-    memory.append({"run_id": spec.run_id, "proposal_id": proposal["proposal_id"],
+    memory.append({"run_id": spec.run_id, "trajectory_id": tid,
+                   "proposal_id": proposal["proposal_id"],
                    "candidate_model": spec.model_family,
                    "baseline_model": spec.acceptance_policy.baseline_model,
                    # use the COMPILED spec (transfer_generalization is translated to the underlying
@@ -232,11 +240,21 @@ def cycle(fb: bool, n_proposals: int = 4, approver: str | None = None) -> dict:
     claim_registry.record(run_id=spec.run_id, proposal_id=proposal["proposal_id"],
                           status=status, comparison=cmp, claim_allowed=pm.claim_allowed)
 
+    # RL-trace: the trajectory OUTCOME — joins every decision in this cycle to the verdict
+    trace.log_event("outcome", selected_action=spec.run_id, policy="harness_verdict",
+                    reason=pm.claim_allowed or status,
+                    outcome={"status": status, "error": None,
+                             "experiment_run_id": spec.run_id,
+                             "mean_delta": cmp.get("mean_delta"),
+                             "ci_excludes_zero": cmp.get("ci_excludes_zero"),
+                             "accepted_by_final_synthesizer": status == "accepted",
+                             "methodology_severity": crit.severity})
+
     _report(run_dir, spec, proposal, verdict, pm, eng_who, rev_who, curve)
     print(f"\nartifacts: {run_dir}  ·  report: reports/static/{spec.run_id}_loop_report.md")
     print(f"Exit criterion (proposal->patch->run->evaluate->postmortem with a verdict): MET ({status})")
     return {"approved": True, "status": status, "cell_id": cid, "revisit": revisit,
-            "run_id": spec.run_id}
+            "run_id": spec.run_id, "trajectory_id": tid}
 
 
 def main() -> int:

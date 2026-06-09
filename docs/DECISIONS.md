@@ -439,6 +439,33 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
 - **Env:** `import os` fix in the provider base (the .env loader referenced it; only triggered
   once a real `.env` existed). 118 tests passing.
 
+## #43 — RL-readiness traceability (decision-event trace; NOT RL)
+- **Goal (audit-driven).** Make every council decision replayable + extractable as
+  `(state, action, candidate_actions, outcome, reward_proxy)` so contextual bandits / learned
+  routing / RL are *possible later* — without implementing any policy now. The practical test:
+  "can you replay a council run and explain why each action was chosen?" → now yes.
+- **`agents/trace.py`.** A contextvar holds the active `(trajectory_id, task_id)` for a council
+  cycle, so EVERY model call (base client) and routing decision (router) is auto-tagged with the
+  join key — no threading through call sites. Events append to `reports/decision_events.jsonl`
+  (append-only JSONL, same discipline as the audit/model-call logs); state snapshots are
+  content-addressed under `reports/state/`. Full target schema emitted (event_id, run_id=trajectory,
+  task_id, decision_type, state_ref, candidate_actions, selected_action, policy, reason, model_*,
+  input/output refs, latency/tokens/cost, outcome, feedback, reward_proxy). `reward_proxy` is
+  ALWAYS null at emit; `derive_reward_proxy` + `extract_training_rows` compute it OFFLINE.
+- **The keystone fix:** `ModelCallRecord` gained `run_id`/`task_id`/`cost_usd`/`output_hash`
+  (cost priced at log time via `budget.call_cost`), so model calls finally join to the council
+  trajectory and downstream outcome — previously impossible (calls had no run_id).
+- **Instrumented decision points:** router `model_routing` (candidate providers + first-available
+  policy + skip reasons); council `focus_planning` (PI), `proposal_generation`, `experiment_selection`
+  (chair: candidates + scores → choice + rationale); approvals `gate` (C9, with approver as
+  feedback); loop `escalate` (revisit) + `outcome` (joins the whole cycle to the verdict). Memory
+  records stamped with `trajectory_id`.
+- **Tooling:** `scripts/replay_trajectory.py` (replay + `--rows` RL extraction). Tests:
+  `tests/test_trace.py` (schema completeness, context→model-call join, context reset, replay
+  explains WHY, outcome join + reward_proxy, router emission). Caught + fixed a real bug: default
+  args bound module paths at def-time, defeating redirection — now resolved at call time. 180 passing.
+- **Verdict:** the system is now RL-*ready* (traceable + extractable), with NO RL/policy code.
+
 ## #42 — K2a: foundation-model embeddings framework (Tier 2, frozen + offline)
 - **Dataset-grounded model choice.** E. coli (96 nt coding) expression is dominated by mRNA
   secondary structure + codon usage ([Cambray, Nat Biotechnol 2018](https://www.nature.com/articles/nbt.4238))

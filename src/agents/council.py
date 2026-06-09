@@ -12,7 +12,7 @@ import yaml
 
 from seq2yield.experiments.run_spec import RunSpec, validate_runspec
 
-from . import memory, methodology_critic, planner, prompting, question_space, roles
+from . import memory, methodology_critic, planner, prompting, question_space, roles, trace
 from .router import Router
 from .schemas import ChairDecision, CouncilReviewItem, ProposalBatch
 
@@ -254,6 +254,10 @@ class Council:
             focus, pi_rationale, pi_who = planner.INTERVENTIONS, "planner disabled", "none"
         targets = planner.rank_targets(prior, focus_types=focus)
         flags = methodology_critic.open_flags(prior)     # K4: surface unresolved methodology flags
+        # RL-trace: PI focus is a decision (which axes to prioritize given coverage)
+        trace.log_event("focus_planning", candidate_actions=planner.INTERVENTIONS,
+                        selected_action=focus, policy=f"pi:{pi_who}", reason=pi_rationale,
+                        state={"coverage": question_space.summarize(prior)})
         prompt = prompting.generator_prompt(n, prior_summary(prior) if prior else "",
                                             targets=targets, open_flags=flags)
         batch, who = self._ask("proposal_generator", prompt, ProposalBatch,
@@ -380,21 +384,38 @@ class Council:
         return spec
 
     def run(self, n_proposals: int = 3, out_dir: str | Path | None = None) -> dict:
+        # RL-trace: one trajectory id spans this council cycle (reuse the loop's if already set)
+        self.trajectory_id = trace.ensure_trajectory()
         proposals, gen_who = self.generate(n_proposals)
         if not proposals:
+            trace.log_event("proposal_generation", candidate_actions=[], selected_action=None,
+                            policy="generator_v4", reason="generator produced no usable proposals")
             return {"generator": gen_who, "n_proposals": 0, "proposals": [],
+                    "trajectory_id": self.trajectory_id,
                     "novelty": getattr(self, "last_novelty", {}),
                     "chair_decision": {"status": "reject", "chosen_proposal_id": None,
                                        "rationale": "generator produced no usable proposals"},
                     "runspec": None,
                     "runspec_validation": {"ok": False, "errors": ["no proposals"], "warnings": []}}
+        trace.log_event("proposal_generation",
+                        candidate_actions=[p.proposal_id for p in proposals],
+                        selected_action=[proposal_cell_id(p) for p in proposals],
+                        policy="generator_v4", reason="kept unsettled, coherent proposals",
+                        state=getattr(self, "last_novelty", {}))
         reviews = self.review(proposals)
         mean_scores = self._mean_scores(reviews, proposals)
         decision, chair_who = self.chair(proposals, mean_scores)
+        # RL-trace: the chair's experiment-selection decision (candidates + scores -> chosen)
+        trace.log_event("experiment_selection",
+                        candidate_actions=[p.proposal_id for p in proposals],
+                        selected_action=decision.chosen_proposal_id, policy="rule_based_chair_v2",
+                        reason=decision.rationale, state={"mean_scores": mean_scores},
+                        outcome={"status": decision.status, "error": None})
 
         chosen = next((p for p in proposals if p.proposal_id == decision.chosen_proposal_id), None)
         result = {
             "generator": gen_who, "chair": chair_who,
+            "trajectory_id": self.trajectory_id,
             "n_proposals": len(proposals),
             "novelty": getattr(self, "last_novelty", {}),
             "proposals": [p.model_dump() for p in proposals],

@@ -70,9 +70,19 @@ def decide(run_id: str, paths, *, approver: str | None = None, reason: str = "")
 
 
 def log(run_dir: str | Path, decision: ApprovalDecision) -> None:
-    """Persist the approval decision as an artifact + audit-log event."""
+    """Persist the approval decision as an artifact + audit-log event + RL-trace decision event."""
     run_dir = Path(run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
     (run_dir / "approval_decision.json").write_text(
         decision.model_dump_json(indent=2), encoding="utf-8")
     audit_log.append(run_dir, "human_review_gate", decision.model_dump())
+    try:                                                 # RL-trace: the human-review gate decision
+        from agents import trace
+        trace.log_event("gate", candidate_actions=["grant", "deny"],
+                        selected_action="grant" if decision.granted else "deny",
+                        policy="human_review_v1", reason=decision.reason,
+                        state={"conditional_paths": decision.conditional_paths,
+                               "strict_paths": decision.strict_paths},
+                        feedback={"human_rating": None, "human_correction": decision.approver})
+    except Exception:
+        pass

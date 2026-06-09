@@ -45,10 +45,14 @@ class ModelCallRecord(BaseModel):
     prompt_hash: str
     prompt_template: str | None = None   # C11: which versioned template produced this call
     prompt_version: str | None = None    # C11: template version (drift vs intentional revision)
+    run_id: str | None = None            # RL-trace: council trajectory id (join key)
+    task_id: str | None = None           # RL-trace: question/cell being worked
     schema_name: str
     raw_text: str | None = None
+    output_hash: str | None = None       # RL-trace: content ref to the output
     parsed: dict | None = None
     token_usage: dict | None = None
+    cost_usd: float | None = None        # RL-trace: per-call $ (priced at log time)
     latency_sec: float = 0.0
     retries: int = 0
     success: bool = False
@@ -105,6 +109,12 @@ class BaseStructuredClient:
         meta = metadata or {}
         tmpl = meta.get("prompt_template")
         tver = meta.get("prompt_version")
+        try:                                             # RL-trace: tag with active trajectory
+            from .. import trace
+            _ctx = trace.current()
+        except Exception:
+            _ctx = {}
+        rid, tid = _ctx.get("trajectory_id"), _ctx.get("task_id")
         last_err = None
         raw_text = None
         t0 = time.perf_counter()
@@ -117,9 +127,11 @@ class BaseStructuredClient:
                 obj = schema.model_validate(data)
                 rec = ModelCallRecord(
                     provider=self.provider, model=self.model, role=role, prompt_hash=ph,
-                    prompt_template=tmpl, prompt_version=tver,
-                    schema_name=schema.__name__, raw_text=raw_text, parsed=obj.model_dump(),
-                    token_usage=usage, latency_sec=round(time.perf_counter() - t0, 3),
+                    prompt_template=tmpl, prompt_version=tver, run_id=rid, task_id=tid,
+                    schema_name=schema.__name__, raw_text=raw_text,
+                    output_hash=_output_hash(raw_text), parsed=obj.model_dump(),
+                    token_usage=usage, cost_usd=_call_cost(self.provider, self.model, usage),
+                    latency_sec=round(time.perf_counter() - t0, 3),
                     retries=attempt, success=True,
                     ts=datetime.now(timezone.utc).isoformat())
                 log_call(rec, log_path)
@@ -127,7 +139,7 @@ class BaseStructuredClient:
             except ProviderUnavailable as e:
                 rec = ModelCallRecord(
                     provider=self.provider, model=self.model, role=role, prompt_hash=ph,
-                    prompt_template=tmpl, prompt_version=tver,
+                    prompt_template=tmpl, prompt_version=tver, run_id=rid, task_id=tid,
                     schema_name=schema.__name__, success=False, error=str(e)[:500],
                     latency_sec=round(time.perf_counter() - t0, 3),
                     ts=datetime.now(timezone.utc).isoformat())
@@ -140,10 +152,27 @@ class BaseStructuredClient:
                         f"Previous error: {str(e)[:300]}")
         rec = ModelCallRecord(
             provider=self.provider, model=self.model, role=role, prompt_hash=ph,
-                    prompt_template=tmpl, prompt_version=tver,
-            schema_name=schema.__name__, raw_text=raw_text, parsed=None,
+            prompt_template=tmpl, prompt_version=tver, run_id=rid, task_id=tid,
+            schema_name=schema.__name__, raw_text=raw_text,
+            output_hash=_output_hash(raw_text), parsed=None,
             latency_sec=round(time.perf_counter() - t0, 3),
             retries=self.max_retries, success=False, error=str(last_err)[:500],
             ts=datetime.now(timezone.utc).isoformat())
         log_call(rec, log_path)
         raise RuntimeError(f"{self.provider}:{self.model} failed structured call: {last_err}")
+
+
+def _output_hash(text: str | None) -> str | None:
+    if text is None:
+        return None
+    return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()[:32]
+
+
+def _call_cost(provider: str, model: str, usage: dict | None) -> float | None:
+    """Price a call at log time (RL-trace). Lazy import keeps base.py dependency-light."""
+    try:
+        from orchestration import budget
+        return round(budget.call_cost({"provider": provider, "model": model,
+                                       "token_usage": usage or {}}), 6)
+    except Exception:
+        return None
