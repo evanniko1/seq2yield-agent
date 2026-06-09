@@ -24,7 +24,7 @@ EMBEDDERS: dict[str, dict] = {
         "note": "single-nucleotide, smallest; validates the pipeline first"},
     "nt-50m": {
         "hf_id": "InstaDeepAI/nucleotide-transformer-v2-50m-multi-species", "dim": 512, "order": 2,
-        "params": "50M", "backend": "hf_mean", "trust_remote_code": False,
+        "params": "50M", "backend": "hf_mean", "trust_remote_code": True,
         "applies": ["ecoli", "yeast"], "family": "dna",
         "cite": "Dalla-Torre et al., Nat Methods 22:287 (2025)"},
     "utr-lm": {
@@ -41,18 +41,20 @@ EMBEDDERS: dict[str, dict] = {
         "note": "RNA secondary-structure aware; targets the E. coli structure-dominated signal"},
     "codonbert": {
         "hf_id": "Sanofi-Public/CodonBERT", "dim": 768, "order": 5, "params": "~87M",
-        "backend": "hf_mean", "trust_remote_code": True,
+        "backend": "codonbert", "trust_remote_code": True,
         "applies": ["ecoli"], "family": "codon",
         "cite": "Li et al., bioRxiv 2023 / NeurIPS 2023",
-        "note": "codon-tokenized; coding sequences only"},
+        "note": "codon-tokenized, coding only; weights are GitHub-hosted (NOT on HF hub) -> needs "
+                "a custom loader before it can run"},
     "dnabert2": {
         "hf_id": "zhihan1996/DNABERT-2-117M", "dim": 768, "order": 6, "params": "117M",
-        "backend": "hf_mean", "trust_remote_code": True,
+        "backend": "hf_mean", "trust_remote_code": True, "requires": ["triton"],
         "applies": ["ecoli", "yeast"], "family": "dna",
-        "cite": "Zhou et al., 2023 (BPE multispecies)"},
+        "cite": "Zhou et al., 2023 (BPE multispecies)",
+        "note": "remote code requires `triton` (no clean Windows wheel)"},
     "nt-250m": {
         "hf_id": "InstaDeepAI/nucleotide-transformer-v2-250m-multi-species", "dim": 768, "order": 7,
-        "params": "250M", "backend": "hf_mean", "trust_remote_code": False,
+        "params": "250M", "backend": "hf_mean", "trust_remote_code": True,
         "applies": ["ecoli", "yeast"], "family": "dna",
         "cite": "Dalla-Torre et al., Nat Methods 22:287 (2025)"},
     "evo": {

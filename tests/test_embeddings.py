@@ -104,3 +104,22 @@ def test_proposal_still_accepts_base_feature_sets():
                             intervention_type="feature_representation", scientific_hypothesis="h",
                             model_family="rf", comparator_model="rf", feature_set=fs)
         assert p.feature_set == fs
+
+
+# ---- backend routing: not-yet-runnable models fail clearly BEFORE any network/training ----
+def test_embed_codonbert_raises_clear_custom_loader_error():
+    import pytest
+    from seq2yield.embeddings import extract
+    with pytest.raises(NotImplementedError, match="GitHub-hosted"):
+        extract.embed("codonbert", ["AAA"])
+
+
+def test_embed_evo_raises_clear_backend_error():
+    import pytest
+    from seq2yield.embeddings import extract
+    with pytest.raises(NotImplementedError, match="evo"):
+        extract.embed("evo", ["AAA"])
+
+
+def test_dnabert2_declares_triton_requirement():
+    assert "triton" in registry.spec("dnabert2").get("requires", [])
