@@ -65,6 +65,62 @@ Living list. Every caveat/finding from [CRITIQUE.md](CRITIQUE.md) is tracked her
 | **K2b (active learning)** | retrospective acquisition simulation (uncertainty vs random/maximin/stratified) on the labeled benchmark | **deferred** — data already fully labeled (no oracle); overlaps existing data_efficiency + DoE sampling; designed libraries risk null gains. Value is mainly the agentic-narrative. |
 | **RL / contextual bandits** | learn routing / template / chair policy from the trace | **deferred** — sparse, expensive, noisy reward (one trajectory = a full council+train+verdict); POC won't generate enough episodes. Most tractable first target = contextual bandit on ROUTING or TEMPLATE (dense per-call proxy reward), NOT council-policy RL. Trace now makes it *possible*. |
 | **K2a (models)** | utr-lm/rna-fm (multimolecule pin), codonbert (custom loader), evo (7B/quant) | kept as extensions; see K2a (models) row above |
+| **K6 (dataset onboarding)** | declarative `DatasetSpec` + per-dataset adapter (loader/cleaner) + intake-audit gate + structure-driven runner, so dataset #3…#N plug in WITHOUT editing strict `cleaning.py`. Generalizes K1. | the direct enabler of "many datasets through the council" (and of the RL episode supply) | L | no |
+
+## Candidate datasets (sequence→function MPRAs) — for K6 onboarding
+Vetted against the project's identity. **Inclusion filters (HARD):** ① short single oligo **≤ 500 nt**
+(ideally 50–200); ② high-throughput **≥ ~10⁴** sequence→function measurements; ③ **continuous
+quantitative** readout → regression; ④ **DNA/RNA** cis-regulatory or coding (NOT protein-AA);
+⑤ designed/random library with per-construct replication. Field overview:
+[Decoding biology with MPRAs + ML, Genes&Dev 2024](https://genesdev.cshlp.org/content/38/17-20/843.full).
+
+**⚠️ Cross-dataset caveats (be extra careful):**
+1. **Heterogeneous readouts ≠ comparable R².** Targets here are *absolute expression* (Cambray/
+   Vaishnav/Sample), *ratios/effect-sizes* (Tewhey allelic), or *bounded fractions* (splicing PSI,
+   APA isoform, IRES activity). Ingest via `DatasetSpec.target_transform`; **the council must NOT
+   pool R² magnitudes across readout types** — extends the C3 bootstrap-unit fence. Transfer of
+   *rankings/conclusions* across them is valid; transfer of absolute R² is not.
+2. **`mechanistic`/`mixed` features are task-specific** (hand-built for 96 nt coding). Only
+   `one_hot`/`kmer`/embeddings generalize to new datasets/lengths; mark mechanistic non-applicable
+   per adapter or define it per dataset.
+3. **Variant vs random libraries.** Tewhey (and other variant MPRAs) are *paired natural alleles*,
+   not random — DoE diversity sampling (maximin) is less meaningful; diversity comes from the
+   variant panel, not designed coverage.
+4. **Length ceiling caveat.** ≤500 nt is fine for `one_hot`/`kmer`/embeddings; confirm CNN input
+   sizing and memory before onboarding the longer (~300 nt) ones.
+
+### Strong fits (onboard these)
+| Dataset | Domain | len · throughput · readout | Notes |
+|---|---|---|---|
+| [Sample 2019, Nat Biotech](https://www.nature.com/articles/s41587-019-0164-5) | human 5′UTR (translation) | 50 nt · ~280k random · mean ribosome load | **first intake** — clean random library, new organism, ~absolute readout |
+| [DREAM 2022 / GPRA](https://zenodo.org/records/7395397) | yeast promoter (transcription) | ~80 nt · 6.7M + 71k held-out · YFP | benchmark + public **leaderboard SOTA** (LegNet…) to score the council against |
+| [Cuperus 2017, Genome Res](https://genome.cshlp.org/content/early/2017/11/02/gr.224964.117.abstract) | yeast 5′UTR (translation) | 50 nt · ~500k random · ribosome load | adds within-organism cross-element transfer (yeast translation vs transcription) |
+| [Höllerer 2020, Nat Commun](https://www.nature.com/articles/s41467-020-17222-4) | E. coli RBS (translation) | short RBS · 300k / 2.7M pairs · translation kinetics (uASPIre) | same organism, *different readout* → readout-invariance test |
+| [Tewhey 2016, Cell](https://www.cell.com/fulltext/S0092-8674(16)30421-4) | **human genetics / disease** (eQTL/GWAS variants) | ~150 nt · 32,373 variants · allelic expression (log-ratio) | first **variant** + **disease** set; ratio readout → forces target_transform + caveat #1/#3 |
+| [Weingarten-Gabbay 2016, Science](https://www.science.org/doi/abs/10.1126/science.aad4939) | **viral + human** (IRES / cap-independent translation) | ~174 nt · ~55k · bicistronic activity ratio | first **viral** domain; niche mechanism but clean regression MPRA |
+| [Rosenberg 2015, Cell](https://www.cell.com/cell/fulltext/S0092-8674(15)01271-4) | **RNA splicing** | minigene ≤~300 nt · 2M+ random · splicing ratio (PSI) | random library, bounded readout; [code](https://github.com/Alex-Rosenberg/cell-2015) |
+| [Bogard 2019 / APARENT, Cell](https://www.sciencedirect.com/science/article/pii/S0092867419304982) | **RNA 3′-end / polyadenylation** | ~200 nt · 3M+ random · isoform fraction (bounded) | same Seelig-lab format as Rosenberg → consistent intake |
+| [Seelig 2024, Nat Commun](https://www.nature.com/articles/s41467-024-49508-2) | human 5′UTR (translation, mRNA therapeutics) | short 5′UTR · MPRA across HEK293T/HepG2/T-cells · translation efficiency | extends Sample 2019 **across cell types** → cell-type transfer |
+
+> **Source note:** the **Seelig lab** (Sample 2019, Cuperus 2017, Rosenberg 2015, Bogard 2019,
+> Seelig 2024) is the richest *format-consistent* family — ideal for batch onboarding once the
+> adapter exists.
+
+### Moderate fits (onboard with caveats)
+| Dataset | Caveat |
+|---|---|
+| [Kosuri 2013, PNAS](https://www.pnas.org/doi/10.1073/pnas.1301301110) | E. coli promoter×RBS, only ~12.5k *combinatorial pairs* (lower throughput, composite seq) — good small-data/compositional stress-test |
+| [de Boer 2020 (raw), Nat Biotech](https://pubmed.ncbi.nlm.nih.gov/31792407/) | fits but **redundant** with the existing yeast benchmark → use the DREAM packaging instead |
+
+### Forthcoming / sources to watch
+- **[Align to Innovate — Sequence-to-Expression](https://alignbio.org/datasets-in-incubation)** (DNA→protein expression across industrial microbes) — *direct fit*, in incubation/embargoed; track for release.
+- Author labs producing new qualifying sets: **Seelig** (above), **Tewhey** (variant MPRAs), **Segal**, **de Boer**. **Cambray → FORECAST** ([MPRA design/inference method](https://pmc.ncbi.nlm.nih.gov/articles/PMC10182853/)) is relevant to the DoE/onboarding side, not a new dataset.
+
+### Excluded even at ≤500 nt (fail on task/modality, not length)
+- **Evo / OpenGenome** (genomes, generative) and **Enformer/Basenji** (>100 kb) — wrong task/scale.
+- **Protein DMS / ProteinGym** and **Align Protein-Engineering Tournament (PETase)** — protein **amino-acid** modality (protein LMs), not nt→function.
+- **Align–ATCC microbe genotype→phenotype** — strain phenotyping, not a sequence-oligo assay.
+- **Genomic enhancer tiles >500 nt / STARR-seq fragments** — exceed the length ceiling.
 
 ## Suggested ordering
 Rigor first (these gate the validity of any future claim): **C1 → C4 → C5 → C2**, then
