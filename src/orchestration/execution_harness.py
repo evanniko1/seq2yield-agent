@@ -38,6 +38,22 @@ def _unlocked_tier() -> str:
     return cfg["maturity_tiers"].get("unlocked_tier", "tier_0")
 
 
+def _attach_diagnostics(spec, cmp: dict, run_dir: Path) -> None:
+    """K4: attach methodology diagnostics + flags to the comparison (ADVISORY — never changes the
+    verdict). Wrapped so a diagnostic failure can never sink a real run."""
+    try:
+        from seq2yield.diagnostics import collect
+        size = cmp.get("comparison_train_size") or max(spec.train_sizes)
+        diag = collect.diagnose(spec, size, per_size=cmp.get("per_size"))
+        cmp["diagnostics"] = diag["diagnostics"]
+        cmp["methodology_flags"] = diag["methodology_flags"]
+        cmp["flag_summary"] = diag["flag_summary"]
+        audit_log.append(run_dir, "diagnostics", diag["flag_summary"])
+    except Exception as e:  # advisory only
+        cmp["diagnostics_error"] = str(e)[:200]
+        audit_log.append(run_dir, "diagnostics_error", {"error": str(e)[:200]})
+
+
 def _verdict(run_dir: Path, status: str, detail: dict) -> dict:
     out = {"run_id": detail.get("run_id"), "status": status, **detail}
     (run_dir / "verdict.json").write_text(__import__("json").dumps(out, indent=2), encoding="utf-8")
@@ -179,6 +195,7 @@ def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
                                                 seed=spec.seed)
         cmp["per_size"] = per_size
         cmp["crossover"] = compare_mod.crossover_analysis(per_size)
+    _attach_diagnostics(spec, cmp, run_dir)            # K4: advisory methodology flags
     audit_log.append(run_dir, "compare", cmp)
 
     return _verdict(run_dir, cmp["status"],
@@ -250,6 +267,7 @@ def _run_yeast(spec: RunSpec, run_dir: Path, vres) -> dict:
             cmp["transfer"] = {"verdict": "inconclusive",
                                "reason": f"source run {spec.transfer_of_run_id} not found"}
 
+    _attach_diagnostics(spec, cmp, run_dir)            # K4: advisory methodology flags
     audit_log.append(run_dir, "compare", cmp)
     return _verdict(run_dir, cmp["status"],
                     {"run_id": spec.run_id, "stage": "complete", "comparison": cmp,

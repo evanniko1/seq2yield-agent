@@ -28,7 +28,7 @@ from datetime import datetime, timezone  # noqa: E402
 
 import pandas as pd  # noqa: E402
 
-from agents import memory, ml_engineer, postmortem, question_space  # noqa: E402
+from agents import memory, methodology_critic, ml_engineer, postmortem, question_space  # noqa: E402
 from agents.council import Council  # noqa: E402
 from agents.patch_reviewer import review as review_patch  # noqa: E402
 from orchestration import approvals, execution_harness, patch_manager  # noqa: E402
@@ -193,6 +193,17 @@ def cycle(fb: bool, n_proposals: int = 4, approver: str | None = None) -> dict:
         print("  data-efficiency (ΔR² per train_size):",
               {c["train_size"]: round(c.get("delta", c.get("mean_delta", 0)), 3) for c in curve})
 
+    # K4: methodology critic narrates the harness diagnostics/flags (advisory)
+    flags = cmp.get("methodology_flags") or []
+    crit, crit_who = methodology_critic.review(
+        cmp.get("diagnostics") or {}, flags,
+        {"candidate_model": spec.model_family, "baseline_model": spec.acceptance_policy.baseline_model,
+         "dataset": spec.dataset, "status": status, "mean_delta": cmp.get("mean_delta")},
+        allow_local_fallback=fb)
+    (run_dir / "methodology_critique.json").write_text(crit.model_dump_json(indent=2), encoding="utf-8")
+    print(f"STATE: METHODOLOGY_CRITIC ({crit_who}): severity={crit.severity} "
+          f"flags={[f['id'] for f in flags]}")
+
     print("STATE: POSTMORTEM_COMPLETE")
     pm, pm_who = postmortem.synthesize(proposal, verdict, curve=curve, crossover=crossover,
                                        heterogeneity=het or None, allow_local_fallback=fb)
@@ -214,6 +225,8 @@ def cycle(fb: bool, n_proposals: int = 4, approver: str | None = None) -> dict:
                    "status": status, "mean_delta": cmp.get("mean_delta"),
                    "ci": cmp.get("paired_bootstrap_ci"), "p_value": cmp.get("p_value"),
                    "claim_allowed": pm.claim_allowed,
+                   # K4: record the methodology flags so the next cycle can chase open concerns
+                   "methodology_flags": flags, "methodology_severity": crit.severity,
                    "data_efficiency": curve, "crossover": crossover,
                    "heterogeneity": het or None})
     claim_registry.record(run_id=spec.run_id, proposal_id=proposal["proposal_id"],

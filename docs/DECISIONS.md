@@ -439,6 +439,34 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
 - **Env:** `import os` fix in the provider base (the .env loader referenced it; only triggered
   once a real `.env` existed). 118 tests passing.
 
+## #41 — K4: diagnostics + methodology red-team (make flaws observable)
+- **Premise.** The council cannot question what it cannot observe; deep flaws (overfit,
+  unrepresentative split, leakage, miscalibration) normally need a domain expert. K4 turns them
+  into OBSERVABLE signals the council can act on.
+- **Trusted, deterministic diagnostics** (`seq2yield/diagnostics/signals.py`): generalization gap
+  (train−test R²), calibration slope/intercept, residual bias + heteroscedasticity, split
+  representativeness (mean-shift/std-ratio/KS, no scipy dep), exact-duplicate sequence leakage,
+  target-range extrapolation, learning-curve shape. Pure functions over arrays/curves —
+  reproducible, computed by the harness, not an agent.
+- **Pitfalls KB + rule-based critic** (`configs/methodology_pitfalls.yaml`, `diagnostics/critic.py`):
+  each signal maps to a named flag with severity + a suggested follow-up intervention.
+- **Harness wiring** (`_attach_diagnostics`): one bounded representative PROBE fit at the
+  comparison size (capped rows; pooled for E. coli, the yeast holdout for yeast) computes the
+  signals; flags attach to every verdict. **ADVISORY by design** — they never change the
+  accept/reject/inconclusive status (the statistical verdict stays the single source of truth);
+  wrapped so a diagnostic error can never sink a real run.
+- **LLM methodology critic** (`agents/methodology_critic.py` + `MethodologyCritique` schema):
+  narrates the trusted flags into a critique (no flags ⇒ deterministic, no model call). It
+  interprets, never recomputes or overturns.
+- **Feedback loop** (the user chose "also propose follow-up experiments"): the loop records flags
+  in memory; `open_flags` dedupes/severity-sorts recent flags; the generator prompt (v4) surfaces
+  them with their suggested intervention so the council proposes follow-up investigative
+  experiments (e.g. `data_limited`→data_efficiency sweep, `overfit`→training_procedure).
+- **Validated live**: RF on E. coli probe flags `overfit` (gap 0.22); the provided splits validate
+  as representative (KS 0.01) and leak-free — i.e. the diagnostics confirm the methodology where it
+  is sound and flag it where it is not. Demo `scripts/run_diagnostics_demo.py`. Tests:
+  `tests/test_diagnostics.py` (15). 161 passing.
+
 ## #40 — K1: dataset dimension + cross-organism transfer (conclusion-replication)
 - **Framing (the important part).** Direct weight transfer across organisms is impossible here
   (E. coli 96 nt vs yeast 80 nt → different one-hot dims and sequence spaces). So "transfer" means

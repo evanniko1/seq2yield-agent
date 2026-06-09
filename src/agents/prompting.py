@@ -18,7 +18,8 @@ Prompt = namedtuple("Prompt", "system user template version")
 
 # Bump a version when the wording changes materially; the new value lands in the call log.
 TEMPLATE_VERSIONS = {
-    "generator": "3",        # + dataset dimension (ecoli|yeast) + transfer_generalization (K1)
+    "generator": "4",        # + open methodology flags feedback loop (K4)
+    "methodology_critic": "1",  # narrate harness diagnostics/flags into a critique (K4)
     "reviewer": "2",         # anchored 1-5 rubric (C8/S3)
     "chair": "2",            # confoundedness tie-break + justified rationale (C8/S3)
     "postmortem": "2",       # run-facts-only + compact proposal (C12)
@@ -72,7 +73,7 @@ _CONTEXT = (
 )
 
 
-def generator_prompt(n: int, prior: str = "", targets=None) -> Prompt:
+def generator_prompt(n: int, prior: str = "", targets=None, open_flags=None) -> Prompt:
     sys = roles.persona("proposal_generator") + "\n\n" + _CONTEXT
     prior_block = ""
     if prior:
@@ -89,6 +90,16 @@ def generator_prompt(n: int, prior: str = "", targets=None) -> Prompt:
             f"sampling_policy={t.sampling_policy}  ({t.describe()})" for t in sample)
         prior_block += ("\n\nUNEXPLORED questions from the coverage map — PREFER proposing "
                         f"from these uncovered cells ({len(targets)} remain):\n{lines}")
+    if open_flags:
+        fl = "\n".join(f"  - [{f.get('severity')}] {f.get('id')}: {f.get('description')} "
+                       f"(suggested follow-up intervention: {f.get('intervention_hint')})"
+                       for f in open_flags[:6])
+        prior_block += ("\n\nOPEN METHODOLOGY FLAGS from recent runs (the harness diagnostics "
+                        "raised these). Consider proposing a FOLLOW-UP experiment that investigates "
+                        "the most severe one using its suggested intervention_type — e.g. an "
+                        "'overfit' flag -> a training_procedure (regularization) study; "
+                        "'data_limited' -> a data_efficiency sweep to larger N; "
+                        "'unrepresentative_split' -> a sampling_design study:\n" + fl)
     user = (f"Propose exactly {n} DISTINCT, controlled experiments, each comparing one "
             "model_family against a DIFFERENT comparator_model on the same fixed splits. "
             "Vary the model_family/hypothesis across proposals; never compare a model to "
@@ -182,3 +193,21 @@ def chair_prompt(proposals: list[dict], reviews: dict) -> Prompt:
             f"proposals:\n{compact_json([_select(p, _CHAIR_FIELDS) for p in proposals])}\n\n"
             f"review_scores (with overall + sound):\n{compact_json(reviews)}")
     return Prompt(sys, user, "chair", TEMPLATE_VERSIONS["chair"])
+
+
+def methodology_critic_prompt(diagnostics: dict, flags: list, run_facts: dict) -> Prompt:
+    sys = (roles.persona("methodology_reviewer") + "\n\n" + _CONTEXT + "\n\n"
+           "You are the METHODOLOGY CRITIC. The harness already computed the diagnostic SIGNALS "
+           "and FLAGS below deterministically — treat them as ground truth; do not recompute or "
+           "dispute the numbers. Your job is to INTERPRET them: explain what each flag means for "
+           "the validity of THIS run's conclusion, and suggest concrete follow-up experiments.")
+    user = ("Write a short methodology critique of this completed run. Ground every concern in a "
+            "specific flag/signal below (cite the signal value). Set severity to the highest flag "
+            "severity (none if no flags). In suggested_followups, give concrete experiments that "
+            "would investigate the flags (name the intervention_type). Do NOT claim the result is "
+            "invalid solely from advisory flags — they qualify, not overturn, the statistical "
+            "verdict.\n\n"
+            f"run_facts:\n{compact_json(run_facts, indent=2)}\n\n"
+            f"methodology_flags:\n{compact_json(flags, indent=2)}\n\n"
+            f"diagnostics:\n{compact_json(diagnostics, indent=2)}")
+    return Prompt(sys, user, "methodology_critic", TEMPLATE_VERSIONS["methodology_critic"])

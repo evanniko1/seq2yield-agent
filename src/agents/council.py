@@ -12,7 +12,7 @@ import yaml
 
 from seq2yield.experiments.run_spec import RunSpec, validate_runspec
 
-from . import memory, planner, prompting, question_space, roles
+from . import memory, methodology_critic, planner, prompting, question_space, roles
 from .router import Router
 from .schemas import ChairDecision, CouncilReviewItem, ProposalBatch
 
@@ -253,8 +253,9 @@ class Council:
         else:
             focus, pi_rationale, pi_who = planner.INTERVENTIONS, "planner disabled", "none"
         targets = planner.rank_targets(prior, focus_types=focus)
+        flags = methodology_critic.open_flags(prior)     # K4: surface unresolved methodology flags
         prompt = prompting.generator_prompt(n, prior_summary(prior) if prior else "",
-                                            targets=targets)
+                                            targets=targets, open_flags=flags)
         batch, who = self._ask("proposal_generator", prompt, ProposalBatch,
                                temperature=0.6, max_tokens=1800)
         kept, dropped = filter_unsettled(batch.proposals, settled)
@@ -268,6 +269,7 @@ class Council:
                              "pi_focus": focus, "pi_rationale": pi_rationale, "pi": pi_who,
                              "n_untested": len(question_space.uncovered(prior)),
                              "dropped": dropped, "hypotheses_normalized": n_normalized,
+                             "open_methodology_flags": [f.get("id") for f in flags],
                              "kept_cells": [proposal_cell_id(p) for p in kept]}
         return kept, who
 

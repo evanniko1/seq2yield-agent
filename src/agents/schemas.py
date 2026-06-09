@@ -122,6 +122,18 @@ class PatchReview(BaseModel):
     required_changes: list[str] = Field(default_factory=list)
 
 
+class MethodologyCritique(BaseModel):
+    """Methodology critic's narrative over the harness-computed diagnostics + flags (K4).
+
+    The critic INTERPRETS trusted signals; it does not recompute them and cannot change the
+    verdict. suggested_followups are concrete experiments the council could run to investigate.
+    """
+    summary: str
+    concerns: list[str] = Field(default_factory=list)
+    suggested_followups: list[str] = Field(default_factory=list)
+    severity: Literal["none", "low", "medium", "high"] = "none"
+
+
 class PlannerPlan(BaseModel):
     """Principal Investigator's strategic direction: which intervention axes to prioritize
     next, given coverage. Concrete cell selection is done deterministically from this focus."""

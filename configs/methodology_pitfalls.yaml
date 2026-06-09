@@ -1,0 +1,80 @@
+# Methodology pitfalls knowledge base (K4). Each entry maps an OBSERVABLE diagnostic signal to a
+# named methodological concern, a severity, and a suggested follow-up intervention the council can
+# propose to investigate it. Trusted/deterministic: the critic applies these rules; the LLM only
+# narrates. Flags are ADVISORY — they never change the harness's statistical verdict.
+#
+# signal: dotted path into the diagnostics dict (top-level key . field).
+# op: ">" | "abs_gt" | "far_from_one" | "is_true"   threshold: numeric (where applicable)
+pitfalls:
+  - id: train_test_leakage
+    signal: leakage.leak_frac
+    op: ">"
+    threshold: 0.0
+    severity: high
+    description: >
+      Test sequences also appear in the training set, so reported performance is leaked/inflated.
+    suggested: deduplicate sequences across splits, then re-run the same comparison
+    intervention_hint: model_architecture
+
+  - id: unrepresentative_split
+    signal: representativeness.ks
+    op: ">"
+    threshold: 0.2
+    severity: medium
+    description: >
+      The held-out target distribution differs markedly from train (large KS). The test set may
+      be unrepresentative — the classic 'tail-sliced / non-stratified validation' pitfall.
+    suggested: use a target-stratified split / sampling and re-test
+    intervention_hint: sampling_design
+
+  - id: overfit
+    signal: generalization_gap.gap
+    op: ">"
+    threshold: 0.15
+    severity: medium
+    description: >
+      Large train-minus-test R² gap: the model fits training structure that does not generalize.
+    suggested: regularize via hyperparameter tuning, or add data
+    intervention_hint: training_procedure
+
+  - id: data_limited
+    signal: learning_curve.still_improving
+    op: is_true
+    severity: low
+    description: >
+      Candidate R² is still rising at the largest train size: performance is data-limited and a
+      single-size verdict understates the model.
+    suggested: extend the data-efficiency sweep to larger training sizes
+    intervention_hint: data_efficiency
+
+  - id: miscalibration
+    signal: calibration.slope
+    op: far_from_one
+    threshold: 0.25
+    severity: low
+    description: >
+      Calibration slope (actual ~ predicted) is far from 1: systematic over/under-confidence,
+      typically regression-to-the-mean compression.
+    suggested: try a better-calibrated model family or post-hoc calibration
+    intervention_hint: model_architecture
+
+  - id: extrapolation
+    signal: coverage.extrapolated_frac
+    op: ">"
+    threshold: 0.05
+    severity: low
+    description: >
+      A non-trivial fraction of test targets fall outside the training target range: the model is
+      asked to extrapolate.
+    suggested: broaden training coverage of the target range via sampling
+    intervention_hint: sampling_design
+
+  - id: prediction_bias
+    signal: residuals.mean_residual
+    op: abs_gt
+    threshold: 0.1
+    severity: low
+    description: >
+      Non-zero mean residual: systematic prediction bias (often a scaling/centering issue).
+    suggested: check feature scaling / target centering
+    intervention_hint: feature_scaling
