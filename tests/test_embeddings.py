@@ -119,7 +119,3 @@ def test_embed_evo_raises_clear_backend_error():
     from seq2yield.embeddings import extract
     with pytest.raises(NotImplementedError, match="evo"):
         extract.embed("evo", ["AAA"])
-
-
-def test_dnabert2_declares_triton_requirement():
-    assert "triton" in registry.spec("dnabert2").get("requires", [])

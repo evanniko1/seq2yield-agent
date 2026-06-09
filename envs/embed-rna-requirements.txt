@@ -1,0 +1,23 @@
+# Isolated extraction sidecar for the RNA embedding models (utr-lm, rna-fm) — K2a.
+#
+# THE PATTERN IS TRIVIAL (and proven): because embeddings are extracted OFFLINE and consumed only
+# as CACHED vectors (numpy), the extraction environment is fully decoupled from the runtime. A
+# sidecar venv that inherits the global CUDA torch builds in ~2 min and writes
+# data/embeddings/<model>/<dataset>.npz, which the main env reads. NO main-code change:
+#   python -m venv .venv-embed --system-site-packages
+#   .venv-embed/Scripts/python -m pip install -r envs/embed-rna-requirements.txt
+#   .venv-embed/Scripts/python scripts/extract_embeddings.py --model rna-fm --dataset ecoli
+#
+# THE CAVEAT (why this is finicky, not turnkey): `multimolecule` declares an UNPINNED dependency
+# on `transformers` but its code imports narrow internal transformers APIs (TransformersKwargs,
+# transformers.initialization, the 4.x PreTrainedModel path, tokenizer-base internals). The
+# working (multimolecule, transformers) window is therefore tiny and undocumented. Attempts here:
+#   - multimolecule 0.2.0 + transformers 5.10  -> fails (PreTrainedModel import path)
+#   - multimolecule 0.2.0 + transformers 4.57  -> fails (no `transformers.initialization`)
+#   - multimolecule 0.0.7 + transformers 4.57  -> fails (tokenizer-base SPECIAL_TOKENS change)
+# To make this run, pin the EXACT pair multimolecule was released against (see multimolecule's
+# release/CI notes or its provided conda/docker env) and lock it here. Once a working pair is
+# found, this file + the sidecar are all that's needed — the runtime/council are unaffected.
+transformers   # <-- PIN to multimolecule's tested version once identified (see caveat above)
+multimolecule
+# torch inherited from the global env (--system-site-packages); not re-pulled.

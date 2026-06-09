@@ -46,12 +46,7 @@ EMBEDDERS: dict[str, dict] = {
         "cite": "Li et al., bioRxiv 2023 / NeurIPS 2023",
         "note": "codon-tokenized, coding only; weights are GitHub-hosted (NOT on HF hub) -> needs "
                 "a custom loader before it can run"},
-    "dnabert2": {
-        "hf_id": "zhihan1996/DNABERT-2-117M", "dim": 768, "order": 6, "params": "117M",
-        "backend": "hf_mean", "trust_remote_code": True, "requires": ["triton"],
-        "applies": ["ecoli", "yeast"], "family": "dna",
-        "cite": "Zhou et al., 2023 (BPE multispecies)",
-        "note": "remote code requires `triton` (no clean Windows wheel)"},
+    # dnabert2 discarded: remote code requires `triton` (no clean Windows wheel) — too uncertain.
     "nt-250m": {
         "hf_id": "InstaDeepAI/nucleotide-transformer-v2-250m-multi-species", "dim": 768, "order": 7,
         "params": "250M", "backend": "hf_mean", "trust_remote_code": True,
