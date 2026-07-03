@@ -34,16 +34,17 @@ def test_applicable_feature_sets_excludes_mechanistic_for_utr():
 
 
 # ---- data-presence gating ----
-def test_ready_ids_excludes_datasets_without_data():
+def test_ready_ids_gate_on_data_presence():
     ready = datasets.ready_ids()
-    assert "ecoli" in ready and "yeast" in ready          # data present locally
-    assert "sample_2019" not in ready                     # GEO data not downloaded
+    assert "ecoli" in ready and "yeast" in ready          # built-in data present locally
+    assert all(datasets.data_present(d) for d in ready)   # readiness == data present (the gate)
 
 
 def test_question_space_only_enumerates_ready_datasets():
     ds = {c.dataset for c in qs.enumerate_cells()}
-    assert ds == {"ecoli", "yeast"}                       # sample_2019 gated out (no data)
-    # per-dataset applicability: yeast feature cells never use mechanistic
+    assert {"ecoli", "yeast"} <= ds                       # built-ins always enumerated
+    assert all(datasets.data_present(d) for d in ds)      # never enumerates an un-ready dataset
+    # per-dataset applicability: yeast (promoter) feature cells never use mechanistic/mixed
     yeast_fs = {c.feature_set for c in qs.enumerate_cells()
                 if c.dataset == "yeast" and c.intervention_type == "feature_representation"}
     assert "mechanistic" not in yeast_fs and "mixed" not in yeast_fs

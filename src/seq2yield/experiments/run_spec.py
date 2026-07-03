@@ -91,16 +91,23 @@ def validate_runspec(spec: RunSpec, *, unlocked_tier: str, primary_metric: str =
     if overlap:
         errors.append(f"allowed_files intersect protected_files: {sorted(overlap)}")
 
-    if spec.dataset not in ("ecoli", "yeast"):
-        errors.append(f"unknown dataset '{spec.dataset}' (expected ecoli|yeast)")
+    # K6: accept any registered dataset (fall back to ecoli|yeast if the registry is unavailable).
+    try:
+        from ..data import datasets
+        known = set(datasets.all_ids()) or {"ecoli", "yeast"}
+        per_series = datasets.exists(spec.dataset) and datasets.spec(spec.dataset).structure == "per_series"
+    except Exception:
+        known, per_series = {"ecoli", "yeast"}, spec.dataset == "ecoli"
+    if spec.dataset not in known:
+        errors.append(f"unknown dataset '{spec.dataset}' (registered: {sorted(known)})")
 
     # transfer_generalization is a replication: it MUST reference the source finding it replicates.
     if spec.intervention_type == "transfer_generalization" and not spec.transfer_of_run_id:
         errors.append("transfer_generalization requires transfer_of_run_id (the source finding)")
 
-    # E. coli uses per-series MC-CV repeats; yeast uses ONE per-gene-stratified holdout with a
-    # SEQUENCE-LEVEL bootstrap (its CIs come from resampling test sequences, not repeats).
-    if spec.dataset == "ecoli":
+    # per-series datasets use MC-CV repeats; pooled datasets use ONE stratified holdout with a
+    # SEQUENCE-LEVEL bootstrap (CIs come from resampling test sequences, not repeats).
+    if per_series:
         if spec.acceptance_policy.requires_repeated_seed and len(spec.iterations) < 2:
             errors.append("acceptance_policy.requires_repeated_seed but <2 iterations (repeats)")
         if len(spec.iterations) < min_seeds_for_repeats:

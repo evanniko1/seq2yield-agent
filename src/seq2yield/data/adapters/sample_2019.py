@@ -29,7 +29,7 @@ def _pick(cols, *candidates):
 
 def load(spec):
     local = ROOT / spec.source.get("local", "data/extracted/sample_2019")
-    csvs = sorted(local.glob("*.csv"))
+    csvs = sorted(local.glob("*.csv*"))    # .csv or .csv.gz (pandas auto-decompresses)
     if not csvs:
         raise FileNotFoundError(
             f"no Sample-2019 CSVs under {local}. Download GEO {spec.source.get('geo')} "

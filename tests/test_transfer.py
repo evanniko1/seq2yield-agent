@@ -25,7 +25,7 @@ _DEC = ChairDecision(status="approve_for_execution", chosen_proposal_id="p", rat
 def test_catalogue_has_ecoli_and_yeast_cells():
     cells = qs.enumerate_cells()
     datasets = {c.dataset for c in cells}
-    assert datasets == {"ecoli", "yeast"}
+    assert {"ecoli", "yeast"} <= datasets           # built-ins present (others appear once onboarded)
     assert any(c.dataset == "yeast" for c in cells)
 
 
