@@ -30,8 +30,8 @@ providers:
     enabled: true
     base_url: "http://localhost:11434"
     models:
-      diversity:                     # both confirmed installed (Milestone 4)
-        - "qwen2.5-coder:14b"
+      diversity:                     # fit the 8.6GB GPU (dropped qwen2.5-coder:14b — it OOMs)
+        - "llama3.1:8b"
         - "llama3.2:latest"
   openrouter:                        # hosted catalogue for model diversity
     enabled: true

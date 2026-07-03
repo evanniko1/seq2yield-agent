@@ -71,7 +71,7 @@ def test_router_diversity_includes_local():
 
 @pytest.mark.skipif(not OllamaClient.available(), reason="Ollama not running")
 def test_live_ollama_structured(tmp_path):
-    models = ["qwen2.5-coder:14b", "llama3.2:latest"]
+    models = ["llama3.1:8b", "llama3.2:latest"]      # fit the GPU (14b OOMs)
     c = OllamaClient(models[0])
     obj = c.complete_structured(
         system="Return ONLY JSON matching the schema.",
