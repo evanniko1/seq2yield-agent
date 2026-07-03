@@ -1,0 +1,18 @@
+# Yeast secondary benchmark (Vaishnav et al. 2022). Pooled promoter library; the cleaner is the
+# grandfathered clean_yeast (delegated via the adapter, no edit to strict cleaning.py).
+id: yeast
+display_name: "Yeast 80nt promoter -> YFP (Vaishnav 2022)"
+organism: yeast
+modality: promoter
+seq_len: 80
+target_col: Protein
+target_transform: none
+structure: pooled
+bootstrap_unit: sequence
+throughput_floor: 10000
+adapter: yeast                    # delegates to the existing clean_yeast (no cleaning.py edit)
+split_strategy: stratified_holdout
+applicable_models: [rf, mlp, cnn]
+applicable_feature_sets: [one_hot, kmer]
+applicable_embedders: [hyenadna-tiny, nt-50m, nt-250m, evo]
+citation: "Vaishnav et al., Nature 603:455 (2022)"

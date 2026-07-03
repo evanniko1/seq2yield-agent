@@ -439,6 +439,32 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
 - **Env:** `import os` fix in the provider base (the .env loader referenced it; only triggered
   once a real `.env` existed). 118 tests passing.
 
+## #44 — K6: dataset onboarding layer (declarative, adapter-based, strict-file-safe)
+- **What.** Generalizes K1 (one-off yeast) into a repeatable intake so dataset #3…#N plug in via a
+  YAML spec + a small adapter — **without editing strict `cleaning.py`** (never trips the C9 gate).
+  Scoped + built against the first real intake, Sample 2019 (`docs/ONBOARDING.md`).
+- **`data/datasets.py` — `DatasetSpec` registry** (`configs/datasets/{ecoli,yeast,sample_2019}.yaml`):
+  seq_len, structure (per_series|pooled), bootstrap_unit, target_transform, split_strategy,
+  applicable models/feature_sets/embedders. ecoli/yeast retrofitted; sample_2019 added.
+- **Adapters** (`data/adapters/`): `yeast.py` delegates to the existing `clean_yeast` (grandfathered,
+  import-only); `sample_2019.py` new (GEO CSV load, read-count filter, provided 260k/20k split,
+  defensive column detection). Strict `cleaning.py` untouched.
+- **Generic `pooled_runner`** replaces the yeast-specific path; the harness dispatches on
+  `structure == "pooled"` (not `dataset == "yeast"`). Yeast re-validated end-to-end through it
+  (accepted, sequence bootstrap, in_run_pooled).
+- **Length-from-spec + explicit-dataset refactor.** `datasets.seq_len()` drives length everywhere
+  (removed the 96/80 hardcodes); `features_for`/`build` take an EXPLICIT `dataset` — **fixing the
+  latent bug** where `features/embeddings.py` inferred the dataset from length (two datasets can
+  share a length). Touches only freely-modifiable/orchestration code.
+- **Council gating.** `question_space` enumerates only READY datasets (`datasets.data_present`) and
+  filters feature cells by per-dataset applicability (so it never proposes an un-onboarded dataset
+  or a mechanistic study on a UTR set). `scripts/onboard_dataset.py` intake-audit reuses the K4
+  diagnostics (length uniformity, throughput floor, dedup, train/test leakage, representativeness).
+- **Defaults applied (ONBOARDING §9):** provided split, raw MRL target, author read-count filter,
+  grandfather ecoli/yeast. Tests: `tests/test_onboarding.py` (registry, gating, adapter cleaning,
+  applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
+  (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
+
 ## #43 — RL-readiness traceability (decision-event trace; NOT RL)
 - **Goal (audit-driven).** Make every council decision replayable + extractable as
   `(state, action, candidate_actions, outcome, reward_proxy)` so contextual bandits / learned

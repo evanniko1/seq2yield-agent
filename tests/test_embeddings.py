@@ -66,20 +66,31 @@ def test_cache_missing_sequence_errors(monkeypatch, tmp_path):
 
 
 # ---- feature pipeline reads the cache as a flat feature_set ----
-def test_embed_feature_set_builds_flat_from_cache(monkeypatch, tmp_path):
+def test_embed_feature_set_builds_flat_from_explicit_dataset(monkeypatch, tmp_path):
     monkeypatch.setattr(cache, "CACHE_DIR", tmp_path)
     cache._load.cache_clear()
     cache.write("toy", "ecoli", ["AAAA", "CCCC"], np.array([[1, 2], [3, 4]], dtype=np.float32))
-    arr, kind = feat_registry.build("embed:toy", ["CCCC", "AAAA"], frame=None, length=96)
-    assert kind == "flat" and arr.shape == (2, 2) and arr[0][0] == 3.0   # 96 -> ecoli cache
+    arr, kind = feat_registry.build("embed:toy", ["CCCC", "AAAA"], frame=None, length=96,
+                                    dataset="ecoli")
+    assert kind == "flat" and arr.shape == (2, 2) and arr[0][0] == 3.0
 
 
-def test_embed_feature_set_length_selects_dataset(monkeypatch, tmp_path):
+def test_embed_resolves_by_explicit_dataset_not_length(monkeypatch, tmp_path):
+    # K6: dataset is EXPLICIT — two datasets can share a length, so length must not select the cache
     monkeypatch.setattr(cache, "CACHE_DIR", tmp_path)
     cache._load.cache_clear()
     cache.write("toy", "yeast", ["AAAA"], np.array([[9.0]], dtype=np.float32))
-    arr, kind = feat_registry.build("embed:toy", ["AAAA"], frame=None, length=80)  # 80 -> yeast
+    arr, _ = feat_registry.build("embed:toy", ["AAAA"], frame=None, length=50, dataset="yeast")
     assert arr[0][0] == 9.0
+
+
+def test_embed_without_dataset_errors(monkeypatch, tmp_path):
+    import pytest
+    monkeypatch.setattr(cache, "CACHE_DIR", tmp_path)
+    cache._load.cache_clear()
+    cache.write("toy", "ecoli", ["AAAA"], np.array([[1.0]], dtype=np.float32))
+    with pytest.raises(ValueError, match="explicit dataset"):
+        feat_registry.build("embed:toy", ["AAAA"], frame=None, length=96)   # no dataset -> error
 
 
 # ---- council schema accepts registered embeddings, rejects unknown ----

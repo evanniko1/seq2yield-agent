@@ -1,8 +1,8 @@
-"""Embedding feature builder (K2a) — READS cached foundation-model vectors (numpy only, no
+"""Embedding feature builder (K2a/K6) — READS cached foundation-model vectors (numpy only, no
 transformers). Produces a flat (N, dim) matrix for classical/MLP models, exactly like kmer.
 
-dataset is inferred from sequence length (96 -> ecoli, 80 -> yeast) so the same `embed:<model>`
-feature_set resolves to the right cache on either benchmark.
+K6: the dataset is passed EXPLICITLY (not inferred from sequence length) so `embed:<model>`
+resolves to the correct per-dataset cache even when datasets share a length.
 """
 from __future__ import annotations
 
@@ -10,11 +10,12 @@ import numpy as np
 
 from ..embeddings import cache
 
-_LEN_TO_DATASET = {96: "ecoli", 80: "yeast"}
 
-
-def embedding_features(model: str, sequences, length: int = 96) -> np.ndarray:
-    dataset = _LEN_TO_DATASET.get(length, "ecoli")
+def embedding_features(model: str, sequences, dataset: str | None = None) -> np.ndarray:
+    if not dataset:
+        raise ValueError(
+            f"embed:{model} requires an explicit dataset (cache is per-dataset). Pass dataset= "
+            "through features_for/build — do not infer it from sequence length.")
     return np.asarray(cache.lookup(model, dataset, [str(s) for s in sequences]), dtype=np.float32)
 
 

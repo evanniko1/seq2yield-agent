@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from ..data import sampling
+from ..data import datasets, sampling
 from ..data.cleaning import TARGET_COL
 from ..data.loaders import load_split_csv, series_subset
 from ..data.splits import load_manifest
@@ -55,7 +55,8 @@ def _run_per_series(spec: RunSpec, splits: dict, series_ids: list[int]) -> list[
                 res = train_evaluate(spec.model_family, sample, h_s,
                                      feature_set=spec.feature_set,
                                      feature_scaling=spec.feature_scaling, target_col=TARGET_COL,
-                                     length=96, seed=spec.seed,
+                                     length=datasets.seq_len(spec.dataset), seed=spec.seed,
+                                     dataset=spec.dataset,
                                      hyperparameters=spec.hyperparameters)
                 rows.append({"iteration": it, "series": sid, "model": spec.model_family,
                              "train_size": size, "r2": res["r2"], "rmse": res["rmse"]})
@@ -78,7 +79,8 @@ def _run_pooled(spec: RunSpec, splits: dict, series_ids: list[int]) -> list[dict
                                              min(size, len(w_s)), seed=spec.seed))
             train_frame = pd.concat(parts, ignore_index=True)
             set_seed(spec.seed)
-            Xtr = features_for(spec.model_family, train_frame, spec.feature_set)
+            _len = datasets.seq_len(spec.dataset)
+            Xtr = features_for(spec.model_family, train_frame, spec.feature_set, _len, spec.dataset)
             scaler = None
             if spec.feature_scaling not in (None, "none") and model_registry.feature_kind(spec.model_family) == "flat":
                 from ..features import scaling as scaling_mod
@@ -93,7 +95,7 @@ def _run_pooled(spec: RunSpec, splits: dict, series_ids: list[int]) -> list[dict
             model.fit(Xtr, train_frame[TARGET_COL].to_numpy())
             for sid in series_ids:                       # evaluate the pooled model per series
                 h_s = series_subset(held, sid)
-                Xte = features_for(spec.model_family, h_s, spec.feature_set)
+                Xte = features_for(spec.model_family, h_s, spec.feature_set, _len, spec.dataset)
                 if scaler is not None:
                     Xte = scaler.transform(Xte)
                 y = h_s[TARGET_COL].to_numpy()

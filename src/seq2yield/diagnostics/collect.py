@@ -27,10 +27,10 @@ _MAX_PROBE_TRAIN = 6000          # cap pooled probe rows so the extra fit stays 
 
 
 def _fit_train_test(model_family, train_frame, test_frame, *, feature_set, feature_scaling,
-                    hyperparameters, seed, length):
+                    hyperparameters, seed, length, dataset=None):
     set_seed(seed)
-    Xtr = features_for(model_family, train_frame, feature_set, length)
-    Xte = features_for(model_family, test_frame, feature_set, length)
+    Xtr = features_for(model_family, train_frame, feature_set, length, dataset)
+    Xte = features_for(model_family, test_frame, feature_set, length, dataset)
     if feature_scaling not in (None, "none") and model_registry.feature_kind(model_family) == "flat":
         from ..features import scaling as sc
         name = sc.recommend_scaler(Xtr)[0] if feature_scaling == "auto" else feature_scaling
@@ -64,21 +64,23 @@ def _ecoli_frames(spec, size):
     return _cap(pd.concat(tr_parts, ignore_index=True), spec.seed), pd.concat(te_parts, ignore_index=True)
 
 
-def _yeast_frames(spec, size):
-    from ..experiments import yeast_runner as Y
-    train_full, test = Y.stratified_holdout(Y.load_yeast(), seed=spec.seed)
-    return _cap(Y._subsample(train_full, size, spec.sampling_policy, spec.seed), spec.seed), test
+def _pooled_frames(spec, size):
+    from ..experiments import pooled_runner as P
+    train_full, test = P.holdout(spec)
+    return _cap(P.subsample(train_full, size, spec.sampling_policy, spec.seed), spec.seed), test
 
 
 def diagnose(spec, comparison_size: int, per_size=None) -> dict:
     """Run the diagnostic probe and return {diagnostics, methodology_flags, flag_summary}."""
-    length = 80 if spec.dataset == "yeast" else 96
-    train_frame, test_frame = (_yeast_frames if spec.dataset == "yeast" else _ecoli_frames)(
-        spec, comparison_size)
+    from ..data import datasets
+    length = datasets.seq_len(spec.dataset)
+    pooled = datasets.spec(spec.dataset).structure == "pooled" if datasets.exists(spec.dataset) \
+        else spec.dataset == "yeast"
+    train_frame, test_frame = (_pooled_frames if pooled else _ecoli_frames)(spec, comparison_size)
     ytr, ptr, yte, pte = _fit_train_test(
         spec.model_family, train_frame, test_frame, feature_set=spec.feature_set,
         feature_scaling=spec.feature_scaling, hyperparameters=spec.hyperparameters,
-        seed=spec.seed, length=length)
+        seed=spec.seed, length=length, dataset=spec.dataset)
     diagnostics = {
         "generalization_gap": S.generalization_gap(ytr, ptr, yte, pte),
         "calibration": S.calibration(yte, pte),

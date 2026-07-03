@@ -20,7 +20,17 @@ FEATURE_SETS = ["kmer", "mechanistic", "mixed"]
 SAMPLING_POLICIES = ["maximin_kmer", "expression_stratified"]
 
 
-DATASETS = ["ecoli", "yeast"]                          # K1: the dataset/organism dimension
+DATASETS = ["ecoli", "yeast"]                          # K1 default; K6 uses the registry (below)
+
+
+def _ready_datasets() -> list[str]:
+    """K6: datasets registered AND with data present (so the council never targets an
+    un-onboarded dataset). Falls back to the K1 default if the registry is unavailable."""
+    try:
+        from seq2yield.data import datasets
+        return datasets.ready_ids() or DATASETS
+    except Exception:
+        return DATASETS
 
 
 @dataclass(frozen=True)
@@ -72,7 +82,7 @@ def _cells_for_dataset(dataset: str) -> list[Cell]:
             cells.append(Cell("model_architecture", cand, comp, dataset=dataset))
             cells.append(Cell("data_efficiency", cand, comp, dataset=dataset))
     for m in FLAT_MODELS:                              # feature_representation (same model)
-        for fs in FEATURE_SETS:
+        for fs in _applicable_feature_sets(dataset):   # K6: per-dataset applicability
             cells.append(Cell("feature_representation", m, m, feature_set=fs, dataset=dataset))
     for emb in _embed_features_available(dataset):     # K2a: only models whose cache is extracted
         for m in FLAT_MODELS:
@@ -87,11 +97,24 @@ def _cells_for_dataset(dataset: str) -> list[Cell]:
     return cells
 
 
+def _applicable_feature_sets(dataset: str) -> list[str]:
+    """Flat feature sets applicable to a dataset (K6 — e.g. mechanistic is E.coli-coding-specific),
+    intersected with the catalogue's FEATURE_SETS."""
+    try:
+        from seq2yield.data import datasets
+        allowed = set(datasets.applicable_feature_sets(dataset))
+        sel = [fs for fs in FEATURE_SETS if fs in allowed]
+        return sel or FEATURE_SETS
+    except Exception:
+        return FEATURE_SETS
+
+
 def enumerate_cells() -> list[Cell]:
-    """All catalogue cells across datasets (K1). Each ecoli cell has a yeast counterpart; a
-    transfer/replication run targets the yeast cell while linking back to its ecoli result."""
+    """All catalogue cells across READY datasets (K1/K6). Each dataset's cells mirror the intervention
+    catalogue; a transfer/replication run targets one dataset's cell while linking back to a source
+    finding on another."""
     cells: list[Cell] = []
-    for ds in DATASETS:
+    for ds in _ready_datasets():
         cells.extend(_cells_for_dataset(ds))
     return cells
 

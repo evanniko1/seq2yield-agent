@@ -1,0 +1,18 @@
+# E. coli primary benchmark (Nikolados et al. 2022 / Cambray et al. 2018). Retrofitted to the
+# K6 DatasetSpec; the actual per-series splits + cleaning are the grandfathered built-in path.
+id: ecoli
+display_name: "E. coli 96nt -> sfGFP (Nikolados 2022)"
+organism: ecoli
+modality: coding
+seq_len: 96
+target_col: Protein
+target_transform: none
+structure: per_series
+bootstrap_unit: series
+throughput_floor: 10000
+adapter: null                     # built-in per-series splits path (grandfathered)
+split_strategy: provided
+applicable_models: [rf, mlp, cnn, ridge, svr, transformer]
+applicable_feature_sets: [one_hot, kmer, mechanistic, mixed]
+applicable_embedders: [hyenadna-tiny, nt-50m, nt-250m, codonbert, utr-lm, rna-fm, evo]
+citation: "Nikolados et al., Nat Commun 13:7755 (2022); Cambray et al., Nat Biotechnol 36:1005 (2018)"

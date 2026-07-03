@@ -1,0 +1,23 @@
+# Human 5'UTR MPRA (Sample et al. 2019) — first K6 onboarding. Data: GEO GSE114002 +
+# github.com/pjsample/human_5utr_modeling. Defaults per docs/ONBOARDING.md §9:
+# provided 260k/20k split, raw MRL target, author read-count filter.
+id: sample_2019
+display_name: "Human 5'UTR MPRA -> mean ribosome load (Sample 2019)"
+organism: human
+modality: utr
+seq_len: 50
+target_col: rl                    # mean ribosome load (raw; R2 is scale-invariant)
+target_transform: none
+structure: pooled
+bootstrap_unit: sequence
+throughput_floor: 10000
+adapter: sample_2019
+split_strategy: provided           # author 260k train / 20k held-out
+applicable_models: [rf, mlp, cnn, ridge, svr, transformer]
+applicable_feature_sets: [one_hot, kmer]     # NOT mechanistic/mixed (E. coli-coding-specific)
+applicable_embedders: [hyenadna-tiny, nt-50m, nt-250m, utr-lm, rna-fm]   # NOT codonbert (noncoding)
+citation: "Sample et al., Nat Biotechnol 37:803 (2019)"
+source:
+  geo: GSE114002
+  repo: "https://github.com/pjsample/human_5utr_modeling"
+  local: "data/extracted/sample_2019"

@@ -121,8 +121,8 @@ def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
 
     # 4. execute experiment
     audit_log.append(run_dir, "execute_start", {})
-    if spec.dataset == "yeast":                         # K1: pooled, sequence-level path
-        return _run_yeast(spec, run_dir, vres)
+    if _is_pooled(spec.dataset):                        # K6: any pooled dataset -> sequence-level path
+        return _run_pooled(spec, run_dir, vres)
     result = run_runspec(spec)
     result["metrics"].to_csv(run_dir / "metrics.csv", index=False)
     audit_log.append(run_dir, "execute_done", {"n_rows": int(len(result["metrics"]))})
@@ -203,14 +203,19 @@ def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
                      "environment": environment(), "warnings": vres.warnings})
 
 
-def _run_yeast(spec: RunSpec, run_dir: Path, vres) -> dict:
-    """K1: pooled yeast path. Trains candidate + in-run baseline pooled, evaluates on a fixed
-    per-gene-stratified test set with a SEQUENCE-LEVEL paired bootstrap (bootstrap_unit=sequence,
-    C3 — never pooled with E. coli per-series CIs). If the run links a source finding
-    (transfer_of_run_id), attaches a cross-organism concordance verdict (replication)."""
+def _is_pooled(dataset_id: str) -> bool:
+    from seq2yield.data import datasets
+    return datasets.exists(dataset_id) and datasets.spec(dataset_id).structure == "pooled"
+
+
+def _run_pooled(spec: RunSpec, run_dir: Path, vres) -> dict:
+    """K6: generic pooled path (any `structure: pooled` dataset). Trains candidate + in-run baseline
+    pooled, evaluates on a fixed held-out set with a SEQUENCE-LEVEL paired bootstrap
+    (bootstrap_unit=sequence, C3 — never pooled with per-series CIs). If the run links a source
+    finding (transfer_of_run_id), attaches a cross-dataset concordance verdict (replication)."""
     import json
 
-    from seq2yield.experiments import transfer, yeast_runner
+    from seq2yield.experiments import pooled_runner, transfer
     from seq2yield.statistics.bootstrap import paired_bootstrap_r2
     from seq2yield.training import metrics as M
 
@@ -218,20 +223,20 @@ def _run_yeast(spec: RunSpec, run_dir: Path, vres) -> dict:
     if pol.track != "performance":
         return _verdict(run_dir, "inconclusive",
                         {"run_id": spec.run_id, "stage": "compare",
-                         "reasons": [f"track '{pol.track}' not implemented for yeast"]})
+                         "reasons": [f"track '{pol.track}' not implemented for pooled datasets"]})
 
-    cand = yeast_runner.run_yeast(spec)
+    cand = pooled_runner.run_pooled(spec)
     base_spec = _baseline_spec(spec, pol.baseline_model)
-    base = yeast_runner.run_yeast(base_spec, model_family=base_spec.model_family)
+    base = pooled_runner.run_pooled(base_spec, model_family=base_spec.model_family)
     y = cand["y_test"]
     sizes = sorted(set(cand["preds"]) & set(base["preds"]))
     audit_log.append(run_dir, "execute_done", {"n_test": int(len(y)), "sizes": sizes})
 
     rows = []
     for size in sizes:
-        rows.append({"dataset": "yeast", "train_size": size, "model": spec.model_family,
+        rows.append({"dataset": spec.dataset, "train_size": size, "model": spec.model_family,
                      "r2": M.r2(y, cand["preds"][size])})
-        rows.append({"dataset": "yeast", "train_size": size, "model": pol.baseline_model,
+        rows.append({"dataset": spec.dataset, "train_size": size, "model": pol.baseline_model,
                      "r2": M.r2(y, base["preds"][size])})
     pd.DataFrame(rows).to_csv(run_dir / "metrics.csv", index=False)
 
@@ -249,8 +254,8 @@ def _run_yeast(spec: RunSpec, run_dir: Path, vres) -> dict:
     size = pol.comparison_train_size if pol.comparison_train_size in sizes else max(sizes)
     cmp = dict(next(p for p in per_size if p["train_size"] == size))
     cmp.update({"comparison_train_size": size, "candidate_model": spec.model_family,
-                "baseline_model": pol.baseline_model, "baseline_source": "in_run_yeast",
-                "bootstrap_unit": "sequence", "dataset": "yeast", "n_test": int(len(y))})
+                "baseline_model": pol.baseline_model, "baseline_source": "in_run_pooled",
+                "bootstrap_unit": "sequence", "dataset": spec.dataset, "n_test": int(len(y))})
     if len(per_size) > 1:
         cmp["per_size"] = per_size
         cmp["crossover"] = compare_mod.crossover_analysis(per_size)
