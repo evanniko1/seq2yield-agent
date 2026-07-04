@@ -465,6 +465,24 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #44 — Multi-dataset scale-out: onboard 2 more, K5 app, transfer generalization, skill
+- **Datasets (item 1).** `target_transform` (log1p/logit/none, parameter-free, no leakage) in the
+  runner. Shared Seelig 5'UTR cleaner. **Onboarded LIVE:** `sample_2019` (human 5'UTR, 280k) and
+  `cuperus_2017` (yeast 5'UTR, 489k, `growth_rate`) — both fetched, intake-audited PASS, bounded
+  runs accepted. `dream2022` + `tewhey_2016` specs+adapters written (data-gated; Tewhey carries the
+  log-ratio / no-R²-pool caveat). Registry now holds 6 datasets.
+- **K5 operator app (item 2).** `scripts/config_app.py` (Flask): edits selection_bonuses / budget
+  caps / unlocked tier with TARGETED LINE REPLACEMENT so the commented source YAMLs keep comments
+  (ruamel absent); status panel (ready datasets, spend, open flags, recent runs); launch a council
+  cycle + set the C9 approver. Strict scientific files untouched.
+- **K6 follow-ups (item 3).** `CouncilProposal.dataset` accepts any registered dataset;
+  `_resolve_transfer_source` matches a settled finding on ANY dataset ≠ target and returns
+  (run_id, source_dataset) → transfer replicates arbitrary source→target pairs (not just
+  ecoli→yeast). `compile_runspec` baseline_run_id is structure-aware (per_series→registry;
+  pooled→`<dataset>-baseline`).
+- **Skill.** `.claude/skills/onboard-dataset` — the repeatable fit-check→spec→adapter→fetch→intake
+  →verify→commit playbook. 195 passing.
+
 ## #43 — RL-readiness traceability (decision-event trace; NOT RL)
 - **Goal (audit-driven).** Make every council decision replayable + extractable as
   `(state, action, candidate_actions, outcome, reward_proxy)` so contextual bandits / learned
