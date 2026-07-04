@@ -51,18 +51,20 @@ def _transfer_underlying(p) -> str:
     return "model_architecture"
 
 
-def _resolve_transfer_source(records: list[dict], underlying: str, p) -> str | None:
-    """Find the most recent SETTLED E. coli run whose cell matches the comparison being replicated,
-    so concordance compares against a real prior finding (never a hallucinated run_id)."""
-    want = question_space.cell_id_for(
-        underlying, p.model_family, p.comparator_model, p.feature_set, p.sampling_policy,
-        getattr(p, "scope", "global"), dataset="ecoli")
+def _resolve_transfer_source(records: list[dict], underlying: str, p, target_dataset: str):
+    """Find the most recent SETTLED run — on ANY dataset OTHER than the target — whose cell matches
+    the comparison being replicated (K6: cross-dataset, not just ecoli->yeast). Returns
+    (run_id, source_dataset) so concordance compares against a real prior finding."""
     found = None
     for r in records:
-        if r.get("dataset", "ecoli") != "ecoli" or r.get("status") not in ("accepted", "rejected"):
+        rds = r.get("dataset", "ecoli")
+        if rds == target_dataset or r.get("status") not in ("accepted", "rejected"):
             continue
+        want = question_space.cell_id_for(
+            underlying, p.model_family, p.comparator_model, p.feature_set, p.sampling_policy,
+            getattr(p, "scope", "global"), dataset=rds)
         if question_space.record_cell_id(r) == want:
-            found = r.get("run_id")                 # keep scanning -> latest wins
+            found = (r.get("run_id"), rds)          # keep scanning -> latest wins
     return found
 
 
@@ -341,9 +343,12 @@ class Council:
         # the source run from memory (real run_id -> concordance is computed; else direct yeast Q).
         if itype == "transfer_generalization":
             itype = _transfer_underlying(proposal)
-            dataset = "yeast"
-            transfer_src = _resolve_transfer_source(memory.load(), itype, proposal)
-            transfer_src_ds = "ecoli"
+            # target = the dataset to replicate ON (proposal.dataset; default yeast for back-compat
+            # if the proposal left it at the ecoli default, since source==target is invalid).
+            dataset = proposal.dataset if proposal.dataset != "ecoli" else "yeast"
+            resolved = _resolve_transfer_source(memory.load(), itype, proposal, dataset)
+            if resolved:
+                transfer_src, transfer_src_ds = resolved
 
         allowed = _ALLOWED.get(itype, ["src/seq2yield/models/"])
         same_model = itype in _SAME_MODEL_BASELINE
@@ -374,9 +379,11 @@ class Council:
             max_runtime_minutes=decision.max_runtime_minutes,
         )
         spec.acceptance_policy.track = "performance"
-        # yeast has no per-series registry; its harness path uses an in-run baseline (marker id).
-        spec.acceptance_policy.baseline_run_id = (
-            YEAST_BASELINE_RUN_ID if dataset == "yeast" else BASELINE_RUN_ID)
+        # K6: per-series datasets compare to the persistent registry; pooled datasets use an in-run
+        # baseline, so a per-dataset marker id ('<dataset>-baseline') suffices (never ecoli's).
+        from seq2yield.data import datasets as _ds
+        per_series = _ds.exists(dataset) and _ds.spec(dataset).structure == "per_series"
+        spec.acceptance_policy.baseline_run_id = BASELINE_RUN_ID if per_series else f"{dataset}-baseline"
         spec.acceptance_policy.baseline_model = baseline_model
         spec.acceptance_policy.min_delta_r2 = _min_delta_r2()   # C7: documented, config-sourced
         # verdict at the largest swept size (where data-hungry models have the best chance)

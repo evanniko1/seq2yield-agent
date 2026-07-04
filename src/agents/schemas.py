@@ -53,12 +53,23 @@ class CouncilProposal(BaseModel):
     intervention_type: Literal["model_architecture", "training_procedure", "data_efficiency",
                                "feature_representation", "sampling_design", "feature_scaling",
                                "transfer_generalization"]
-    # transfer_generalization = REPLICATE a settled E. coli finding on yeast (cross-organism
-    # transfer-of-conclusions; the compiler resolves the source run + forces dataset=yeast).
-    # dataset selects the organism for a DIRECT (non-transfer) question. E. coli = 96 nt
-    # per-series; yeast = 80 nt pooled (sequence-level bootstrap).
-    dataset: Literal["ecoli", "yeast"] = "ecoli"
+    # transfer_generalization = REPLICATE a settled finding from ANOTHER dataset on THIS `dataset`
+    # (cross-dataset transfer-of-conclusions; the compiler resolves the source run from memory).
+    # For a DIRECT (non-transfer) question, `dataset` is simply where to run.
+    dataset: str = "ecoli"                 # any REGISTERED dataset id (K6)
     scientific_hypothesis: str
+
+    @field_validator("dataset")
+    @classmethod
+    def _valid_dataset(cls, v: str) -> str:
+        try:
+            from seq2yield.data import datasets
+            known = set(datasets.all_ids())
+        except Exception:
+            known = {"ecoli", "yeast"}
+        if v not in known:
+            raise ValueError(f"unknown dataset '{v}'; registered: {sorted(known)}")
+        return v
     model_family: ModelFamily
     comparator_model: RegistryModel        # must exist in the baseline registry to compare
     # base flat features OR a foundation-model embedding token 'embed:<registered-model>' (K2a)

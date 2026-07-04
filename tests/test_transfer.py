@@ -124,7 +124,7 @@ def test_transfer_underlying_inference():
     assert _transfer_underlying(CouncilProposal(**base)) == "model_architecture"
 
 
-def test_resolve_transfer_source_matches_settled_ecoli_run():
+def test_resolve_transfer_source_matches_any_non_target_dataset():
     records = [{"run_id": "eco-1", "dataset": "ecoli", "status": "accepted",
                 "intervention_type": "model_architecture", "candidate_model": "cnn",
                 "baseline_model": "rf"},
@@ -134,4 +134,8 @@ def test_resolve_transfer_source_matches_settled_ecoli_run():
     p = CouncilProposal(proposal_id="p", title="t", maturity_tier="tier_1",
                         intervention_type="transfer_generalization", scientific_hypothesis="h",
                         model_family="cnn", comparator_model="rf")
-    assert _resolve_transfer_source(records, "model_architecture", p) == "eco-1"   # ecoli only
+    # target=sample_2019 -> source can be either ecoli or yeast (latest wins); returns (run, ds)
+    run, src_ds = _resolve_transfer_source(records, "model_architecture", p, "sample_2019")
+    assert run in ("eco-1", "yeast-x") and src_ds in ("ecoli", "yeast")
+    # target=ecoli -> excludes the ecoli source, matches yeast
+    assert _resolve_transfer_source(records, "model_architecture", p, "ecoli") == ("yeast-x", "yeast")
