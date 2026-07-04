@@ -47,3 +47,6 @@ venv/
 .ruff_cache/
 reports/decision_events.jsonl
 reports/state/
+
+# local working notes — never commit
+NEXT_STEPS.md
