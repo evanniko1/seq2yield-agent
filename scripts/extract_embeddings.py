@@ -43,16 +43,21 @@ def _ecoli_sequences(limit: int | None) -> list[str]:
     return out[:limit] if limit else out
 
 
-def _yeast_sequences(limit: int | None) -> list[str]:
-    df = clean_yeast(pd.read_csv(ROOT / "data/extracted/seq2yield/to_import/yeast_data.csv"))
-    seqs = df[SEQ_COL].astype(str).drop_duplicates().tolist()
+def _adapter_sequences(dataset: str, limit: int | None) -> list[str]:
+    """K6: sequences for any registered pooled dataset via its adapter (yeast, sample_2019, …)."""
+    from seq2yield.data import adapters
+    seqs = adapters.frame_for(dataset)[SEQ_COL].astype(str).drop_duplicates().tolist()
     return seqs[:limit] if limit else seqs
+
+
+def _dataset_sequences(dataset: str, limit: int | None) -> list[str]:
+    return _ecoli_sequences(limit) if dataset == "ecoli" else _adapter_sequences(dataset, limit)
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", help="registry model name (see --list)")
-    ap.add_argument("--dataset", choices=["ecoli", "yeast"])
+    ap.add_argument("--dataset", help="any registered dataset id (K6)")
     ap.add_argument("--limit", type=int, default=None, help="cap #sequences (sampling/validation)")
     ap.add_argument("--batch-size", type=int, default=64)
     ap.add_argument("--list", action="store_true", help="list registry models (smallest->largest)")
@@ -66,13 +71,15 @@ def main() -> int:
                   f"backend={s['backend']}  [{s['cite']}]")
         return 0
 
-    if args.dataset not in registry.spec(args.model)["applies"]:
-        print(f"ERROR: model '{args.model}' does not apply to dataset '{args.dataset}' "
-              f"(applies to {registry.spec(args.model)['applies']})", file=sys.stderr)
+    from seq2yield.data import datasets as ds_reg
+    apt = ds_reg.spec(args.dataset).applicable_embedders if ds_reg.exists(args.dataset) else []
+    if apt and args.model not in apt:
+        print(f"ERROR: embedder '{args.model}' is not in dataset '{args.dataset}' applicable_embedders "
+              f"({apt})", file=sys.stderr)
         return 2
 
     from seq2yield.embeddings import extract  # lazy: pulls transformers only when extracting
-    seqs = _ecoli_sequences(args.limit) if args.dataset == "ecoli" else _yeast_sequences(args.limit)
+    seqs = _dataset_sequences(args.dataset, args.limit)
     print(f"[extract] {args.model} on {len(seqs)} {args.dataset} sequences ...")
     vecs = extract.embed(args.model, seqs, batch_size=args.batch_size)
     p = cache.write(args.model, args.dataset, seqs, vecs)
