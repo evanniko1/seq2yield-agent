@@ -1,0 +1,19 @@
+# Tewhey et al. 2016 — human expression-modulating variants (MPRA). LOG-RATIO readout (variant
+# library, not random). CAVEAT: never pool its R2 with absolute-expression datasets (C3 fence).
+id: tewhey_2016
+display_name: "Human variant MPRA -> allelic expression (Tewhey 2016)"
+organism: human
+modality: regulatory
+seq_len: 150
+target_col: expression
+target_transform: none        # already a log2 ratio
+structure: pooled
+bootstrap_unit: sequence
+throughput_floor: 10000
+adapter: tewhey_2016
+split_strategy: stratified_holdout
+applicable_models: [rf, mlp, cnn, ridge, svr, transformer]
+applicable_feature_sets: [one_hot, kmer]
+applicable_embedders: [hyenadna-tiny, nt-50m, nt-250m]
+citation: "Tewhey et al., Cell 165:1519 (2016)"
+source: {geo: GSE75661, local: "data/extracted/tewhey_2016"}

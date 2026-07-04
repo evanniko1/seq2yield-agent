@@ -1,0 +1,18 @@
+# Cuperus et al. 2017 — yeast 5'UTR MPRA -> ribosome load (growth selection). Seelig format.
+id: cuperus_2017
+display_name: "Yeast 5'UTR MPRA -> ribosome load (Cuperus 2017)"
+organism: yeast
+modality: utr
+seq_len: 50
+target_col: growth_rate
+target_transform: none
+structure: pooled
+bootstrap_unit: sequence
+throughput_floor: 10000
+adapter: cuperus_2017
+split_strategy: stratified_holdout
+applicable_models: [rf, mlp, cnn, ridge, svr, transformer]
+applicable_feature_sets: [one_hot, kmer]
+applicable_embedders: [hyenadna-tiny, nt-50m, nt-250m, utr-lm, rna-fm]
+citation: "Cuperus et al., Genome Res 27:2015 (2017)"
+source: {geo: GSE104252, repo: "https://github.com/Alex-Rosenberg/optimus_5-prime", local: "data/extracted/cuperus_2017"}

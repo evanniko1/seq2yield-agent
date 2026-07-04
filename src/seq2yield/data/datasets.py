@@ -77,6 +77,27 @@ def applicable_feature_sets(dataset_id: str) -> list[str]:
     return s.applicable_feature_sets if s else ["one_hot", "kmer", "mechanistic", "mixed"]
 
 
+def apply_target_transform(df, dataset_id: str):
+    """Apply the dataset's readout transform to TARGET_COL (K6). Parameter-free + elementwise so it
+    never leaks train/test: log1p for skewed positives, logit for bounded (0,1) fractions
+    (splicing PSI / APA isoform), none/standardize are R²-invariant (affine) -> left as-is."""
+    import numpy as np
+
+    from .cleaning import TARGET_COL
+    s = _load_all().get(dataset_id)
+    t = (s.target_transform if s else "none")
+    if t in ("none", "standardize"):        # affine -> R² unchanged; leave raw
+        return df
+    y = df[TARGET_COL].to_numpy(dtype=float)
+    if t == "log1p":
+        df = df.copy(); df[TARGET_COL] = np.log1p(np.clip(y, 0, None))
+    elif t == "logit":
+        eps = 1e-6
+        p = np.clip(y, eps, 1 - eps)
+        df = df.copy(); df[TARGET_COL] = np.log(p / (1 - p))
+    return df
+
+
 def data_present(dataset_id: str) -> bool:
     """Is the dataset's data actually available to run? (Council only targets ready datasets.)"""
     s = _load_all().get(dataset_id)

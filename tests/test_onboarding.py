@@ -91,3 +91,43 @@ def test_intake_audit_passes_clean_dataset(monkeypatch, tmp_path):
     assert res["pass"] is True
     assert res["checks"]["length_uniform"]["pass"] and res["checks"]["throughput_floor"]["pass"]
     assert res["checks"]["no_train_test_leakage"]["pass"]
+
+
+# ---- item 1: new datasets + target_transform ----
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
+from seq2yield.data.cleaning import SEQ_COL, TARGET_COL  # noqa: E402
+
+
+def test_registry_has_all_onboarded_datasets():
+    ids = set(datasets.all_ids())
+    assert {"ecoli", "yeast", "sample_2019", "cuperus_2017", "tewhey_2016", "dream2022"} <= ids
+    assert datasets.spec("tewhey_2016").seq_len == 150      # <=500 length ceiling honored
+    assert datasets.spec("cuperus_2017").structure == "pooled"
+
+
+def test_target_transform_none_and_standardize_are_noops():
+    df = pd.DataFrame({SEQ_COL: ["A"], TARGET_COL: [3.0]})
+    for t in ("none", "standardize"):
+        # ecoli=none, yeast=none; both leave the value untouched
+        assert datasets.apply_target_transform(df, "ecoli")[TARGET_COL].iloc[0] == 3.0
+
+
+def test_target_transform_log1p_and_logit(monkeypatch):
+    from seq2yield.data.datasets import DatasetSpec
+    df = pd.DataFrame({SEQ_COL: ["A", "C"], TARGET_COL: [0.0, np.e - 1]})
+    # patch a fake spec with log1p
+    fake = DatasetSpec(id="x", seq_len=10, target_transform="log1p")
+    monkeypatch.setattr(datasets, "_load_all", lambda: {"x": fake})
+    out = datasets.apply_target_transform(df, "x")[TARGET_COL].to_numpy()
+    assert abs(out[0]) < 1e-9 and abs(out[1] - 1.0) < 1e-6      # log1p(0)=0, log1p(e-1)=1
+    fake2 = DatasetSpec(id="y", seq_len=10, target_transform="logit")
+    monkeypatch.setattr(datasets, "_load_all", lambda: {"y": fake2})
+    dfb = pd.DataFrame({SEQ_COL: ["A"], TARGET_COL: [0.5]})
+    assert abs(datasets.apply_target_transform(dfb, "y")[TARGET_COL].iloc[0]) < 1e-6  # logit(0.5)=0
+
+
+def test_new_adapters_import():
+    import importlib
+    for a in ("sample_2019", "cuperus_2017", "tewhey_2016", "dream2022", "_seelig"):
+        importlib.import_module(f"seq2yield.data.adapters.{a}")

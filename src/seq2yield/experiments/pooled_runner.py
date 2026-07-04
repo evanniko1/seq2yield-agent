@@ -21,7 +21,8 @@ from ..training.train import features_for
 
 @lru_cache(maxsize=4)
 def _frame(dataset_id: str) -> pd.DataFrame:
-    return adapters.frame_for(dataset_id)
+    from ..data import datasets
+    return datasets.apply_target_transform(adapters.frame_for(dataset_id), dataset_id)
 
 
 def holdout(spec, frac: float = 0.1):

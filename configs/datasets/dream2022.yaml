@@ -1,0 +1,19 @@
+# Random Promoter DREAM Challenge 2022 (de Boer GPRA) — yeast promoter -> expression. Benchmark
+# with a public leaderboard; provided train/held-out split.
+id: dream2022
+display_name: "Yeast promoter GPRA -> expression (DREAM 2022)"
+organism: yeast
+modality: promoter
+seq_len: 110
+target_col: expression
+target_transform: none
+structure: pooled
+bootstrap_unit: sequence
+throughput_floor: 10000
+adapter: dream2022
+split_strategy: provided
+applicable_models: [rf, mlp, cnn, ridge, svr, transformer]
+applicable_feature_sets: [one_hot, kmer]
+applicable_embedders: [hyenadna-tiny, nt-50m, nt-250m]
+citation: "de Boer et al., Nat Biotechnol 38:56 (2020); DREAM Challenge 2022 (Zenodo 7395397)"
+source: {zenodo: "10.5281/zenodo.7395397", local: "data/extracted/dream2022"}
