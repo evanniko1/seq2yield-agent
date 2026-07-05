@@ -465,6 +465,31 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #47 — C10: search-worthiness gate (bounded/async; governs C2/C3/C4/C5)
+- **Why.** C2 makes search possible; without a gate, autoresearch/HPO would run on every question and
+  stall the council loop. C10 is what makes the search layer safe to turn on: the Council decides
+  **if** and **how much** to search before spending compute, and the search can never hang the loop.
+- **Decision (`decide`, pure + unit-tested).** Weighs **value-of-information** — is the current cell
+  inconclusive / near `min_delta` (search could tip it)? does the model overfit (reg/arch tuning has
+  headroom)? did a prior HPO run help this model here? is the model meaningfully tunable (ridge's
+  single knob → no)? is the bottleneck data rather than HP? — against **cost** (trials × estimated
+  per-trial train time vs the per-cycle compute budget). Maps to **skip** (C1 defaults) / **light**
+  (cheap search) / **full** (budgeted search). Thresholds + budgets in code, overridable via
+  `configs/search_policy.yaml`.
+- **Bounded + async (`run_gated`).** Runs the C2 search on a **daemon thread** with a hard wall-clock
+  **deadline** (= estimated cost × slack). `fut.join(deadline)` returns the moment the deadline
+  passes; a search that overruns is **abandoned** and the run falls back to C1 defaults. The council
+  loop therefore always returns its verdict WITHOUT hanging (verified: a 3 s fake search under a
+  0.3 s deadline returns in ~0.3 s, `timed_out=True`).
+- **Logged (RL-trace).** Every decision is a `search_worthiness` event (candidate actions
+  skip/light/full → selected action; state = the context; outcome carries best_score + the **search
+  lift** as the reward proxy) — so C10 is itself a learnable policy later.
+- **Context from memory + K4 (`build_context`).** Reads prior ΔR² for the cell (inconclusive?),
+  prior training-procedure lift (did HPO help here?), tunability from `SEARCH_SPACE`; `overfit`/
+  `data_limited` come from open methodology flags. `Council.gate_search(proposal, execute=False)`
+  logs the decision by default (fast cycle) and can execute the bounded search when asked.
+- CLI `scripts/run_search_gate.py`; `test_search_gate.py` (11). 223 passing.
+
 ## #46 — C2: hybrid LLM-guided hyperparameter search over the C1 space
 - **What.** New `seq2yield.search` package. `search(model, dataset, *, subregion, budget, seeds,
   strategy)` → argmax config + validation R² + full trace. It is hybrid by construction: systematic

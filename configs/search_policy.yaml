@@ -1,0 +1,18 @@
+# C10 — search-worthiness gate policy (agents/search_gate.py). All keys optional; anything omitted
+# falls back to DEFAULT_POLICY in code. Thresholds are on value-of-information (VoI) in [0, 1].
+search_policy:
+  value_skip: 0.35            # below this VoI, skip searching (use C1 defaults)
+  value_full: 0.65            # at/above this VoI (and affordable), run the full search
+  remaining_search_seconds: 900.0   # per-cycle wall-clock compute budget for search
+  deadline_slack: 1.4         # hard async deadline = estimated cost x this
+  est_seconds_per_trial:      # rough per-config scoring cost by model kind
+    image: 20.0               # cnn / transformer (torch)
+    flat: 3.0                 # rf / mlp / ridge / svr (sklearn)
+  light:                      # cheap search
+    n_trials: 8
+    max_train_size: 1500
+    score_epochs: 8
+  full:                       # budgeted search
+    n_trials: 24
+    max_train_size: 4000
+    score_epochs: 12

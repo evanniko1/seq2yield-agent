@@ -331,6 +331,35 @@ class Council:
                                   temperature=0.1, max_tokens=600)
         return decision, who
 
+    def gate_search(self, proposal, *, execute: bool = False, seeds=None):
+        """C10: decide whether a hyperparameter search is worth running for this proposal — and, if
+        `execute`, run it BOUNDED + ASYNC (the loop never hangs) — then log the decision (RL-trace).
+
+        Returns a GatedOutcome. Value-of-information comes from memory (is this cell inconclusive?
+        did HPO help here before?) + open K4 flags (overfit/data-limited); cost from the per-cycle
+        search budget. The winner's config would seed the RunSpec's hyperparameters; on skip/timeout
+        the run uses C1 defaults. `execute=False` (default) logs the decision only, so the standard
+        council cycle stays fast — the loop/CLI opts in to actually searching."""
+        from . import search_gate
+        flags = methodology_critic.open_flags(memory.load())
+        flag_ids = {f.get("id") for f in flags}
+        ctx = search_gate.build_context(
+            proposal.model_family, getattr(proposal, "dataset", "ecoli"),
+            intervention_type=proposal.intervention_type,
+            min_delta=_min_delta_r2(), memory_records=memory.load(),
+            overfit=("overfitting" in flag_ids or "generalization_gap" in flag_ids),
+            data_limited=("data_limited" in flag_ids or "small_sample" in flag_ids))
+        if not execute:                                   # decision-only: bounded, no training
+            dec = search_gate.decide(ctx)
+            search_gate.trace.log_event(
+                "search_worthiness", candidate_actions=["skip", "light", "full"],
+                selected_action=dec.action, policy="c10_gate_v1", reason=dec.reason,
+                state={"model": ctx.model, "dataset": ctx.dataset,
+                       "value_score": round(dec.value_score, 3)})
+            return search_gate.GatedOutcome(decision=dec)
+        return search_gate.run_gated(ctx, seeds=seeds, feature_set=proposal.feature_set,
+                                     feature_scaling=proposal.feature_scaling)
+
     def compile_runspec(self, proposal, decision) -> RunSpec:
         dh, sh = _registry_hashes()
         sizes = sorted(set(proposal.train_sizes)) or [500]
