@@ -108,7 +108,10 @@ def data_present(dataset_id: str) -> bool:
     if s.adapter == "yeast":
         return (ROOT / "data/extracted/seq2yield/to_import/yeast_data.csv").exists()
     local = s.source.get("local")
-    return bool(local) and (ROOT / local).exists() and any((ROOT / local).glob("*.csv*"))
+    if not (local and (ROOT / local).exists()):
+        return False
+    d = ROOT / local
+    return any(d.glob(g) for g in ("*.csv*", "*.txt*", "*.tsv*"))    # csv/txt/tsv data files
 
 
 def ready_ids() -> list[str]:

@@ -11,7 +11,7 @@ structure: pooled
 bootstrap_unit: sequence
 throughput_floor: 10000
 adapter: dream2022
-split_strategy: provided
+split_strategy: stratified_holdout
 applicable_models: [rf, mlp, cnn, ridge, svr, transformer]
 applicable_feature_sets: [one_hot, kmer]
 applicable_embedders: [hyenadna-tiny, nt-50m, nt-250m]
