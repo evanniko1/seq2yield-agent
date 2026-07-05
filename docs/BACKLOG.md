@@ -102,6 +102,7 @@ quantitative** readout → regression; ④ **DNA/RNA** cis-regulatory or coding 
 | [Rosenberg 2015, Cell](https://www.cell.com/cell/fulltext/S0092-8674(15)01271-4) | **RNA splicing** | minigene ≤~300 nt · 2M+ random · splicing ratio (PSI) | random library, bounded readout; [code](https://github.com/Alex-Rosenberg/cell-2015) |
 | [Bogard 2019 / APARENT, Cell](https://www.sciencedirect.com/science/article/pii/S0092867419304982) | **RNA 3′-end / polyadenylation** | ~200 nt · 3M+ random · isoform fraction (bounded) | same Seelig-lab format as Rosenberg → consistent intake |
 | [Seelig 2024, Nat Commun](https://www.nature.com/articles/s41467-024-49508-2) | human 5′UTR (translation, mRNA therapeutics) | short 5′UTR · MPRA across HEK293T/HepG2/T-cells · translation efficiency | extends Sample 2019 **across cell types** → cell-type transfer |
+| [Deng 2023, bioRxiv 2023.02.15.528663](https://doi.org/10.1101/2023.02.15.528663) | **human neuronal enhancer** (developing cortex, psychiatric variants) | **270 bp** · ~102,767 · mean RNA/DNA activity (ratio) | first **enhancer-activity** task + longest seq; **spec+adapter ONBOARDED** (`deng_2023`). ⚠️ ACCESS-GATED: data on PsychENCODE Portal (Synapse, NIMH data-use terms) → export locally. SOTA CNN+RNN r=0.82. Ratio → no-R²-pool (C3). |
 
 > **Source note:** the **Seelig lab** (Sample 2019, Cuperus 2017, Rosenberg 2015, Bogard 2019,
 > Seelig 2024) is the richest *format-consistent* family — ideal for batch onboarding once the

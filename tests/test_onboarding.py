@@ -131,3 +131,15 @@ def test_new_adapters_import():
     import importlib
     for a in ("sample_2019", "cuperus_2017", "tewhey_2016", "dream2022", "_seelig"):
         importlib.import_module(f"seq2yield.data.adapters.{a}")
+
+
+def test_deng_2023_registered_and_adapter_cleans_270bp():
+    s = datasets.spec("deng_2023")
+    assert s.seq_len == 270 and s.modality == "regulatory" and s.bootstrap_unit == "sequence"
+    assert "mechanistic" not in s.applicable_feature_sets   # regulatory, not E.coli coding
+    from seq2yield.data.adapters import deng_2023 as A
+    rng = np.random.default_rng(0); bases = np.array(list("ACGT"))
+    seqs = ["".join(rng.choice(bases, 270)) for _ in range(30)] + ["ACGT" * 10]  # 40bp -> dropped
+    df = pd.DataFrame({"sequence": seqs, "activity": list(rng.normal(1, .5, 30)) + [9.0]})
+    out = A.clean(df, s)
+    assert list(out.columns) == [SEQ_COL, TARGET_COL] and (out[SEQ_COL].str.len() == 270).all()

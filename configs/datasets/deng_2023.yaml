@@ -1,0 +1,24 @@
+# Deng et al. 2023 (bioRxiv 2023.02.15.528663) — human developing-cortex enhancer lentiMPRA ->
+# activity. 270bp oligos, ~102,767 sequences, readout = mean RNA/DNA ratio (a RATIO -> C3: never
+# pool its R2 with absolute-expression datasets). ACCESS-GATED: data on the PsychENCODE Knowledge
+# Portal (Synapse), NIMH data-use terms — export the processed (sequence, activity) table locally.
+id: deng_2023
+display_name: "Human cortex enhancer MPRA -> activity (Deng 2023)"
+organism: human
+modality: regulatory
+seq_len: 270
+target_col: activity        # mean RNA/DNA ratio
+target_transform: none       # raw ratio (paper's regression target); log1p is a defensible option
+structure: pooled
+bootstrap_unit: sequence
+throughput_floor: 10000
+adapter: deng_2023
+split_strategy: stratified_holdout
+applicable_models: [rf, mlp, cnn, ridge, svr, transformer]
+applicable_feature_sets: [one_hot, kmer]     # NOT mechanistic/mixed (E.coli-coding-specific)
+applicable_embedders: [hyenadna-tiny, nt-50m, nt-250m]   # DNA models (NOT utr/codon)
+citation: "Deng, Whalen, ... Ahituv, Pollard, bioRxiv 2023.02.15.528663 (2023)"
+source:
+  portal: "https://psychencode.synapse.org/"
+  note: "access-gated (Synapse + NIMH data-use terms); export processed table to local"
+  local: "data/extracted/deng_2023"
