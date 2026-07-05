@@ -68,6 +68,23 @@ Living list. Every caveat/finding from [CRITIQUE.md](CRITIQUE.md) is tracked her
 | **K2a (models)** | utr-lm/rna-fm (multimolecule pin), codonbert (custom loader), evo (7B/quant) | kept as extensions; see K2a (models) row above |
 | ~~K6 (dataset onboarding)~~ | ✅ **DONE** (DECISIONS #44) — `data/datasets.py` DatasetSpec registry (`configs/datasets/*.yaml`); `data/adapters/` (yeast delegates to clean_yeast, `sample_2019.py` new) — strict `cleaning.py` untouched; generic `pooled_runner` (structure-driven harness dispatch); **length-from-spec + explicit-dataset refactor** (fixed the latent embedding-cache bug); dynamic data-gated `DATASETS` + per-dataset feature applicability; `scripts/onboard_dataset.py` intake-audit (reuses K4 diagnostics). Yeast re-validated through the generic path; Sample 2019 spec+adapter ready (awaits GEO data). 187 passing. | the direct enabler of "many datasets through the council" | L | done |
 
+## Council capability roadmap (C1–C9) — TOP PRIORITY (opens the question space)
+Detailed actionable steps + acceptance live in the local `NEXT_STEPS.md`. Summary + build order:
+| ID | Capability | Unlocks |
+|---|---|---|
+| **C1** | Tunable architecture (CNN `kernel_sizes`/`n_filters`, transformer `n_heads/layers/d_model`) | varying filter widths at all |
+| **C2** | HPO search engine (random→bandit) returning argmax config per (model, scope) | "best hyperparameters" |
+| **C3** | Proposing Biologist (modality/organism → architecture priors into the RunSpec) | biology-informed conv widths (3bp codon / 6–12bp TF-motif / structure-aware UTR) |
+| **C4** | Best-algorithm-per-scope **tournament** (all models, FDR-corrected leaderboard) | MAJOR GOAL: best model per dataset/subregion/sample |
+| **C6** | Strata/subregion dimension (GC, uORF, expression quantile, cell-type, TSS-dist) | per-subregion questions |
+| **C5** | Per-series/subregion **HPO-distribution** study (Nat Comms question) | distribution of best {kernel,lr,dropout} across series, per model class |
+| **C7** | `config_transfer` intervention (carry winning hyperparams source→target) | "what worked on A, try on B" |
+| **C8** | Joint / cross-dataset training in embedding space | pool datasets; train-A-test-B |
+| **C9** | Fill empty personas (transformer_reviewer, doe_strategist) | richer review |
+
+Build order: **C1 → C2 → C3 → C4 → C6 → C5 → C7 → C8 → C9.** These take priority over remaining
+dataset downloads (deng_2023/tewhey_2016) and further embedding models.
+
 ## Candidate datasets (sequence→function MPRAs) — for K6 onboarding
 Vetted against the project's identity. **Inclusion filters (HARD):** ① short single oligo **≤ 500 nt**
 (ideally 50–200); ② high-throughput **≥ ~10⁴** sequence→function measurements; ③ **continuous
