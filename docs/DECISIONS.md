@@ -465,6 +465,34 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #45 — C1: FULL tunable hyperparameter space per algorithm (foundational for the search layer)
+- **Why.** The CNN conv widths were hardcoded `[7,5,3]` and the whitelist exposed only a handful of
+  knobs (epochs/lr/dropout). That blocked the project's core questions — best architecture per
+  dataset/subregion, biology-informed filter widths (3bp codon vs 6–12bp TF-motif), and the Nat
+  Comms per-series HPO-distribution study. C1 opens the whole space; C2/C3 will search + propose it.
+- **CNN.** `_Net` now builds the conv stack from lists: `kernel_sizes[]`, `n_filters[]`,
+  `dilations[]`, `pool_type` (max/avg), `pool_sizes[]`, `global_pool`, `dense_sizes[]`,
+  `activation`, `batchnorm`. Defaults `(7,5,3)/(64,128,128)/(256,128,64)` reproduce the prior net
+  **exactly** (param count unchanged), so existing baselines don't drift.
+- **Transformer.** `_Encoder` exposes `d_model/nhead/layers/ff/dropout/attn_dropout/pos_encoding`
+  (learned|sinusoidal|none) `/pool` (mean|cls). `nhead` is **clamped** to a divisor of `d_model`
+  so an invalid proposal never crashes a run.
+- **Optimization/reg (shared).** `_torch_train.train_loop` gained `optimizer` (adam/adamw/sgd/
+  rmsprop), `weight_decay`, `grad_clip`, `lr_schedule` (none/cosine/step) + `warmup`, `patience`.
+  Defaults reproduce Adam/constant-lr/no-clip exactly.
+- **Classical.** RF (depth/leaf/split/max_features/bootstrap/max_samples/criterion), SVR (C/epsilon/
+  kernel/gamma/degree), MLP (hidden_layer_sizes[]/activation/solver/alpha/batch_size/early_stopping),
+  Ridge (alpha) — all as explicit kwargs.
+- **Registry.** `HYPERPARAMS` widened with list/bool/categorical coercers (invalid values silently
+  dropped, keeping HPO bounded + safe). New `SEARCH_SPACE` table records each knob's searchable
+  type + range/choices — the single definition **C2** (hybrid search) and **C3** (proposing
+  Biologist) will sample and warm-start over. `param_count(name, length, hyperparameters)` is now
+  config-aware (reflects the proposed arch for C5 capacity fairness).
+- **Loop hookup.** The ML-engineer prompt now renders the family's full space so proposals can reach
+  the new knobs (not just epochs/lr/dropout). `test_hpo_space.py` (9): codon CNN runs + param_count
+  reflects it, every knob settable+validated, coercion safety, nhead clamp, SEARCH_SPACE coherence.
+  214 passing.
+
 ## #44 — Multi-dataset scale-out: onboard 2 more, K5 app, transfer generalization, skill
 - **Datasets (item 1).** `target_transform` (log1p/logit/none, parameter-free, no leakage) in the
   runner. Shared Seelig 5'UTR cleaner. **Onboarded LIVE:** `sample_2019` (human 5'UTR, 280k) and
