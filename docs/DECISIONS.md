@@ -465,6 +465,29 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #46 — C2: hybrid LLM-guided hyperparameter search over the C1 space
+- **What.** New `seq2yield.search` package. `search(model, dataset, *, subregion, budget, seeds,
+  strategy)` → argmax config + validation R² + full trace. It is hybrid by construction: systematic
+  search over the C1 `SEARCH_SPACE` **and** LLM-guided warm-start.
+- **Strategies.** `random` = random exploration (seeds evaluated first) then a local-search
+  **exploitation** phase that perturbs the incumbent (the "results fed back as the next acquisition
+  step"). `bandit` = successive halving / Hyperband-lite: a candidate pool is scored at a cheap rung
+  (small train size), the top `keep` fraction is promoted to a larger rung, repeat — budget flows to
+  the survivors. Dependency-free (no optuna/skopt); honest about being local-search + halving rather
+  than a GP.
+- **Warm-start (the LLM half).** `seeds` (config dicts the Biologist / ML-engineer will propose in
+  C3) are coerced through `clean_hyperparameters`, evaluated first, and become the seeds of the
+  exploitation neighbourhood — domain priors steer the search instead of starting cold.
+- **No test leakage.** Every config is scored by R² on a **target-stratified validation split carved
+  from the training frame only** (the same `stratified_val_indices` the torch trainer uses); the
+  benchmark test set is never loaded during search. Train frame comes from `pooled_runner.holdout`
+  (pooled) or the per-series working set (E. coli), so HPO respects the exact production holdout.
+- **Bounded.** `SearchBudget` hard-caps trials, scoring train size, and torch epochs (winner is
+  retrained uncapped by the harness) — the hooks C10 will set to keep the loop non-blocking.
+- CLI `scripts/run_search.py`; `space.sample_config`/`perturb_config` always emit valid whitelist
+  points. `test_hpo_search.py` (7): sampling/perturb validity, seed-honouring + exploit, bandit rung
+  promotion, val-split (no leak), torch epoch-cap path, guards. 221 passing.
+
 ## #45 — C1: FULL tunable hyperparameter space per algorithm (foundational for the search layer)
 - **Why.** The CNN conv widths were hardcoded `[7,5,3]` and the whitelist exposed only a handful of
   knobs (epochs/lr/dropout). That blocked the project's core questions — best architecture per
