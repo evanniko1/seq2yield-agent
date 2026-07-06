@@ -465,6 +465,27 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #56 — Council evaluation + persona/role ablation harness
+- **Why.** The multi-agent-LLM literature ablates # agents / rounds / ROLES and repeatedly finds
+  personas don't reliably help — so we MEASURE each role's contribution instead of assuming it.
+- **Roles-as-data override.** `roles.configure(disabled=…, persona_overrides=…)` (+ `reset_config`)
+  disables roles or blanks personas at runtime, so an ablation is a config diff — `load_roles()`
+  applies it, so `reviewers()`/`persona()` see it everywhere. `council_eval.role_config` is the
+  context-managed form for the live path.
+- **Deterministic simulator (offline, testable).** Each proposal carries hidden FLAWS (confound /
+  sampling / capacity / implausible); each critic detects exactly one and casts a reject vote; a
+  proposal is sound only with zero rejects; the real chair rule picks the highest-value sound one.
+  A fixed battery pairs a high-value "trap" (one flaw) with a lower-value clean pick, so the critic
+  guarding that flaw is exactly what prevents a false accept. `council_fn` is injectable → the same
+  metric/attribution layer runs the real `Council` live.
+- **Finding (offline).** Full panel: correct 1.0, false-accept 0.0. No critics: correct 0.2,
+  false-accept 0.8 — critics matter. Per-role attribution: methodology / biology / doe_strategist
+  each guard a UNIQUE failure mode (dropping any → +0.20 false-accept), but modeling + transformer
+  are REDUNDANT on capacity (dropping either alone costs nothing; only dropping both hurts) — a
+  concrete "which roles earn their cost" result, matching the literature.
+- CLI `scripts/run_council_eval.py`; `test_council_eval.py` (9). Note: this is the offline study; the
+  larger LIVE benchmark battery + provider/structure ablations remain planned (NEXT_STEPS).
+
 ## #55 — dream2022 benchmark + planned council-evaluation / persona-ablation
 - **dream2022 (vs SOTA r²=0.938).** First real model run on the local 71k MAUDE test set: CNN≈**0.730**
   (biology prior [8,6,4], train 8000) beats RF (0.466) significantly; ~−0.21 to the Vaishnav
