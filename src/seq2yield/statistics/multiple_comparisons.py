@@ -41,6 +41,50 @@ def bonferroni(pvalues: list[float], alpha: float = 0.05) -> dict:
             "method": "bonferroni"}
 
 
+def gather_family(claims_dir=None) -> list[dict]:
+    """The FULL family of directional tests to correct JOINTLY (G2): the claim registry AND the
+    tournament winner-vs-runner-up tests (previously each corrected in isolation → under-corrected).
+    Each item is {id, source, p_value, status}."""
+    import json
+    from pathlib import Path
+
+    from ..experiments import claim_registry
+    cd = Path(claims_dir or claim_registry.CLAIMS_DIR)
+    fam = []
+    for c in claim_registry.load(cd):
+        if isinstance(c.get("p_value"), (int, float)):
+            fam.append({"id": c.get("run_id"), "source": "claim",
+                        "p_value": float(c["p_value"]), "status": c.get("status")})
+    tf = cd / "tournaments.jsonl"
+    if tf.exists():
+        for line in tf.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            t = json.loads(line)
+            ru = next((x for x in (t.get("leaderboard") or []) if x.get("rank") == 2), None)
+            if ru and isinstance(ru.get("p_value"), (int, float)):
+                fam.append({"id": t.get("run_id"), "source": "tournament",
+                            "p_value": float(ru["p_value"]),
+                            "status": "accepted" if t.get("winner_significant") else "inconclusive"})
+    return fam
+
+
+def correct_all(claims_dir=None, *, alpha: float = 0.05, method: str = "bh") -> dict:
+    """BH-FDR (or Bonferroni) over the JOINT family of claims + tournament headline tests (G2)."""
+    fam = gather_family(claims_dir)
+    pvals = [f["p_value"] for f in fam]
+    res = (bonferroni if method == "bonferroni" else benjamini_hochberg)(pvals, alpha)
+    items = []
+    for f, q, rej in zip(fam, res["qvalues"], res["rejected"]):
+        items.append({**f, "q_value": round(q, 4), "survives_correction": bool(rej),
+                      "raw_discovery": f["status"] in ("accepted", "rejected")})
+    return {"method": res.get("method"), "alpha": alpha, "n_comparisons": res["n"],
+            "n_raw_discoveries": sum(1 for a in items if a["raw_discovery"]),
+            "n_after_correction": res["n_rejected"], "threshold": res["threshold"],
+            "by_source": {s: sum(1 for a in items if a["source"] == s)
+                          for s in ("claim", "tournament")}, "items": items}
+
+
 def correct_claims(records: list[dict], *, alpha: float = 0.05, method: str = "bh") -> dict:
     """Apply family-wise correction over runs that carry a p_value.
 
