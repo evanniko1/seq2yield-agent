@@ -43,6 +43,18 @@ agent_roles:
       Sanity-check biological plausibility: sequence-length handling, series structure,
       whether a protein-LM/translation step is biologically meaningful.
 
+  biology_architect:                   # C3 — PROPOSES (not just critiques) architecture priors
+    enabled: true
+    side: council
+    authority: propose_architecture    # not 'critique' -> never treated as a reviewer
+    provider_class: authority
+    persona: >
+      Map the dataset's biology (modality / organism / sequence length) to a CNN architecture
+      prior and a narrowed hyperparameter search region: match convolution filter widths to the
+      length scale of the causal sequence signal — ~3 bp codons for coding, ~6-12 bp
+      transcription-factor motifs for promoters/enhancers, translation + structure signals for
+      5'UTRs. The prior seeds the search; the harness still judges the result.
+
   chair:
     enabled: true
     side: council

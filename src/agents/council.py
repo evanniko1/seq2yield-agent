@@ -360,7 +360,47 @@ class Council:
         return search_gate.run_gated(ctx, seeds=seeds, feature_set=proposal.feature_set,
                                      feature_scaling=proposal.feature_scaling)
 
-    def compile_runspec(self, proposal, decision) -> RunSpec:
+    def biology_runspec(self, proposal, decision, *, execute_search: bool = False, seed: int = 0):
+        """C3 — compile a RunSpec whose hyperparameters carry the proposing Biologist's prior.
+
+        The Biologist maps the dataset's biology (modality/organism/seq_len) to a CNN architecture
+        prior + a narrowed C2 search region + seed configs. Those flow through the C10 gate: if the
+        gate decides the search is worth it (and `execute_search`), C2 runs BOUNDED over the biology
+        region warm-started by the seeds, and its winner becomes the RunSpec's hyperparameters; on
+        skip/timeout the biology prior itself seeds the RunSpec. Either way the run is
+        biology-informed and the RunSpec is schema-valid. Returns (spec, info)."""
+        from . import biology_architect, search_gate
+        model = proposal.model_family
+        dataset = getattr(proposal, "dataset", "ecoli")
+        prop = biology_architect.propose(dataset, model)
+        hyper = dict(prop["architecture_prior"])          # default: the biology prior
+        source = "biology_prior"
+
+        flags = {f.get("id") for f in methodology_critic.open_flags(memory.load())}
+        ctx = search_gate.build_context(
+            model, dataset, intervention_type=proposal.intervention_type,
+            min_delta=_min_delta_r2(), memory_records=memory.load(),
+            overfit=("overfitting" in flags or "generalization_gap" in flags),
+            data_limited=("data_limited" in flags or "small_sample" in flags))
+        gate = search_gate.run_gated(ctx, seeds=prop["seeds"], space=prop["region"],
+                                     feature_set=proposal.feature_set,
+                                     feature_scaling=proposal.feature_scaling, seed=seed) \
+            if execute_search else search_gate.GatedOutcome(decision=search_gate.decide(ctx))
+        if execute_search and gate.result is not None and gate.result.best_config:
+            hyper = dict(gate.result.best_config)          # search winner (biology-seeded)
+            source = f"search:{gate.result.strategy}"
+
+        spec = self.compile_runspec(proposal, decision, hyperparameters=hyper,
+                                    hyperparameters_source=source)
+        info = {"gate_action": gate.decision.action, "gate_reason": gate.decision.reason,
+                "hyperparameters_source": source, "rationale": prop.get("rationale"),
+                "motif_scale": prop.get("motif_scale"),
+                "search_best_r2": (round(float(gate.result.best_score), 4)
+                                   if getattr(gate, "result", None) else None)}
+        return spec, info
+
+    def compile_runspec(self, proposal, decision, *, hyperparameters: dict | None = None,
+                        hyperparameters_source: str = "default") -> RunSpec:
         dh, sh = _registry_hashes()
         sizes = sorted(set(proposal.train_sizes)) or [500]
         itype = proposal.intervention_type
@@ -404,6 +444,7 @@ class Council:
             model_family=proposal.model_family, feature_set=proposal.feature_set,
             sampling_policy=proposal.sampling_policy, feature_scaling=scaling,
             scope=proposal.scope, train_sizes=sizes,
+            hyperparameters=(hyperparameters or {}), hyperparameters_source=hyperparameters_source,
             allowed_files=allowed, protected_files=_protected(),
             max_runtime_minutes=decision.max_runtime_minutes,
         )

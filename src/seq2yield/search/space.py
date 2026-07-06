@@ -47,9 +47,10 @@ def sample_value(meta: dict, rng: np.random.Generator):
     return _sample_list(meta, rng) if meta["type"].endswith("list") else _sample_scalar(meta, rng)
 
 
-def sample_config(model: str, rng: np.random.Generator, knobs=None) -> dict:
-    """A random, valid config over `knobs` (default: the model's whole space)."""
-    space = reg.search_space(model)
+def sample_config(model: str, rng: np.random.Generator, knobs=None, space: dict | None = None) -> dict:
+    """A random, valid config over `knobs` (default: all). `space` overrides the model's default
+    SEARCH_SPACE — e.g. the Biologist's narrowed region (C3) — so exploration honours domain priors."""
+    space = space if space is not None else reg.search_space(model)
     keys = list(space) if knobs is None else [k for k in knobs if k in space]
     raw = {k: sample_value(space[k], rng) for k in keys}
     return reg.clean_hyperparameters(model, raw)
@@ -73,10 +74,12 @@ def _perturb_value(v, meta: dict, rng: np.random.Generator):
     return _sample_scalar(meta, rng)                        # bool/categorical: resample
 
 
-def perturb_config(model: str, config: dict, rng: np.random.Generator, prob: float = 0.34) -> dict:
+def perturb_config(model: str, config: dict, rng: np.random.Generator, prob: float = 0.34,
+                   space: dict | None = None) -> dict:
     """Nudge an incumbent: each present knob is perturbed independently w.p. `prob` (>=1 always).
-    The neighbourhood is the local-search acquisition around the current best."""
-    space = reg.search_space(model)
+    The neighbourhood is the local-search acquisition around the current best. `space` (default the
+    model's SEARCH_SPACE) can be the Biologist's narrowed region so exploitation stays in-region."""
+    space = space if space is not None else reg.search_space(model)
     keys = [k for k in config if k in space]
     if not keys:
         return dict(config)

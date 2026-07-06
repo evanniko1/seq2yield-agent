@@ -41,6 +41,7 @@ class RunSpec(BaseModel):
     sampling_policy: str = "random"
     feature_scaling: str = "none"        # none | minmax (train-fit, flat features; paper used MinMax)
     hyperparameters: dict = Field(default_factory=dict)   # HPO: overrides model defaults
+    hyperparameters_source: str = "default"   # default | biology_prior | search:<strategy> (C3)
     scope: str = "global"               # global | pooled (Q6)
     train_sizes: list[int] = Field(default_factory=lambda: [250, 500, 1000, 2000])
     iterations: list[int] = Field(default_factory=lambda: [1, 2, 3, 4, 5])

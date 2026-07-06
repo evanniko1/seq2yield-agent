@@ -176,8 +176,9 @@ def _bounded_call(fn, timeout_s: float | None):
 
 
 def run_gated(ctx: SearchContext, *, policy: dict | None = None, search_fn=search,
-              seeds=None, feature_set: str = "one_hot", feature_scaling: str = "none",
-              seed: int = 0, deadline_s: float | None = None, log: bool = True) -> GatedOutcome:
+              seeds=None, space: dict | None = None, feature_set: str = "one_hot",
+              feature_scaling: str = "none", seed: int = 0, deadline_s: float | None = None,
+              log: bool = True) -> GatedOutcome:
     """Decide, then (if not skipped) run the search BOUNDED + ASYNC and log the decision.
 
     Returns a GatedOutcome; the council uses `outcome.result.best_config` when present, else falls
@@ -191,7 +192,7 @@ def run_gated(ctx: SearchContext, *, policy: dict | None = None, search_fn=searc
         dl = deadline_s or decision.deadline_s
         result, timed_out = _bounded_call(
             lambda: search_fn(ctx.model, ctx.dataset, subregion=ctx.subregion,
-                              budget=decision.budget, seeds=seeds, strategy="bandit",
+                              budget=decision.budget, seeds=seeds, strategy="bandit", space=space,
                               feature_set=feature_set, feature_scaling=feature_scaling, seed=seed),
             dl)
         if result is not None and ctx.current_delta is not None:

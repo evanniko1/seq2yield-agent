@@ -138,7 +138,7 @@ def _coerce_seeds(model: str, seeds) -> list[dict]:
     return out
 
 
-def _random_search(obj, model, budget, seeds, rng, trace):
+def _random_search(obj, model, budget, seeds, rng, trace, space=None):
     """Random exploration (seeds first) then local exploitation around the incumbent."""
     n = budget.n_trials
     best_cfg, best_score = ({}, NEG_INF)
@@ -157,14 +157,14 @@ def _random_search(obj, model, budget, seeds, rng, trace):
         if i < len(seed_cfgs):
             _eval(seed_cfgs[i], "seed")
         else:
-            _eval(S.sample_config(model, rng), "explore")
+            _eval(S.sample_config(model, rng, space=space), "explore")
     for _ in range(n - min(explore_n, n)):                 # exploitation: perturb the best
-        base = best_cfg if best_cfg else S.sample_config(model, rng)
-        _eval(S.perturb_config(model, base, rng), "exploit")
+        base = best_cfg if best_cfg else S.sample_config(model, rng, space=space)
+        _eval(S.perturb_config(model, base, rng, space=space), "exploit")
     return best_cfg, best_score, len(seed_cfgs)
 
 
-def _bandit_search(obj, model, budget, seeds, rng, trace):
+def _bandit_search(obj, model, budget, seeds, rng, trace, space=None):
     """Successive halving: evaluate a pool at a cheap rung, promote the top `keep`, re-evaluate the
     survivors at a larger rung, repeat. Budget concentrates on the promising configs."""
     seed_cfgs = _coerce_seeds(model, seeds)
@@ -172,7 +172,8 @@ def _bandit_search(obj, model, budget, seeds, rng, trace):
     # size the initial pool so total evals ≈ n_trials given the keep ratio across rungs
     weights = [budget.halving_keep ** r for r in range(len(rungs))]
     n0 = max(len(seed_cfgs), 2, int(round(budget.n_trials / max(1e-9, sum(weights)))))
-    pool = seed_cfgs + [S.sample_config(model, rng) for _ in range(max(0, n0 - len(seed_cfgs)))]
+    pool = seed_cfgs + [S.sample_config(model, rng, space=space)
+                        for _ in range(max(0, n0 - len(seed_cfgs)))]
 
     evals = 0
     best_cfg, best_score = ({}, NEG_INF)
@@ -200,13 +201,15 @@ _STRATEGIES = {"random": _random_search, "bandit": _bandit_search}
 
 def search(model: str, dataset: str, *, subregion: str | None = None,
            budget: SearchBudget | None = None, seeds=None, strategy: str = "random",
-           feature_set: str = "one_hot", feature_scaling: str = "none",
+           space: dict | None = None, feature_set: str = "one_hot", feature_scaling: str = "none",
            seed: int = 0) -> SearchResult:
     """Optimize `model`'s C1 hyperparameters on `dataset` (optionally a `subregion`).
 
     Returns the argmax config, its validation R², and the full trace. `seeds` (a list of config
-    dicts from the LLM) warm-start the search. Scoring uses a validation split of the training
-    data only — the benchmark test set is never touched.
+    dicts from the LLM / Biologist) warm-start the search; `space` (default the model's full
+    SEARCH_SPACE) can be the Biologist's narrowed region (C3), so BOTH the seed configs and the
+    explored region carry the domain prior. Scoring uses a validation split of the training data
+    only — the benchmark test set is never touched.
     """
     if model not in reg.HYPERPARAMS:
         raise KeyError(f"unknown model '{model}'")
@@ -219,7 +222,8 @@ def search(model: str, dataset: str, *, subregion: str | None = None,
                      feature_scaling=feature_scaling, val_frac=budget.val_frac,
                      score_epochs=budget.score_epochs, seed=seed)
     trace: list = []
-    best_cfg, best_score, seeds_used = _STRATEGIES[strategy](obj, model, budget, seeds, rng, trace)
+    best_cfg, best_score, seeds_used = _STRATEGIES[strategy](obj, model, budget, seeds, rng, trace,
+                                                             space=space)
     return SearchResult(model=model, dataset=dataset, subregion=subregion, strategy=strategy,
                         best_config=best_cfg, best_score=best_score, n_evals=len(trace),
                         seeds_used=seeds_used, trace=trace)

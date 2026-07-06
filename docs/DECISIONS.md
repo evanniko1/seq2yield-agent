@@ -465,6 +465,31 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #48 — C3: proposing Biologist (architecture priors + C2 region/seeds → RunSpec)
+- **What.** New `agents/biology_architect.py` — the first Council role that PROPOSES (not just
+  critiques). `propose(dataset, model)` reads the `DatasetSpec` (modality/organism/seq_len) and emits
+  three things that flow into the run: a CNN **architecture prior**, a **narrowed C2 search region**,
+  and **seed configs**.
+- **The biology is the argument (deterministic, reviewable).** Filter widths are matched to the
+  length scale of the causal signal: coding (E. coli CDS) → the **codon**, ~3 bp → `[3,3,3]`;
+  promoter (yeast/DREAM) → **TF motifs** ~6–12 bp → `[8,6,4]`; enhancer/regulatory (Deng) →
+  clustered motifs over a longer window → `[11,7,5]` + dilation; 5'UTR (Seelig/Cuperus) → translation
+  (uORF/Kozak) + RNA structure → `[9,6,3]`; RBS → Shine–Dalgarno ~6 bp. Kernels are capped at ½ the
+  read length; every emitted config passes through `clean_hyperparameters` (always a valid C1 point).
+  A deterministic map (not an opaque LLM guess) keeps the prior reproducible + reviewable.
+- **Flows through the C10 gate into the RunSpec.** `Council.biology_runspec(proposal, decision,
+  execute_search=)` builds the biology prior + region + seeds, passes them to the C10 gate; if the
+  gate runs the search, C2 explores the **narrowed region** warm-started by the **seeds** (both halves
+  of the hybrid now carry the domain prior) and its winner becomes `RunSpec.hyperparameters`; on
+  skip/timeout the biology prior itself seeds the RunSpec. New `hyperparameters_source` field records
+  `biology_prior` vs `search:<strategy>`. Either way the compiled RunSpec is schema-valid and
+  biology-informed (verified: ecoli→[3,3,3] skip, yeast→[8,6,4], deng→[11,7,5], all valid).
+- **C2 extension.** `search`/`sample_config`/`perturb_config` gained a `space` override so the
+  Biologist's region actually constrains exploration (not just the seeds).
+- `biology_architect` role added to `configs/agent_roles.yaml` (authority `propose_architecture`, so
+  it is never mistaken for a reviewer). CLI `scripts/run_biology_architect.py`;
+  `test_biology_architect.py` (10). 233 passing.
+
 ## #47 — C10: search-worthiness gate (bounded/async; governs C2/C3/C4/C5)
 - **Why.** C2 makes search possible; without a gate, autoresearch/HPO would run on every question and
   stall the council loop. C10 is what makes the search layer safe to turn on: the Council decides
