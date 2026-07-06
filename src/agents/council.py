@@ -332,6 +332,13 @@ class Council:
                                   temperature=0.1, max_tokens=600)
         return decision, who
 
+    def suggest_experiment(self, kind: str, params: dict, rationale: str):
+        """Council-side entry to the human-accept gate: enqueue a tournament / HPO-distribution /
+        config-transfer SUGGESTION. It never runs here — a human must accept it (run_queue.py / K5)
+        before it is dispatched. Returns the queued record."""
+        from . import experiment_queue
+        return experiment_queue.suggest(kind, params, rationale, source="council")
+
     def gate_search(self, proposal, *, execute: bool = False, seeds=None):
         """C10: decide whether a hyperparameter search is worth running for this proposal — and, if
         `execute`, run it BOUNDED + ASYNC (the loop never hangs) — then log the decision (RL-trace).

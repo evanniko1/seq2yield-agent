@@ -465,6 +465,23 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #53 — Human-accept gate for the expensive experiment modules (+ C9 specialist reviewers)
+- **Guard.** The tournament / HPO-distribution / config-transfer modules are powerful and costly, so
+  the council must not run them autonomously. `agents/experiment_queue.py`: the council/PI may only
+  `suggest(kind, params, rationale)` → the suggestion lands in `reports/experiment_queue.jsonl` with a
+  rough cost estimate and status `pending`; **nothing runs**. A human `accept`/`reject`s (CLI
+  `run_queue.py` or K5); only an **accepted** item is ever `dispatch`ed to the real module (a
+  non-accepted dispatch raises `PermissionError`); a bad suggestion errors without wedging the queue.
+  Every suggest/accept/dispatch is an RL-trace event (`experiment_suggestion` / `experiment_decision`
+  / `experiment_dispatch`). `Council.suggest_experiment` is the council-side entry (suggest-only).
+  Same trust posture as the rest of the system: the human gates the expensive, outward-facing work.
+  `test_experiment_queue.py` (6).
+- **C9.** Enabled the two specialist reviewers (`transformer_reviewer`, `doe_strategist`) with real
+  briefs; roster now 5 critics (biology_architect stays a proposer). Persona audit verdict: prose is
+  terse but the review layer is well-specified where it counts (anchored 1-5 rubric + output schemas),
+  and terseness suits the small local diversity models — so the only change was a calibrated-confidence
+  nudge in the reviewer prompt. `test_c9_personas.py` (3).
+
 ## #52 — C7: config_transfer intervention (does A's winner help B?)
 - **Why.** C5 shows the best hyperparameters can differ across scopes; the natural follow-up is
   whether a config that WON on one scope still helps on another — "what worked on A, try on B".
