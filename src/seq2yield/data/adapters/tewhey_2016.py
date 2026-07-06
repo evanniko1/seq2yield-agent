@@ -8,6 +8,15 @@ then joins the 150 nt oligo SEQUENCE from a user-provided `oligo_sequences.csv` 
 oligo,sequence) — reconstructed from the paper's design table / tewheylab GitHub / genome
 extraction (GEO does not include it). Readout is a LOG-RATIO (target_transform=none); per the C3
 fence its R² must never be pooled with absolute-expression datasets.
+
+STATUS (probed 2026-07): the GEO supplementary confirmed there is NO sequence file — only
+`GSE75661_{79k,7.5k}_collapsed_counts.txt.gz` (Oligo IDs like `rs11548103_RC_A`: rsID + allele
+A/B=ref/alt + optional `_RC` strand) and `*_Barcode_Oligo.tab.gz` (barcode→oligo, ~1.4GB, still no
+sequence). Reconstruction RECIPE (deferred, with deng_2023): for each Oligo, (1) rsID → hg19 coord
+via dbSNP, (2) extract the 145 bp genomic window centered on the SNP, (3) substitute the ref/alt
+allele for the A/B suffix, (4) reverse-complement when `_RC`. That needs dbSNP + hg19 (~3GB) for
+79k variants and is a VARIANT-EFFECT modality (allelic skew), a poorer fit for our seq→expression
+contract than the other datasets. TODO — tackle later.
 """
 from __future__ import annotations
 

@@ -39,8 +39,11 @@ DEFAULT_POLICY = {
     "remaining_search_seconds": 900.0,   # per-cycle compute budget for search (wall clock)
     "deadline_slack": 1.4,       # wall-clock deadline = estimated cost × slack
     "est_seconds_per_trial": {"image": 20.0, "flat": 3.0},   # rough per-config cost by model kind
-    "light": {"n_trials": 8, "max_train_size": 1500, "score_epochs": 8},
-    "full": {"n_trials": 24, "max_train_size": 4000, "score_epochs": 12},
+    # halving_sizes must be set here too: without it the bandit falls back to the SearchBudget
+    # default rungs (up to 8000), so a "light" search is not actually light and can blow the deadline.
+    "light": {"n_trials": 8, "max_train_size": 1500, "score_epochs": 8, "halving_sizes": [300, 800]},
+    "full": {"n_trials": 20, "max_train_size": 4000, "score_epochs": 12,
+             "halving_sizes": [500, 2000, 6000]},
 }
 
 

@@ -12,7 +12,9 @@ search_policy:
     n_trials: 8
     max_train_size: 1500
     score_epochs: 8
+    halving_sizes: [300, 800]           # small rungs so 'light' is actually light (fits the deadline)
   full:                       # budgeted search
-    n_trials: 24
+    n_trials: 20
     max_train_size: 4000
     score_epochs: 12
+    halving_sizes: [500, 2000, 6000]
