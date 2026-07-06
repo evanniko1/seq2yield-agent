@@ -132,10 +132,38 @@ def datasets():
     for d in ds:
         ready = "<span class='chip ok'>ready</span>" if d["ready"] else "<span class='chip no'>—</span>"
         strata = ", ".join(json.loads(d.get("strata") or "[]"))
-        b.append(f"<tr><td><b>{d['id']}</b></td><td>{d['organism']}</td><td>{d['modality']}</td>"
-                 f"<td>{d['seq_len']}</td><td>{d['structure']}</td><td class=mut>{d['bootstrap_unit']}</td>"
-                 f"<td class=mut>{strata}</td><td>{ready}</td></tr>")
+        b.append(f"<tr><td><a href='/dataset/{d['id']}'><b>{d['id']}</b></a></td><td>{d['organism']}</td>"
+                 f"<td>{d['modality']}</td><td>{d['seq_len']}</td><td>{d['structure']}</td>"
+                 f"<td class=mut>{d['bootstrap_unit']}</td><td class=mut>{strata}</td><td>{ready}</td></tr>")
     b.append("</table>")
+    return _page("".join(b))
+
+
+@app.route("/dataset/<did>")
+def dataset_card(did):
+    from seq2yield.data import data_card
+    c = data_card.card(did)
+    b = [f"<h1>Dataset <code>{did}</code></h1>",
+         f"<p class=mut>{c.get('organism')} · {c.get('modality')} · {c.get('seq_len')} bp · "
+         f"{c.get('structure')} ({c.get('bootstrap_unit')} unit)</p>"]
+    if c.get("note"):
+        b.append(f"<p class=no chip>{c['note']}</p>")
+    if c.get("n"):
+        t = c["target"]
+        b.append(f"<h2>Distribution ({c['n']:,} rows)</h2><table>"
+                 f"<tr><th>length uniform</th><td>{c['length_uniform_frac']}</td>"
+                 f"<th>duplicate seqs</th><td>{c['duplicate_seq_frac']}</td></tr>"
+                 f"<tr><th>target mean±std</th><td>{t['mean']} ± {t['std']}</td>"
+                 f"<th>skew</th><td>{t['skew']}</td></tr>"
+                 f"<tr><th>target range</th><td>[{t['min']}, {t['max']}]</td>"
+                 f"<th>GC mean±std</th><td>{c['gc']['mean']} ± {c['gc']['std']}</td></tr></table>")
+        b.append("<h2>Strata balance</h2>")
+        for s, bal in (c.get("strata_balance") or {}).items():
+            frac = " · ".join(f"{k}={v}" for k, v in bal.items())
+            b.append(f"<p><b>{s}</b>: {frac}</p>")
+    prov = c.get("source") or {}
+    b.append(f"<h2>Provenance</h2><p class=mut>source: {prov} · citation: {c.get('citation') or '—'} "
+             f"· license: {c.get('license') or '—'}</p>")
     return _page("".join(b))
 
 
