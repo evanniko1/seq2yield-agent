@@ -57,6 +57,40 @@ figure/table/section it becomes).
 | II-11 | **Online credit-assignment** (OpenOPC-style) vs offline ablation | II | do they agree on which roles matter? |
 | M-1 | **Selection-on-test correction** (nested holdout: select on val, report on untouched test) | method | does the tournament winner change? |
 
+## Foundation-model / BioNeMo hypotheses (H1–H6) — worth exploring, EACH lit-review-gated
+NVIDIA **BioNeMo** is a datacenter-scale training/inference stack for *large* biological foundation
+models (ESM-2, AMPLIFY, Geneformer, CodonFM, genomic-Llama; TransformerEngine/FP8/FSDP; Hopper+/
+Blackwell). It is **not adopted** — it is mismatched to our regime on every axis (protein/single-cell/
+natural-genome modalities; random synthetic libraries are OOD; 8.6 GB consumer GPU; abundant labels
+past the low-data crossover). But its landscape sharpens an open, publishable question the council is
+well-suited to answer *without hype*: **when and where do biological FMs actually help on
+high-throughput, short, random-sequence regression vs from-scratch models?** Each H below is
+falsifiable, maps to existing capabilities (K2a embedding cache + C2/C4/C6/C8), and needs only a
+**small** HF checkpoint.
+
+> **GATE — literature review REQUIRED before scheduling any H through the council.** For each
+> hypothesis, first do a focused lit review to confirm it is (a) still OPEN / not already answered in
+> the literature, and (b) that the bounded, FDR-corrected council platform is the right instrument for
+> it (vs a one-off benchmark). Only then queue it. This prevents "AI-slop" studies that re-derive a
+> known result.
+
+| H | Hypothesis | Capability | Falsifiable prediction | Status |
+|---|---|---|---|---|
+| **H1** | FM (CodonFM/ESM-small) embeddings do NOT transfer to *random* libraries (OOD crux) | C8 embed + C4 | on ecoli coding, frozen-FM ≈ from-scratch CNN (little edge) | ⬜ **lit-review first** |
+| **H2** | ∃ training size N* where FM-embed beats one_hot below, not above (data-regime crossover) | C2 × C8 | small N* → "FMs buy data-efficiency, not asymptotic accuracy on MPRA" | ⬜ **lit-review first** |
+| **H3** | Modality-matched FM wins only on-task (utr-lm/CodonFM ≫ generic; ESM useless on 5'UTR) | C4 × C8 across modalities | a strong diagonal (matched > generic > mismatched) | ⬜ **lit-review first** (highest novelty) |
+| **H4** | FMs help selectively in the HARD subregions (where the CNN is far from ceiling) | C6 strata × C8 embed | Δ(embed−one_hot) concentrates in dream2022 tail / uORF UTRs | ⬜ **lit-review first** (novel) |
+| **H5** | Cross-assay transfer is easier in FM space than k-mer/pad | C8 compare_strategies (embed) | FM ≥ k-mer on yeast→human 5'UTR (our baseline Spearman 0.62) | ⬜ **lit-review first** |
+| **H6** | FM-as-cheap-teacher: cache embeddings once → cheap CNN captures ≥90% of the benefit | K2a cache + C4 | distilled model ≈ FM-fine-tune proxy at a fraction of compute | ⬜ **lit-review first** |
+
+## Candidate names / titles for the write-up
+1. **seq2yield-council** — *A bounded, auditable agentic council for sequence-to-expression science.* (umbrella project name)
+2. *When Do Foundation Models Actually Help? An FDR-Corrected, Human-Gated Council for Honest Sequence-Function Benchmarking.* (Track-II methods emphasis)
+3. *No Free Transfer: Do Biological Foundation Models Beat From-Scratch CNNs on Random High-Throughput Libraries?* (Track-I, provocative)
+4. *Out-of-Distribution by Design: Auditing Foundation-Model Embeddings for Random Regulatory Sequences.* (the OOD/H1 angle)
+5. *Which Foundation Model for Which Assay? A Council-Driven Map of Transfer Value in MPRA Prediction.* (the H3 "diagonal" table as the headline)
+6. *The Data-Efficiency Frontier: Where (and Whether) Genomic Foundation Models Earn Their Keep on Short-Sequence Regression.* (the H2 crossover as the headline)
+
 ## Notes on framing
 - **Track II is the more novel contribution.** The multi-agent-LLM literature repeatedly finds that
   personas *don't reliably help* — and II-1/II-2 give a concrete, reproducible instance (two of five
