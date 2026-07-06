@@ -46,6 +46,12 @@ class Proposal:
     id: str
     value: int                          # true scientific value 1-5
     flaws: tuple = ()                   # hidden true flaws; empty == genuinely sound
+    # optional rendering for the LIVE path (real LLM reviewers judge this text):
+    hypothesis: str = ""
+    model: str = "cnn"
+    comparator: str = "rf"
+    intervention: str = "model_architecture"
+    dataset: str = "ecoli"
 
 
 @dataclass
@@ -106,16 +112,40 @@ def ablation_variants() -> list[dict]:
 def default_battery() -> list[Scenario]:
     """Each scenario pairs a high-value 'trap' (one flaw) with a slightly-lower-value clean pick, so
     the critic guarding that flaw is exactly what prevents a false accept."""
+    # hypotheses are written so a REAL reviewer could detect the flaw (used by the live path).
+    _TRAP_HYP = {
+        "confound": "CNN with k-mer features AND 4x more training data beats RF — attribute the gain to the architecture.",
+        "sampling": "CNN beats RF, training only on the highest-expression decile of sequences (not a representative sample).",
+        "capacity": "A 10M-parameter transformer beats a 50k-parameter CNN at N=250 training sequences.",
+        "implausible": "Reversing each DNA sequence end-to-end improves protein-expression prediction.",
+    }
+
     def trap(flaw):
-        return [Proposal("A", value=5, flaws=(flaw,)),        # tempting but flawed
-                Proposal("B", value=4, flaws=()),             # the right pick
-                Proposal("C", value=2, flaws=())]
+        return [Proposal("A", 5, (flaw,), hypothesis=_TRAP_HYP[flaw]),        # tempting but flawed
+                Proposal("B", 4, (), hypothesis="CNN beats RF on the same one-hot features, same "
+                         "train size, same fixed splits (one axis changed)."),
+                Proposal("C", 2, (), hypothesis="Ridge beats RF on one-hot at fixed size.",
+                         model="ridge")]
     return [
         Scenario("confound_trap", trap("confound")),          # guarded by methodology_reviewer
         Scenario("sampling_trap", trap("sampling")),          # guarded by doe_strategist
         Scenario("capacity_trap", trap("capacity")),          # guarded by modeling + transformer
         Scenario("implausible_trap", trap("implausible")),    # guarded by biology_reviewer
-        Scenario("clean_winner", [Proposal("A", 5), Proposal("B", 3)]),   # no trap
+        Scenario("clean_winner", [
+            Proposal("A", 5, hypothesis="CNN beats RF on one-hot, fixed splits."),
+            Proposal("B", 3, hypothesis="MLP beats RF on one-hot, fixed splits.", model="mlp")]),
+    ]
+
+
+def structure_variants() -> list[dict]:
+    """Provider-class / structure ablations (each is a role-config diff). authority = methodology +
+    biology; diversity = modeling + transformer + doe."""
+    return [
+        {"name": "full", "reviewers": list(ALL_REVIEWERS)},
+        {"name": "authority_only", "reviewers": ["methodology_reviewer", "biology_reviewer"]},
+        {"name": "diversity_only",
+         "reviewers": ["modeling_reviewer", "transformer_reviewer", "doe_strategist"]},
+        {"name": "single_reviewer", "reviewers": ["methodology_reviewer"]},
     ]
 
 
@@ -166,3 +196,36 @@ def role_config(disabled=None, persona_overrides=None):
         yield
     finally:
         roles.reset_config()
+
+
+def _to_council_proposal(p: Proposal):
+    from .schemas import CouncilProposal
+    return CouncilProposal(
+        proposal_id=p.id, title=(p.hypothesis[:70] or p.id),
+        scientific_hypothesis=(p.hypothesis or f"{p.model} beats {p.comparator}"),
+        model_family=p.model, comparator_model=p.comparator, intervention_type=p.intervention,
+        dataset=p.dataset, maturity_tier="tier_0", scope="global")
+
+
+def live_council_fn(scenario: Scenario, enabled_reviewers: list[str], *,
+                    allow_local_fallback: bool = True) -> str | None:
+    """Run the REAL council review + chair under a role ablation and return the chosen id. Uses live
+    providers — call only from `--live`. The SAME trap battery + metric layer as the offline sim, so
+    this measures whether real reviewer LLMs actually catch the flaws each role guards."""
+    from .council import Council
+    disabled = set(ALL_REVIEWERS) - set(enabled_reviewers)
+    with role_config(disabled=disabled):
+        council = Council(use_planner=False, allow_local_fallback=allow_local_fallback)
+        cps = [_to_council_proposal(p) for p in scenario.proposals]
+        reviews = council.review(cps)
+        mean_scores = council._mean_scores(reviews, cps)
+        decision, _ = council.chair(cps, mean_scores)
+        return decision.chosen_proposal_id
+
+
+def run_live_ablation(scenarios=None, variants=None, allow_local_fallback: bool = True) -> dict:
+    """The live counterpart to run_ablation — real Council under each role config. Costs provider
+    calls (authority reviewers hit paid APIs); use a small battery + variant set."""
+    return run_ablation(scenarios, variants,
+                        council_fn=lambda sc, rev: live_council_fn(
+                            sc, rev, allow_local_fallback=allow_local_fallback))

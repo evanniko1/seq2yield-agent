@@ -76,3 +76,34 @@ def test_role_config_can_blank_a_persona():
     with E.role_config(persona_overrides={"biology_reviewer": ""}):
         assert roles.persona("biology_reviewer") == ""
     assert roles.persona("biology_reviewer") != ""         # restored
+
+
+# ---- live adapter plumbing (real Council mocked -> no providers) ----
+def test_live_council_fn_applies_role_config_and_returns_choice(monkeypatch):
+    seen = {}
+
+    class _FakeCouncil:
+        def __init__(self, *a, **k):
+            seen["reviewers"] = list(roles.reviewers())        # captured INSIDE role_config
+        def review(self, cps):
+            return {p.proposal_id: [] for p in cps}
+        def _mean_scores(self, reviews, cps):
+            return {p.proposal_id: {} for p in cps}
+        def chair(self, cps, ms):
+            return type("D", (), {"chosen_proposal_id": "B"})(), "stub"
+
+    import agents.council_eval as CE
+    monkeypatch.setattr("agents.council.Council", _FakeCouncil)
+    sc = E.Scenario("t", [E.Proposal("A", 5, ("confound",)), E.Proposal("B", 4)])
+    chosen = CE.live_council_fn(sc, ["methodology_reviewer", "biology_reviewer"])
+    assert chosen == "B"
+    assert "doe_strategist" not in seen["reviewers"]          # roster was ablated during the run
+    assert "methodology_reviewer" in seen["reviewers"]
+    assert set(roles.reviewers()) == set(E.ALL_REVIEWERS) or "doe_strategist" in set(roles.reviewers())
+
+
+def test_structure_variants_split_by_provider_class():
+    names = {v["name"] for v in E.structure_variants()}
+    assert {"full", "authority_only", "diversity_only", "single_reviewer"} <= names
+    auth = next(v for v in E.structure_variants() if v["name"] == "authority_only")
+    assert set(auth["reviewers"]) == {"methodology_reviewer", "biology_reviewer"}
