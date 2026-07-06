@@ -69,3 +69,24 @@ def test_real_nested_tournament_has_val_and_test(require_data):
     res = T.run_tournament("sample_2019", family=["ridge", "rf"], train_size=500, n_boot=300, seed=0)
     assert res.selection == "nested_val"
     assert all(c.r2_val is not None for c in res.leaderboard)     # every contender selected on val
+
+
+# ---- G3 multi-seed variance (SOTA-gap attribution) ----
+def test_multiseed_structure_and_variance(monkeypatch):
+    import numpy as np
+    import pandas as pd
+    from seq2yield.data.cleaning import SEQ_COL, TARGET_COL as TC
+    frame = pd.DataFrame({SEQ_COL: ["A" * 50] * 100, TC: np.random.default_rng(0).normal(0, 1, 100)})
+    monkeypatch.setattr(C, "_frames", lambda ds, sub, seed: (frame, frame))
+    # seed-dependent predictions -> non-zero std
+    monkeypatch.setattr(T, "_fit_predict_seq",
+                        lambda ds, m, sub, test, hp, fs, sc, seed: test[TC].to_numpy()
+                        + np.random.default_rng(seed).normal(0, 0.3, len(test)))
+    r = C.multiseed_r2("sample_2019", "cnn", train_size=50, seeds=(0, 1, 2))
+    assert len(r["r2"]) == 3 and r["std"] >= 0 and "mean" in r and r["range"] >= 0
+
+
+def test_real_multiseed_rf(require_data):
+    require_data("sample_2019")
+    r = C.multiseed_r2("sample_2019", "rf", train_size=400, seeds=(0, 1))
+    assert len(r["r2"]) == 2 and isinstance(r["mean"], float)

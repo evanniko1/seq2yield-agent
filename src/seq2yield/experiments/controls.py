@@ -45,3 +45,26 @@ def shuffled_label_r2(dataset: str, model: str = "rf", *, subregion: str | None 
 def negative_control_ok(r2: float, threshold: float = 0.05) -> bool:
     """True if the shuffled-label R² is close enough to zero (no detectable leakage)."""
     return bool(abs(r2) < threshold)
+
+
+def multiseed_r2(dataset: str, model: str = "cnn", *, subregion: str | None = None,
+                 train_size: int = 1000, feature_set: str = "one_hot",
+                 feature_scaling: str = "auto", seeds=(0, 1, 2)) -> dict:
+    """R² across model INIT/TRAIN seeds on a FIXED test set + fixed training subsample — so the
+    spread is pure model stochasticity (G3). A large `std` means a point R² (and part of the gap to
+    SOTA) is seed noise, not capacity; report mean ± std, not a single number."""
+    from . import tournament
+    train_full, test = _frames(dataset, subregion, 0)              # fixed frames + subsample
+    sub = pooled_runner.subsample(train_full, train_size, "expression_stratified", 0)
+    hp, _ = tournament._contender_config(dataset, model, tune=False, feature_set=feature_set,
+                                         feature_scaling=feature_scaling, seed=0)
+    y = test[TARGET_COL].to_numpy(dtype=float)
+    r2s = []
+    for s in seeds:                                                # vary ONLY the model seed
+        pred = tournament._fit_predict_seq(dataset, model, sub, test, hp, feature_set,
+                                           feature_scaling, s)
+        r2s.append(float(M.r2(y, pred)))
+    arr = np.asarray(r2s)
+    return {"dataset": dataset, "model": model, "seeds": list(seeds),
+            "r2": [round(x, 4) for x in r2s], "mean": round(float(arr.mean()), 4),
+            "std": round(float(arr.std()), 4), "range": round(float(arr.max() - arr.min()), 4)}
