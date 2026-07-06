@@ -164,10 +164,15 @@ _RUBRIC = (
     "seeded, enough MC-CV repeats to support a bootstrap CI.")
 
 
-def reviewer_prompt(role: str, proposal: dict) -> Prompt:
+def reviewer_prompt(role: str, proposal: dict, peer_summary: str = "") -> Prompt:
     sys = roles.persona(role) + "\n\n" + _CONTEXT
+    peer = ""
+    if peer_summary:                        # R2 debate round: this reviewer sees the prior consensus
+        peer = ("\n\nPEER CONSENSUS (previous round — you MAY revise your scores if it changes your "
+                "assessment, but do NOT simply conform; defend a well-founded disagreement):\n"
+                f"{peer_summary}\n")
     user = ("Critically review ONE proposal. Be a discriminating skeptic, not a rubber stamp.\n\n"
-            f"{_RUBRIC}\n\n"
+            f"{_RUBRIC}{peer}\n\n"
             "Then output the four integer scores (score_feasibility, score_scientific_value, "
             "score_confoundedness, score_reproducibility). In required_changes, name the SINGLE "
             "most important concrete fix that would raise your lowest score (be specific to this "

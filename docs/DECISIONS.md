@@ -465,6 +465,22 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #60 — Hardening batch: R3 credit assignment · R2 debate round · G6 council auto-suggest
+- **R3 (adopted from OpenOPC — online per-role credit assignment).** *Source:* OpenOPC ("credit and
+  blame land where they were earned"; per-role outcome attribution). *Insight/rationale:* the offline
+  persona ablation removes a role and measures loss; the ONLINE complement watches roles in the loop
+  and scores how often each was right — the agenda's II-11. `agents/credit.py`: `assign_credit`
+  (per-role alignment rate) + `cycles_from_reviews` (a reviewer is aligned when it vouched-for an
+  accepted run or flagged a rejected one; inconclusive skipped). `test_credit.py` (3).
+- **R2 (debate round).** *Insight:* single-round independent review is a known agentic weakness
+  (the audit + literature). `Council.review(rounds=N)` runs N passes; each after the first shows every
+  reviewer the previous round's peer consensus (`reviewer_prompt(peer_summary=…)`) so they may revise
+  (explicitly instructed NOT to merely conform). Runs offline via the deterministic provider; a
+  2-round debate makes 2× the reviewer calls. `test_debate.py` (2).
+- **G6 (council auto-suggest).** Closes the "new experiment modules aren't council-driven" gap while
+  keeping the human gate: `Council.autosuggest_experiments` enqueues a tournament SUGGESTION for each
+  ready dataset lacking a recorded one — nothing runs until a human accepts. `test_autosuggest.py` (1).
+
 ## #59 — Hardening batch: G2 joint FDR · G3 multi-seed · G4 data card · G5 noise ceiling · R4 · R6 · R7
 - **G2 (joint FDR).** `multiple_comparisons.correct_all` folds the claim registry AND each
   tournament's headline winner-vs-runner-up test into ONE BH-FDR family (they were corrected in

@@ -301,21 +301,32 @@ class Council:
                              "kept_cells": [proposal_cell_id(p) for p in kept]}
         return kept, who
 
-    def review(self, proposals):
-        out = {}
-        for p in proposals:
-            items = []
-            for r in roles.reviewers():
-                prompt = prompting.reviewer_prompt(r, p.model_dump())
-                try:
-                    item, _ = self._ask(r, prompt, CouncilReviewItem,
-                                        temperature=0.2, max_tokens=600)
-                    items.append(item)
-                except Exception as e:  # one reviewer failing must not sink the round
-                    items.append(CouncilReviewItem(role=r, score_feasibility=3,
-                                 score_scientific_value=3, score_confoundedness=3,
-                                 score_reproducibility=3, reject_reason=f"review_error:{e}"[:120]))
-            out[p.proposal_id] = items
+    def review(self, proposals, rounds: int | None = None):
+        """Independent review, optionally with DEBATE rounds (R2): each round after the first shows
+        every reviewer the previous round's peer consensus so they may revise (single-round review is
+        a known agentic weakness). `rounds` defaults to self.debate_rounds (1 = no debate)."""
+        rounds = rounds if rounds is not None else getattr(self, "debate_rounds", 1)
+        out, peer = {}, {}
+        for rnd in range(max(1, rounds)):
+            out = {}
+            for p in proposals:
+                items = []
+                for r in roles.reviewers():
+                    prompt = prompting.reviewer_prompt(r, p.model_dump(),
+                                                       peer_summary=peer.get(p.proposal_id, ""))
+                    try:
+                        item, _ = self._ask(r, prompt, CouncilReviewItem,
+                                            temperature=0.2, max_tokens=600)
+                        items.append(item)
+                    except Exception as e:  # one reviewer failing must not sink the round
+                        items.append(CouncilReviewItem(role=r, score_feasibility=3,
+                                     score_scientific_value=3, score_confoundedness=3,
+                                     score_reproducibility=3, reject_reason=f"review_error:{e}"[:120]))
+                out[p.proposal_id] = items
+            if rnd + 1 < rounds:            # summarize this round for the next debate round
+                agg = self._mean_scores(out, proposals)
+                peer = {pid: f"overall={a['overall']}, sound={a['sound']}, "
+                             f"mean_confoundedness={a['confoundedness']}" for pid, a in agg.items()}
         return out
 
     def _mean_scores(self, reviews, proposals=None):
@@ -352,6 +363,30 @@ class Council:
         decision, who = self._ask("chair", prompt, ChairDecision,
                                   temperature=0.1, max_tokens=600)
         return decision, who
+
+    def autosuggest_experiments(self, datasets=None, *, max_suggestions: int = 3) -> list[dict]:
+        """G6 — the council SUGGESTS follow-on experiments (tournament / HPO-distribution) to the
+        human-accept queue for ready datasets that lack a recorded tournament. Nothing runs — the
+        human still gates each (Council.suggest_experiment). Returns the queued records."""
+        from . import experiment_queue
+        from seq2yield.data import datasets as _ds
+        from seq2yield.experiments import claim_registry
+        import json
+        done = set()
+        tf = claim_registry.CLAIMS_DIR / "tournaments.jsonl"
+        if tf.exists():
+            for line in tf.read_text(encoding="utf-8").splitlines():
+                if line.strip():
+                    done.add(json.loads(line).get("dataset"))
+        ready = datasets or _ds.ready_ids()
+        out = []
+        for d in ready:
+            if d in done or len(out) >= max_suggestions:
+                continue
+            out.append(experiment_queue.suggest(
+                "tournament", {"dataset": d, "family": ["ridge", "rf", "cnn"]},
+                f"no tournament recorded for ready dataset '{d}' — find its best model", source="council"))
+        return out
 
     def suggest_experiment(self, kind: str, params: dict, rationale: str):
         """Council-side entry to the human-accept gate: enqueue a tournament / HPO-distribution /
