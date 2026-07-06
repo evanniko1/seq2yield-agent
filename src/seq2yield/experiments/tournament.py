@@ -41,10 +41,11 @@ DEFAULT_FAMILY = ["ridge", "rf", "mlp", "cnn"]     # svr/transformer opt-in (slo
 @dataclass
 class Contender:
     model: str
-    r2: float
+    r2: float                                             # reported (test) R²
     rank: int
     hyperparameters_source: str
     hyperparameters: dict = field(default_factory=dict)   # the config this contender ran (C7 source)
+    r2_val: float | None = None                           # selection (val) R² — ranked on this (M-1)
     n_params: int | None = None
     delta_vs_winner: float | None = None      # winner_r2 − this_r2 (0 for the winner)
     ci: list | None = None                    # paired-bootstrap CI of (winner − this)
@@ -70,6 +71,7 @@ class TournamentResult:
     n_units: int
     leaderboard: list[Contender] = field(default_factory=list)
     method: str = "benjamini_hochberg"
+    selection: str = "test"          # nested_val (M-1: ranked on val, reported on test) | test (legacy)
 
     def as_dict(self) -> dict:
         d = {k: v for k, v in asdict(self).items() if k != "leaderboard"}
@@ -107,16 +109,29 @@ def _fit_predict_seq(dataset, model, train, test, hparams, feature_set, feature_
 
 
 def _seq_unit_family(dataset, family, train_full, test, *, train_size, feature_set,
-                     feature_scaling, tune, seed):
-    """Sequence-unit: fit every model on a shared train subsample, predict the shared test set."""
-    sub = pooled_runner.subsample(train_full, train_size, "expression_stratified", seed)
+                     feature_scaling, tune, seed, val_frac=0.2):
+    """Sequence-unit: fit every model on a shared train subsample, predict the shared test set AND a
+    held-out VALIDATION slice carved from train_full. The val R² is what ranks the family (model
+    SELECTION); the test R² is only ever reported for the already-chosen winner — so the tournament
+    is not selecting on the same set it reports (nested holdout, methodology fix M-1)."""
+    from ..models._torch_train import stratified_val_indices
+    from ..training import metrics as M
+    y_tr = train_full[TARGET_COL].to_numpy(dtype=float)
+    v_idx, t_idx = stratified_val_indices(y_tr, val_frac=val_frac, seed=seed)
+    fit_full, val = train_full.iloc[t_idx].reset_index(drop=True), train_full.iloc[v_idx].reset_index(drop=True)
+    sub = pooled_runner.subsample(fit_full, train_size, "expression_stratified", seed)
     y_test = test[TARGET_COL].to_numpy(dtype=float)
+    y_val = val[TARGET_COL].to_numpy(dtype=float)
+    combined = pd.concat([val, test], ignore_index=True)          # one fit, predict both
     out = {}
     for m in family:
         hp, src = _contender_config(dataset, m, tune=tune, feature_set=feature_set,
                                     feature_scaling=feature_scaling, seed=seed)
-        pred = _fit_predict_seq(dataset, m, sub, test, hp, feature_set, feature_scaling, seed)
-        out[m] = {"pred": np.asarray(pred, dtype=float), "source": src, "hparams": hp}
+        pred_all = np.asarray(_fit_predict_seq(dataset, m, sub, combined, hp, feature_set,
+                                               feature_scaling, seed), dtype=float)
+        pred_val, pred_test = pred_all[:len(val)], pred_all[len(val):]
+        out[m] = {"pred": pred_test, "val_r2": float(M.r2(y_val, pred_val)),
+                  "source": src, "hparams": hp}
     return out, y_test
 
 
@@ -131,26 +146,41 @@ def _series_unit_family(dataset, family, *, train_size, feature_set, feature_sca
     held = load_split_csv(man["iterations"][it]["heldout_set"]["path"])
     series_ids = sorted(work["mut_series"].unique())[:n_series]
     from ..training import metrics as M
-    out = {m: {"per_series": [], "source": None, "hparams": None} for m in family}
+    from ..models._torch_train import stratified_val_indices
+    out = {m: {"per_series": [], "per_series_val": [], "source": None, "hparams": None} for m in family}
     for m in family:
         hp, src = _contender_config(dataset, m, tune=tune, feature_set=feature_set,
                                     feature_scaling=feature_scaling, seed=seed)
         out[m]["source"], out[m]["hparams"] = src, hp
         for sid in series_ids:
             w_s, h_s = series_subset(work, sid), series_subset(held, sid)
-            sub = pooled_runner.subsample(w_s, train_size, "expression_stratified", seed)
-            pred = _fit_predict_seq(dataset, m, sub, h_s, hp, feature_set, feature_scaling, seed)
-            out[m]["per_series"].append(M.r2(h_s[TARGET_COL].to_numpy(), pred))
+            # nested holdout WITHIN the series: carve a val slice for selection (M-1)
+            yv = w_s[TARGET_COL].to_numpy(dtype=float)
+            v_idx, t_idx = stratified_val_indices(yv, val_frac=0.2, seed=seed)
+            fit_s, val_s = w_s.iloc[t_idx].reset_index(drop=True), w_s.iloc[v_idx].reset_index(drop=True)
+            sub = pooled_runner.subsample(fit_s, train_size, "expression_stratified", seed)
+            combined = pd.concat([val_s, h_s], ignore_index=True)
+            pred_all = np.asarray(_fit_predict_seq(dataset, m, sub, combined, hp, feature_set,
+                                                   feature_scaling, seed), dtype=float)
+            pv, pt = pred_all[:len(val_s)], pred_all[len(val_s):]
+            out[m]["per_series"].append(M.r2(h_s[TARGET_COL].to_numpy(), pt))
+            out[m]["per_series_val"].append(M.r2(val_s[TARGET_COL].to_numpy(), pv))
     for m in family:
         out[m]["per_series"] = np.asarray(out[m]["per_series"], dtype=float)
+        out[m]["per_series_val"] = np.asarray(out[m]["per_series_val"], dtype=float)
     return out, series_ids
 
 
 # ------------------------------------------------------------------ the tournament
 def _rank_and_correct(dataset: str, scored: dict, basis: dict, *, min_delta: float, alpha: float,
                       n_boot: int, seed: int) -> tuple[list[Contender], bool, str | None]:
-    """Rank by R², paired-bootstrap the winner vs each other contender, BH-FDR the family."""
-    ranked = sorted(scored.items(), key=lambda kv: kv[1]["r2"], reverse=True)
+    """Rank the family (by VAL R² when a nested holdout supplied it, else by the reported R²),
+    paired-bootstrap the winner vs each other contender on the TEST set, BH-FDR the family. Ranking
+    on val and reporting on test is the M-1 selection-on-test fix."""
+    # nested holdout: select on val R² if present; the winner's TEST R² is then an unbiased report.
+    rank_key = "r2_val" if any(v.get("r2_val") is not None for v in scored.values()) else "r2"
+    ranked = sorted(scored.items(), key=lambda kv: (kv[1].get(rank_key)
+                    if kv[1].get(rank_key) is not None else kv[1]["r2"]), reverse=True)
     winner = ranked[0][0]
     unit = basis["unit"]
     comps = []                                     # (model, mean_delta, ci, p) for non-winners
@@ -170,16 +200,17 @@ def _rank_and_correct(dataset: str, scored: dict, basis: dict, *, min_delta: flo
     for rank, (m, info) in enumerate(ranked, start=1):
         np_ = reg.param_count(m, datasets.seq_len(dataset), info["hparams"]) \
             if m in ("cnn", "transformer") else None
+        rv = None if info.get("r2_val") is None else round(info["r2_val"], 4)
         if m == winner:
             board.append(Contender(model=m, r2=round(info["r2"], 4), rank=rank,
                                    hyperparameters_source=info["source"],
-                                   hyperparameters=info["hparams"], n_params=np_,
+                                   hyperparameters=info["hparams"], r2_val=rv, n_params=np_,
                                    delta_vs_winner=0.0))
         else:
             md, ci, p, q, rej = qmap[m]
             board.append(Contender(model=m, r2=round(info["r2"], 4), rank=rank,
                                    hyperparameters_source=info["source"],
-                                   hyperparameters=info["hparams"], n_params=np_,
+                                   hyperparameters=info["hparams"], r2_val=rv, n_params=np_,
                                    delta_vs_winner=round(scored[winner]["r2"] - info["r2"], 4),
                                    ci=[round(x, 4) for x in ci], p_value=round(p, 4),
                                    q_value=round(q, 4), survives_fdr=rej))
@@ -215,6 +246,7 @@ def run_tournament(dataset: str, *, subregion: str | None = None, family: list[s
             dataset, family, train_size=train_size, feature_set=feature_set,
             feature_scaling=feature_scaling, tune=tune, n_series=n_series, seed=seed)
         scored = {m: {"r2": float(np.mean(v["per_series"])), "per_series": v["per_series"],
+                      "r2_val": (float(np.mean(v["per_series_val"])) if v.get("per_series_val") is not None else None),
                       "source": v["source"], "hparams": v["hparams"]} for m, v in scored_raw.items()}
         basis, scope, unit, n_units = {"unit": "series"}, "per_series", "series", len(series_ids)
     else:
@@ -241,16 +273,18 @@ def run_tournament(dataset: str, *, subregion: str | None = None, family: list[s
                                        tune=tune, seed=seed)
         from ..training import metrics as M
         scored = {m: {"r2": float(M.r2(y_test, v["pred"])), "pred": v["pred"],
+                      "r2_val": v.get("val_r2"),
                       "source": v["source"], "hparams": v["hparams"]} for m, v in fam.items()}
         basis, unit, n_units = {"unit": "sequence", "y_test": y_test}, "sequence", int(len(y_test))
 
     board, sig, runner_up = _rank_and_correct(dataset, scored, basis, min_delta=md, alpha=alpha,
                                               n_boot=n_boot, seed=seed)
+    selection = "nested_val" if any(c.r2_val is not None for c in board) else "test"
     return TournamentResult(
         dataset=dataset, subregion=subregion, scope=scope, bootstrap_unit=unit,
         train_size=train_size, feature_set=feature_set, family=family, winner=board[0].model,
         winner_significant=sig, runner_up=runner_up, min_delta=md, alpha=alpha,
-        n_units=n_units, leaderboard=board)
+        n_units=n_units, leaderboard=board, selection=selection)
 
 
 def best_model(dataset: str, subregion: str | None = None, *, record: bool = True,

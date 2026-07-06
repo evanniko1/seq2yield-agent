@@ -465,6 +465,22 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #57 — Methodology hardening: nested holdout (no selection-on-test) + shuffled-label control
+- **Selection-on-test (M-1).** The tournament previously ranked the family AND reported its winner on
+  the same held-out test set — optimistic. Now each contender is scored on a VALIDATION slice carved
+  from the training frame (sequence-unit: one slice; series-unit: within each series), the family is
+  RANKED on val, and the winner's TEST R² is reported for the already-chosen model — an unbiased
+  estimate. `Contender.r2_val` + `TournamentResult.selection` (`nested_val` | legacy `test`) record
+  it. Backward-compatible: a family lacking val (the monkeypatched tests) falls back to test-ranking.
+  Verified: sample_2019 ridge/rf now ranks on val, reports test; winner unchanged here but the
+  guarantee holds.
+- **Shuffled-label negative control.** `experiments/controls.py`: `shuffled_label_r2` trains on
+  PERMUTED training labels (sequence↔target link destroyed) and returns held-out R² — expect ≈ 0; a
+  materially positive value flags leakage / a feature bug. `negative_control_ok` (|R²|<0.05).
+  Verified: rf on shuffled sample_2019 → R² −0.007 (OK). `--control` on the tournament CLI runs it
+  on the winner.
+- `test_methodology.py` (5). These make the first live-study claims valid rather than optimism-caveated.
+
 ## #56 — Council evaluation + persona/role ablation harness
 - **Why.** The multi-agent-LLM literature ablates # agents / rounds / ROLES and repeatedly finds
   personas don't reliably help — so we MEASURE each role's contribution instead of assuming it.
