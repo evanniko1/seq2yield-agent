@@ -465,6 +465,20 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #55 — dream2022 benchmark + planned council-evaluation / persona-ablation
+- **dream2022 (vs SOTA r²=0.938).** First real model run on the local 71k MAUDE test set: CNN≈**0.730**
+  (biology prior [8,6,4], train 8000) beats RF (0.466) significantly; ~−0.21 to the Vaishnav
+  transformer SOTA (expected — bounded train + small generic CNN vs their 6.7M-sequence models).
+- **High-expressed-tail phenomenon reproduced.** DREAM reported models fail on high-expressed
+  sequences (random r²≈0.91 vs high-expressed 0.26). Our C6 expression-quantile heterogeneity report
+  shows CNN R² = q1 0.47 / q2 0.19 / q3 0.24 / q4 0.65 (spread 0.46, heterogeneous) — the compressed
+  middle quartiles are hardest here. Surfaced automatically by machinery built for a different reason.
+- **Planned (deferred to after remaining impl, before quantum embeddings + gated datasets): council
+  evaluation + persona ablation.** Multi-agent-LLM practice ablates # agents / rounds / roles, and a
+  repeated finding is that personas don't reliably help — so we will MEASURE role contribution, not
+  assume it: a fixed council-benchmark battery + role-toggle ablations (roles-as-data → an ablation
+  is a config diff) + a single-agent-vs-council control. Recorded in NEXT_STEPS.
+
 ## #54 — C8: joint / cross-dataset training via pluggable length-reconciliation
 - **Reframing.** Cross-dataset training does NOT require foundation-model embeddings — length is a
   *representation* problem with several standard fixes. `experiments/joint.py` pools datasets and
