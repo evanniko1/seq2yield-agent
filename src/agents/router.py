@@ -95,6 +95,11 @@ class Router:
 
     def resolve(self, role: str, *, require_available: bool = True,
                 allow_local_fallback: bool = False) -> ModelClient:
+        if (getattr(self, "mode", None) or runtime_mode()) == "deterministic":
+            from .model_clients.deterministic_client import DeterministicClient
+            self._emit_routing(role, ["deterministic"], "deterministic:det-v1",
+                               "deterministic_mode", "keyless reproducible provider (offline)")
+            return DeterministicClient()
         providers = self.policy["providers"]
         pclass = self.provider_class(role)
         candidates = self.candidates(role)

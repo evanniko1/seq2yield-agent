@@ -465,6 +465,22 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #58 — Hardening: CI (G1) + deterministic keyless provider (R1, adopted from shepherd)
+- **G1 — CI (audit gap; awesome-harness-engineering taxonomy).** `.github/workflows/ci.yml` runs
+  the suite (CPU torch, advisory ruff, pytest) on push/PR. The ~5 real-data smoke tests take a
+  `require_data` fixture that skips when the gitignored datasets are absent, so CI runs every logic/
+  agentic/methodology test while the full suite runs locally. `flask` added as the `[ui]` extra.
+- **R1 — deterministic keyless provider.** *Source:* `shepherd-agents/shepherd` (its offline
+  deterministic provider + reproducible traces). *Insight:* an agent runtime needs a keyless,
+  reproducible provider so runs are replayable and testable without network. *Why we took it:* the
+  infra audit flagged that real LLM decisions were **not replayable** (temperature>0, no caching);
+  and CI/tests should exercise the FULL council without providers. `DeterministicClient` fills the
+  requested pydantic schema with hash-seeded, constraint-respecting, VALID values (enums, numeric
+  bounds, min-length lists, field-name heuristics so `dataset must be registered`-type validators
+  pass); every call is a $0 ModelCallRecord. `Router` gains a `deterministic` mode that routes every
+  role to it. *Verified:* a whole council cycle (generate→review→chair) runs offline; identical
+  prompts give identical objects. `test_deterministic_provider.py` (4).
+
 ## #57 — Methodology hardening: nested holdout (no selection-on-test) + shuffled-label control
 - **Selection-on-test (M-1).** The tournament previously ranked the family AND reported its winner on
   the same held-out test set — optimistic. Now each contender is scored on a VALIDATION slice carved
