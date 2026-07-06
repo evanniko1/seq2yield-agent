@@ -465,6 +465,22 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #54 — C8: joint / cross-dataset training via pluggable length-reconciliation
+- **Reframing.** Cross-dataset training does NOT require foundation-model embeddings — length is a
+  *representation* problem with several standard fixes. `experiments/joint.py` pools datasets and
+  does train-A→test-B in a FIXED-WIDTH space with a **selectable reconciliation strategy**:
+  `kmer` (default, 4^k, length-invariant), `pad` (one-hot padded/truncated + a pad-indicator
+  channel), `adaptive_pool` (per-bin base composition — the length-agnostic global-pool analog for
+  non-deep models), `embed` (mean-pooled K2a embedding; gated on the cache). All four are testable;
+  `compare_strategies` runs them head-to-head.
+- **Cross-assay honesty.** Each dataset is a different assay, so targets are z-scored **per dataset**
+  before pooling and the primary metric is **Spearman** (rank, scale-free) alongside R² on the
+  z-target — "does a model trained on A rank B correctly" answered without conflating assay scales.
+  Flat models only (the reconciled X is flat); deep joint training is a future extension.
+- Real result: an RF trained ONLY on yeast 5'UTRs (cuperus_2017) predicts human 5'UTRs (sample_2019)
+  at **Spearman 0.62** in shared k-mer space — impossible with raw one-hot. CLI `scripts/run_joint.py`;
+  `test_joint.py` (7).
+
 ## #53 — Human-accept gate for the expensive experiment modules (+ C9 specialist reviewers)
 - **Guard.** The tournament / HPO-distribution / config-transfer modules are powerful and costly, so
   the council must not run them autonomously. `agents/experiment_queue.py`: the council/PI may only
