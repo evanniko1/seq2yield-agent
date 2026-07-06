@@ -24,6 +24,15 @@ def _load(name: str) -> dict:
     return yaml.safe_load((ROOT / "configs" / name).read_text(encoding="utf-8"))
 
 
+def runtime_mode() -> str:
+    """Provider mode from configs/runtime.yaml: hybrid (default) | local | api."""
+    f = ROOT / "configs" / "runtime.yaml"
+    if f.exists():
+        cfg = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
+        return (cfg.get("runtime") or {}).get("mode", "hybrid")
+    return "hybrid"
+
+
 def _model_for(provider_cfg: dict, provider_class: str):
     """Pick the model name for a provider given the role's provider_class."""
     models = provider_cfg.get("models", {})
@@ -62,10 +71,14 @@ class Router:
 
     def candidates(self, role: str) -> list[str]:
         pclass = self.provider_class(role)
-        order = self.policy["provider_class_map"].get(pclass, [])
-        # authority roles: keep only direct providers
+        mode = getattr(self, "mode", None) or runtime_mode()
+        if mode == "local":                              # force every role onto the local tier
+            return self.policy["provider_class_map"].get("diversity", [])
+        order = self.policy["provider_class_map"].get(
+            "authority" if mode == "api" else pclass, [])  # 'api' promotes every role to direct
+        # authority roles (and everything under 'api' mode): keep only direct providers
         rp = self.policy.get("role_policy", {}).get(role, {})
-        if rp.get("require_direct_provider"):
+        if rp.get("require_direct_provider") or mode == "api":
             order = [p for p in order if p in _DIRECT]
             if rp.get("allowed_providers"):
                 order = [p for p in order if p in rp["allowed_providers"]]

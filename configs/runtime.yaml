@@ -1,0 +1,9 @@
+# Runtime provider mode for live council runs (the interface's provider toggle).
+#   hybrid — diversity roles on local Ollama, authority roles/chair on paid APIs (the default design)
+#   local  — ALL roles on local Ollama (free, reproducible-ish; no API spend)
+#   api    — ALL roles on direct paid providers (Anthropic/OpenAI via .env keys)
+runtime:
+  mode: hybrid
+  # local model for the diversity tier / local mode. Qwen3-4B-Instruct-2507 (the real model behind
+  # the 'fable-traces' joke) is a strong ~4B option — `ollama pull qwen3:4b` then set it here.
+  local_model: llama3.1:8b
