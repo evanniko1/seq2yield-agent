@@ -97,6 +97,21 @@ def test_run_gated_times_out_without_hanging():
     assert (time.time() - t0) < 1.5                     # returned near the deadline, did not hang
 
 
+def test_min_action_forces_search_where_gate_would_skip():
+    # a decisive cell would SKIP; the C5 study floor raises it to at least 'light'
+    ctx = G.SearchContext(model="rf", dataset="d", current_delta=0.30, est_seconds_per_trial=1.0,
+                          remaining_search_seconds=900)
+    assert G.decide(ctx).action == "skip"
+    calls = {}
+
+    def _fast(*a, **k):
+        calls["ran"] = True
+        return SimpleNamespace(best_score=0.4, n_evals=8, best_config={"n_estimators": 300})
+
+    out = G.run_gated(ctx, search_fn=_fast, min_action="light", deadline_s=5, log=False)
+    assert out.decision.action == "light" and calls.get("ran") and out.result is not None
+
+
 def test_run_gated_uses_fast_result():
     ctx = G.SearchContext(model="rf", dataset="d", inconclusive=True, current_delta=0.01,
                           est_seconds_per_trial=1.0, remaining_search_seconds=900)

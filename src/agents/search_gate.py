@@ -175,17 +175,28 @@ def _bounded_call(fn, timeout_s: float | None):
     return box.get("result"), False
 
 
+_ACTION_RANK = {"skip": 0, "light": 1, "full": 2}
+
+
 def run_gated(ctx: SearchContext, *, policy: dict | None = None, search_fn=search,
               seeds=None, space: dict | None = None, feature_set: str = "one_hot",
               feature_scaling: str = "none", seed: int = 0, deadline_s: float | None = None,
-              log: bool = True) -> GatedOutcome:
+              min_action: str | None = None, log: bool = True) -> GatedOutcome:
     """Decide, then (if not skipped) run the search BOUNDED + ASYNC and log the decision.
 
     Returns a GatedOutcome; the council uses `outcome.result.best_config` when present, else falls
     back to C1 defaults. The loop never hangs: a search exceeding its deadline is abandoned.
-    """
+
+    `min_action` ('light'|'full') is a study floor: the C5 HPO-distribution study wants a search on
+    EVERY unit even where the gate would skip, so it raises the action to at least `min_action`
+    (still bounded/async). The value-of-information decision can still upgrade above the floor."""
     pol = policy or load_policy()
     decision = decide(ctx, pol)
+    if min_action and _ACTION_RANK.get(decision.action, 0) < _ACTION_RANK[min_action]:
+        forced = SearchBudget(**pol[min_action])
+        decision = GateDecision(min_action, f"{decision.reason}; raised to '{min_action}' (study floor)",
+                                decision.value_score, decision.cost_score, forced,
+                                forced.n_trials * ctx.est_seconds_per_trial * pol["deadline_slack"])
     result, timed_out, lift = None, False, None
 
     if decision.action != "skip":

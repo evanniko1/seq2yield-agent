@@ -465,6 +465,27 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #51 — C5: per-series / per-subregion HPO-distribution study (the Nat Comms question)
+- **The question.** The original E. coli benchmark (56 mutational series) never asked whether every
+  series prefers the SAME architecture or a different one. C5 answers it: run the search per unit and
+  look at the *distribution* of the winning hyperparameters — wide ⇒ per-unit heterogeneity (no
+  universal optimum), tight ⇒ a shared sweet spot. Now askable for CNN / transformer / RF, per series
+  OR per C6 stratum level (thanks to C1+C2+C10+C6).
+- **What.** `experiments/hpo_distribution.py`: `run_hpo_distribution(dataset, model, unit_type=…)`.
+  `unit_type='series'` iterates E. coli series; otherwise it is a stratum name (e.g. `gc_bin`) and the
+  units are its levels on a pooled dataset. Each unit is searched via C2 **under the C10 gate**; the
+  results are flattened (a list knob → its first element / mean / depth) and summarized per feature
+  (numeric mean/std/min/max/**cv**; categorical counts/mode), with a **heterogeneity flag** (numeric
+  CV ≥ 0.15, or a categorical with >1 value).
+- **Study floor (new gate hook).** A distribution study needs a result on EVERY unit even where the
+  gate would skip, so `run_gated(min_action='light')` raises the action to at least a light search
+  (still bounded/async; the value-of-information decision can upgrade above the floor). This is the
+  only change to C10 and it is opt-in.
+- **Strata search path.** The C2 engine's `_train_frame` now filters a `stratum=level` subregion (via
+  `strata.filter`) as well as a mutational-series id, so a search can target `gc_bin=high` directly.
+- Persisted to `reports/hpo_distributions/`. CLI `scripts/run_hpo_distribution.py`;
+  `test_hpo_distribution.py` (6) incl. a real 2-series RF search. 255 passing.
+
 ## #50 — C6: strata / subregion dimension (per-subregion questions + heterogeneity)
 - **Why.** A dataset is not homogeneous — high-GC vs low-GC promoters, uORF-bearing vs clean 5'UTRs,
   the high- vs low-expression tail. The Council needs to target a *subregion* and the tournament

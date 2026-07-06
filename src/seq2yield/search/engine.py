@@ -80,10 +80,13 @@ def _train_frame(dataset: str, subregion: str | None, seed: int) -> pd.DataFrame
         it = next(iter(man["iterations"]))                 # first iteration's working set = train
         train = load_split_csv(man["iterations"][it]["working_set"]["path"])
     if subregion is not None:
-        if SERIES_COL not in train.columns:
-            raise ValueError(f"dataset '{dataset}' has no '{SERIES_COL}' column to filter a "
-                             f"subregion; strata subregions arrive with C6")
-        train = train[train[SERIES_COL].astype(str) == str(subregion)].reset_index(drop=True)
+        if "=" in str(subregion):                          # C6 strata subregion ('gc_bin=high')
+            from ..data import strata
+            train = strata.filter(train, dataset, str(subregion))
+        elif SERIES_COL in train.columns:                  # a mutational series id
+            train = train[train[SERIES_COL].astype(str) == str(subregion)].reset_index(drop=True)
+        else:
+            raise ValueError(f"dataset '{dataset}' cannot filter subregion '{subregion}'")
         if len(train) < 20:
             raise ValueError(f"subregion '{subregion}' has too few rows ({len(train)}) to search")
     return train
