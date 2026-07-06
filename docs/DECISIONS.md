@@ -465,6 +465,27 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #50 — C6: strata / subregion dimension (per-subregion questions + heterogeneity)
+- **Why.** A dataset is not homogeneous — high-GC vs low-GC promoters, uORF-bearing vs clean 5'UTRs,
+  the high- vs low-expression tail. The Council needs to target a *subregion* and the tournament
+  needs to run inside one; C4 had guarded pooled subregions pending this.
+- **Strata (`data/strata.py`).** Derived from the canonical frame so they work for any adapter
+  dataset without bespoke metadata: `gc_bin` (GC tertiles), `expression_quantile` (target quartiles),
+  `has_uorf` (upstream ATG; UTR), `length_bin`. **Bin edges are fit once on the FULL cleaned dataset**
+  and applied to any subset, so a train frame and a test frame get consistent, leak-free subregion
+  membership. `DatasetSpec.strata` ([] → a modality default); adapter-supplied metadata columns
+  (cell_type, tss_distance) are used directly when present.
+- **Subregion is first-class.** `Cell`/`cell_id_for`/`record_cell_id` + `CouncilProposal` gain a
+  `subregion` field ('all' | '<stratum>=<level>'). A subregion rides on the cell_id's last segment
+  with `#`, so a whole-dataset cell_id is **unchanged** ('all') — existing coverage/novelty logic is
+  untouched, and "gc_bin=high" is a genuinely distinct, trackable question.
+- **Subregion tournaments + heterogeneity.** `run_tournament(dataset, subregion="gc_bin=high")` filters
+  the pooled frame to the stratum (new `pooled_runner.holdout_frame` splits an arbitrary frame) and
+  runs a sequence-unit tournament inside it (scope `pooled_subregion`). `strata.heterogeneity(dataset,
+  stratum, model=…)` fits the model within each level and reports the R² spread — the "is this dataset
+  heterogeneous?" summary.
+- CLI `scripts/run_strata.py`; `test_strata.py` (8). 248 passing.
+
 ## #49 — C4: best-algorithm-per-scope tournament (the MAJOR GOAL — best model per scope)
 - **Why.** Every prior comparison was PAIRWISE (candidate vs one baseline). The project's headline
   question is "which model actually wins on this dataset / series / subspace?" — a family-wide

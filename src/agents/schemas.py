@@ -96,6 +96,16 @@ class CouncilProposal(BaseModel):
     # across series (per-series heterogeneity is reported for EVERY run regardless); pooled =
     # ONE model trained across all series (compared to an in-run pooled baseline).
     scope: Literal["global", "pooled"] = "global"
+    subregion: str = "all"                 # C6: 'all' | '<stratum>=<level>' (e.g. 'gc_bin=high')
+
+    @field_validator("subregion")
+    @classmethod
+    def _valid_subregion(cls, v: str) -> str:
+        if v in (None, "", "all"):
+            return "all"
+        if "=" not in v:
+            raise ValueError(f"subregion must be 'all' or '<stratum>=<level>', got {v!r}")
+        return v
     required_controls: list[str] = Field(default_factory=list)
     expected_failure_modes: list[str] = Field(default_factory=list)
 

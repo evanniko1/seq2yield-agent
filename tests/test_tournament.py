@@ -103,9 +103,10 @@ def test_record_tournament_writes_leaderboard_and_headline_claim(monkeypatch, tm
 
 
 # ---- guards ----
-def test_pooled_subregion_is_guarded():
+def test_malformed_subregion_is_rejected():
+    # C6 implements pooled subregions, but the spec must be '<stratum>=<level>'
     import pytest
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(ValueError):
         T.run_tournament("sample_2019", subregion="high_gc", family=["rf", "ridge"])
 
 

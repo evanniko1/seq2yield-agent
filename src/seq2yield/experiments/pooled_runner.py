@@ -25,16 +25,17 @@ def _frame(dataset_id: str) -> pd.DataFrame:
     return datasets.apply_target_transform(adapters.frame_for(dataset_id), dataset_id)
 
 
-def holdout(spec, frac: float = 0.1):
-    """(train, test) frames. Provided split if the adapter supplied one; else a stratified holdout
-    (per-group if a series column exists, else target-quantile)."""
-    df = _frame(spec.dataset)
-    ds = datasets.spec(spec.dataset)
-    if ds.split_strategy == "provided" and "split" in df.columns:
+def holdout_frame(df: pd.DataFrame, *, frac: float = 0.1, seed: int = 0):
+    """(train, test) split of an arbitrary frame. Provided 'split' column respected; else a
+    stratified holdout (per-group if a series column exists, else target-quantile). Used by the
+    generic holdout AND by C6 subregion tournaments that filter the frame first."""
+    if "split" in df.columns:
         tr = df[df["split"] == "train"].drop(columns=["split"]).reset_index(drop=True)
         te = df[df["split"] == "test"].drop(columns=["split"]).reset_index(drop=True)
-        return tr, te
-    rng = np.random.default_rng(spec.seed)
+        if len(tr) and len(te):
+            return tr, te
+        df = df.drop(columns=["split"])                # provided split empty after filtering -> re-split
+    rng = np.random.default_rng(seed)
     if SERIES_COL in df.columns:
         group = df[SERIES_COL]
     else:
@@ -47,6 +48,18 @@ def holdout(spec, frac: float = 0.1):
     test = df.loc[test_idx]
     train = df.drop(index=test_idx)
     return train.reset_index(drop=True), test.reset_index(drop=True)
+
+
+def holdout(spec, frac: float = 0.1):
+    """(train, test) frames. Provided split if the adapter supplied one; else a stratified holdout
+    (per-group if a series column exists, else target-quantile)."""
+    df = _frame(spec.dataset)
+    ds = datasets.spec(spec.dataset)
+    if ds.split_strategy == "provided" and "split" in df.columns:
+        tr = df[df["split"] == "train"].drop(columns=["split"]).reset_index(drop=True)
+        te = df[df["split"] == "test"].drop(columns=["split"]).reset_index(drop=True)
+        return tr, te
+    return holdout_frame(df, frac=frac, seed=spec.seed)
 
 
 def subsample(train: pd.DataFrame, size: int, policy: str, seed: int) -> pd.DataFrame:

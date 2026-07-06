@@ -152,7 +152,8 @@ def _key(p):
 
 def proposal_cell_id(p) -> str:
     return question_space.cell_id_for(p.intervention_type, p.model_family, p.comparator_model,
-                                      p.feature_set, p.sampling_policy, p.scope)
+                                      p.feature_set, p.sampling_policy, p.scope,
+                                      subregion=getattr(p, "subregion", "all"))
 
 
 def _is_self_comparison(p) -> bool:

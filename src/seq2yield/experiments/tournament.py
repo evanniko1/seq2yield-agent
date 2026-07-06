@@ -223,9 +223,14 @@ def run_tournament(dataset: str, *, subregion: str | None = None, family: list[s
             work = series_subset(load_split_csv(man["iterations"][it]["working_set"]["path"]), int(subregion))
             held = series_subset(load_split_csv(man["iterations"][it]["heldout_set"]["path"]), int(subregion))
             train_full, test, scope = work, held, "per_series_single"
-        else:                                            # pooled dataset
-            if subregion is not None:
-                raise NotImplementedError("pooled-dataset subregions arrive with C6 (strata)")
+        elif subregion is not None:                      # C6: a pooled-dataset strata subregion
+            from ..data import strata
+            sub = strata.filter(pooled_runner._frame(dataset), dataset, subregion)
+            if len(sub) < 50:
+                raise ValueError(f"subregion '{subregion}' has too few rows ({len(sub)})")
+            train_full, test = pooled_runner.holdout_frame(sub, seed=seed)
+            scope = "pooled_subregion"
+        else:                                            # whole pooled dataset
             train_full, test = pooled_runner.holdout(SimpleNamespace(dataset=dataset, seed=seed))
             scope = "pooled"
         fam, y_test = _seq_unit_family(dataset, family, train_full, test, train_size=train_size,

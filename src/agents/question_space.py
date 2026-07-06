@@ -42,12 +42,15 @@ class Cell:
     sampling_policy: str = "random"
     scope: str = "global"
     dataset: str = "ecoli"                              # ecoli (96nt) | yeast (80nt, pooled)
+    subregion: str = "all"                              # C6: 'all' | '<stratum>=<level>' (e.g. gc_bin=high)
 
     @property
     def cell_id(self) -> str:
-        # dataset prepended, scope kept last (so _valid_cell's scope-strip still works)
+        # dataset prepended; scope kept last (so _valid_cell's scope-strip still works). A subregion
+        # rides on the last segment with a '#' so a whole-dataset cell is unchanged (back-compat).
+        last = self.scope if self.subregion in (None, "all") else f"{self.scope}#{self.subregion}"
         return "|".join([self.dataset, self.intervention_type, self.model_family,
-                         self.comparator_model, self.feature_set, self.sampling_policy, self.scope])
+                         self.comparator_model, self.feature_set, self.sampling_policy, last])
 
     def describe(self) -> str:
         it = self.intervention_type
@@ -121,7 +124,7 @@ def enumerate_cells() -> list[Cell]:
 
 def cell_id_for(intervention_type: str, model_family: str, comparator_model: str,
                 feature_set: str = "one_hot", sampling_policy: str = "random",
-                scope: str = "global", dataset: str = "ecoli") -> str:
+                scope: str = "global", dataset: str = "ecoli", subregion: str = "all") -> str:
     # same-model interventions are canonicalized to comparator = model_family
     if intervention_type in ("feature_representation", "sampling_design", "training_procedure",
                              "feature_scaling"):
@@ -131,7 +134,8 @@ def cell_id_for(intervention_type: str, model_family: str, comparator_model: str
     if intervention_type != "sampling_design":
         sampling_policy = "random"
     return Cell(intervention_type, model_family, comparator_model,
-                feature_set, sampling_policy, scope, dataset=dataset).cell_id
+                feature_set, sampling_policy, scope, dataset=dataset,
+                subregion=(subregion or "all")).cell_id
 
 
 def record_cell_id(rec: dict) -> str:
@@ -139,7 +143,8 @@ def record_cell_id(rec: dict) -> str:
         rec.get("intervention_type", "model_architecture"),
         rec.get("candidate_model"), rec.get("baseline_model"),
         rec.get("feature_set", "one_hot"), rec.get("sampling_policy", "random"),
-        rec.get("scope", "global"), dataset=rec.get("dataset", "ecoli"))
+        rec.get("scope", "global"), dataset=rec.get("dataset", "ecoli"),
+        subregion=rec.get("subregion", "all"))
 
 
 def _valid_cell(cid: str) -> bool:
