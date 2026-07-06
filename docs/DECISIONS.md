@@ -465,6 +465,20 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #61 — Hardening: G7 calibration · R5 per-role memory · trace-context test isolation
+- **G7 (calibration; last audit gap).** Point R² ignores predictive uncertainty. `calibration.
+  residual_interval_coverage` builds a prediction interval from TRAIN residual quantiles and measures
+  empirical held-out coverage → `calibrated` / `over_confident` / `under_confident`. `test_calibration`
+  (2). With this, **every infra-audit gap G1–G8 is closed.**
+- **R5 (adopted from OpenOPC — per-role distilled memory).** *Source:* OpenOPC's per-employee
+  experience profiles (traces too noisy → distil into per-role lessons). *Rationale:* a role should
+  carry accumulated experience, not start cold. `agents/role_memory.py`: `add_lesson`/`lessons`
+  (last-k, role-filtered)/`as_block` (surfaced into `reviewer_prompt`). `test_role_memory` (2). With
+  this, **all four references' adoptable properties R1–R7 are done** (R7 = an env-gated decision).
+- **Test isolation.** An autouse conftest fixture resets the RL-trace contextvar per test —
+  `council.run()`/`ensure_trajectory` set it without auto-reset, which had leaked a trajectory_id into
+  later tests once the deterministic provider let full council cycles run in the suite. 328 passing.
+
 ## #60 — Hardening batch: R3 credit assignment · R2 debate round · G6 council auto-suggest
 - **R3 (adopted from OpenOPC — online per-role credit assignment).** *Source:* OpenOPC ("credit and
   blame land where they were earned"; per-role outcome attribution). *Insight/rationale:* the offline

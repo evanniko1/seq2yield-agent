@@ -12,7 +12,7 @@ source + the insight + why we took it** (in `docs/DECISIONS.md`). Status: ⬜ to
 | G4 | no per-dataset data card | `data_card(dataset)`: target dist, GC dist, dedup rate, length uniformity, strata balance, provenance → dashboard + JSON | ✅ |
 | G5 | label-noise ceiling unknown | replicate-reliability framework (`noise_ceiling`); applies when a spec declares replicate cols (tewhey/deng when they land); synthetic-tested | ✅ |
 | G6 | new experiment modules not council-driven | council can SUGGEST tournament/HPO/transfer to the human-accept queue (still gated) | ✅ |
-| G7 | predictions point-R² only | predictive-uncertainty note + interval coverage (deferred — lower value) | ⬜ |
+| G7 | predictions point-R² only | predictive-uncertainty: train-residual interval coverage (calibration) | ✅ |
 | G8 | 3-way split not recorded | nested holdout already records val R²; ensure it flows to the store/claim | ✅ (via M-1) |
 
 ## Phase R — adopt from the four references (each recorded with source + rationale)
@@ -22,7 +22,7 @@ source + the insight + why we took it** (in `docs/DECISIONS.md`). Status: ⬜ to
 | R2 | agentic gap | **debate round** — reviewers see round-1 aggregate before finalizing | single-round review is a known weakness; measurable | ✅ |
 | R3 | OpenOPC | **online per-role credit assignment** — attribute a run's accept/reject to the roles that owned it | complements offline ablation (agenda II-11); "credit lands where earned" | ✅ |
 | R4 | shepherd | **`run show` trail CLI** — reconstruct one council query's full trail from the store | reversible-trace inspection, terminal-native | ✅ |
-| R5 | OpenOPC | **per-role distilled memory** — a short experience profile per role | roles carry accumulated lessons; feeds prompts | ⬜ |
+| R5 | OpenOPC | **per-role distilled memory** — a short experience profile per role | roles carry accumulated lessons; feeds prompts | ✅ |
 | R6 | fable-traces | **Qwen3-4B local default option** — the real model behind the joke | stronger local diversity tier than llama3.1:8b | ✅ (config + doc) |
 | R7 | shepherd / awesome-harness | **OS-level sandbox** (Landlock/Seatbelt) | stronger than the path guard — BUT Linux/macOS only; we are on Windows → documented as an env-gated decision, guard strengthened instead | ✅ (decision recorded) |
 
