@@ -50,3 +50,7 @@ reports/state/
 
 # local working notes — never commit
 NEXT_STEPS.md
+
+# local SQLite read-model (rebuilt via scripts/ingest_history.py)
+reports/*.db
+reports/*.db-journal
