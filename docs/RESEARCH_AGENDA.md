@@ -29,6 +29,7 @@ figure/table/section it becomes).
 | I-8 | **uORF generalization**: does a model trained on uORF-free 5'UTRs generalize to uORF-bearing ones? | C6 `has_uorf` + C7 | ⬜ (novel; papers never asked) | Transfer verdict |
 | I-9 | **Which architecture degrades least in the hard expression tail?** | C4 + C6 (expression_quantile) | ⬜ (DREAM surfaced the gap; nobody resolved it per-architecture) | Per-model tail-robustness |
 | I-10 | **Biology-informed filter widths**: does matching kernel to motif scale help per modality? | C3 proposing Biologist | ✅ priors flow to RunSpec; effect-size study pending | Ablation: biology prior vs default |
+| I-14 | **Per-series heterogeneity as a variance component** (ICC): is there a universal optimum or genuine between-series variation? | **mixed_effects** (promoted) | ⬜ promoted (fits the grouped data) | ICC + random-effects table |
 
 ## Track II — the council as the research object (agentic-AI)
 
@@ -68,5 +69,12 @@ figure/table/section it becomes).
 - **Cross-cutting method claim:** every finding is produced by a *bounded, auditable, human-gated*
   loop (protected files, FDR correction, bootstrap-unit fences, cost caps, human-accept gate),
   which is itself the point — reproducible agentic science, not a leaderboard chase.
+- **Discussion — approaches deliberately NOT taken** (foundation-model embeddings, LoRA fine-tuning,
+  active learning, council-policy RL, JAX, ESM): the strict ML/DS rationale for each deferral is
+  recorded in `docs/BACKLOG.md` → "Deferred ML/DS approaches — assessment & discussion rationale".
+  Headline reasons: abundant labels push us past the low-data regime where transfer pays (empirical
+  embed-vs-one_hot crossover) + the label-noise ceiling; random synthetic sequences are OOD for
+  genomic LMs; fully-labeled data removes active learning's premise; sparse reward removes RL's.
+  Only **mixed-effects** (grouped-data variance decomposition) is promoted — it fits the data.
 
 _Kept in sync with `docs/BACKLOG.md` (what's built) and `NEXT_STEPS.md` (local working notes)._
