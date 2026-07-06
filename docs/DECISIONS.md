@@ -465,6 +465,36 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #59 — Hardening batch: G2 joint FDR · G3 multi-seed · G4 data card · G5 noise ceiling · R4 · R6 · R7
+- **G2 (joint FDR).** `multiple_comparisons.correct_all` folds the claim registry AND each
+  tournament's headline winner-vs-runner-up test into ONE BH-FDR family (they were corrected in
+  isolation → under-corrected).
+- **G3 (multi-seed).** `controls.multiseed_r2` fits across INIT/TRAIN seeds on a FIXED test set +
+  training subsample → the spread is pure model stochasticity; report mean ± std so the SOTA gap can
+  be attributed to seed noise vs capacity.
+- **G4 (data card).** `data.data_card.card` → target dist (mean/std/skew/range), GC, length
+  uniformity, duplicate-seq rate, per-stratum balance, provenance. Dashboard `/dataset/<id>` page.
+- **G5 (noise ceiling).** `noise_ceiling.reliability_ceiling` = median pairwise R² across assay
+  replicates (a model can't beat assay reproducibility). `DatasetSpec.replicate_cols` opt-in;
+  activates for replicate-bearing datasets (tewhey/deng) — returns `available:False` for the current
+  single-target datasets. Pure estimator unit-tested with synthetic replicates.
+- **R4 (adopted from shepherd — `run show`).** *Source:* shepherd's reversible-trace `run show/list`.
+  *Insight/rationale:* a durable trace should be reconstructable from the terminal, not only a UI.
+  `scripts/run_show.py` prints one council query's full trail (proposals → reviews → decision trace)
+  from the read-model.
+- **R6 (adopted from fable-traces).** *Source:* the fable-traces card revealed its base is
+  `Qwen3-4B-Instruct-2507`. *Rationale:* a stronger ~4B local diversity model than llama3.1:8b.
+  `runtime_local_model()` reads `configs/runtime.yaml:local_model` (default llama3.1:8b; `qwen3:4b`
+  documented as the recommended swap).
+- **R7 (adopted from shepherd / awesome-harness — OS-level sandbox: DECISION, not code).** *Source:*
+  shepherd enforces per-binding ReadOnly/ReadWrite at the native syscall jail (macOS Seatbelt / Linux
+  Landlock). *Insight:* OS-level enforcement is strictly stronger than a path check. *Decision:* the
+  dev/CI environment here is **Windows**, where Landlock/Seatbelt do not exist; a portable OS jail is
+  out of scope. We keep the existing `git_guard` (protected-file path guard + the human-accept gate +
+  the deterministic/retained-output proposal pattern) and record OS-jail as an explicitly
+  **environment-gated** future item (revisit on Linux/macOS deployment) rather than ship a
+  half-working or platform-specific jail. `test_hardening_misc.py` (5).
+
 ## #58 — Hardening: CI (G1) + deterministic keyless provider (R1, adopted from shepherd)
 - **G1 — CI (audit gap; awesome-harness-engineering taxonomy).** `.github/workflows/ci.yml` runs
   the suite (CPU torch, advisory ruff, pytest) on push/PR. The ~5 real-data smoke tests take a

@@ -35,6 +35,7 @@ class DatasetSpec(BaseModel):
     applicable_feature_sets: list[str] = Field(default_factory=lambda: ["one_hot", "kmer"])
     applicable_embedders: list[str] = Field(default_factory=list)
     strata: list[str] = Field(default_factory=list)   # C6: subregion axes ([] -> modality default)
+    replicate_cols: list[str] = Field(default_factory=list)   # G5: raw replicate columns (noise ceiling)
     citation: str = ""
     license: str = ""
     source: dict = Field(default_factory=dict)

@@ -24,13 +24,22 @@ def _load(name: str) -> dict:
     return yaml.safe_load((ROOT / "configs" / name).read_text(encoding="utf-8"))
 
 
-def runtime_mode() -> str:
-    """Provider mode from configs/runtime.yaml: hybrid (default) | local | api."""
+def _runtime_cfg() -> dict:
     f = ROOT / "configs" / "runtime.yaml"
     if f.exists():
-        cfg = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
-        return (cfg.get("runtime") or {}).get("mode", "hybrid")
-    return "hybrid"
+        return (yaml.safe_load(f.read_text(encoding="utf-8")) or {}).get("runtime") or {}
+    return {}
+
+
+def runtime_mode() -> str:
+    """Provider mode from configs/runtime.yaml: hybrid (default) | local | api | deterministic."""
+    return _runtime_cfg().get("mode", "hybrid")
+
+
+def runtime_local_model() -> str:
+    """The local (Ollama) model for local/diversity mode. Qwen3-4B-Instruct-2507 (`qwen3:4b`) is the
+    recommended option — the real model behind the 'fable-traces' joke (R6)."""
+    return _runtime_cfg().get("local_model", "llama3.1:8b")
 
 
 def _model_for(provider_cfg: dict, provider_class: str):
