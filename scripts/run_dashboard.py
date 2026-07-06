@@ -171,9 +171,13 @@ def dataset_card(did):
 def cost():
     con = _con()
     c = store.cost_summary(con)
+    from agents.council_metrics import cost_per_claim
+    cpc = cost_per_claim(con)
     con.close()
     b = [f"<h1>Cost</h1><p>{c['n_calls']} model calls · <b>${c['total_cost_usd']}</b> · "
          f"{c['total_tokens']:,} tokens · {c['n_success']} ok</p>"
+         f"<p class=mut>cost per accepted claim: <b>${cpc['cost_per_accepted_claim']}</b> "
+         f"({cpc['n_accepted_claims']} accepted; {cpc.get('by_status')})</p>"
          "<h2>By role</h2><table><tr><th>role</th><th>calls</th><th>cost</th></tr>"]
     for r in c["by_role"]:
         b.append(f"<tr><td>{r['role']}</td><td>{r['calls']}</td><td>${round(r['cost'],4)}</td></tr>")

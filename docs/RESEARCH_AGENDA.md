@@ -39,8 +39,8 @@ figure/table/section it becomes).
 | II-3 | **Does the search-worthiness gate spend compute where it pays?** (value-of-information) | C10 gate + RL-trace | ✅ decisions logged; VoI vs cost | Gate decision audit |
 | II-4 | **Can the gate become a learned policy?** (contextual bandit on the trace) | RL-trace `extract_training_rows` | ⬜ Tier-3 (data exists) | Learned-vs-heuristic gate |
 | II-5 | **Does human question injection improve outcome-per-cost?** (mixed-initiative) | `human_directives` | 🟡 built; needs a with/without study | Steering-vs-autonomous |
-| II-6 | **Cost per accepted claim** under the human-accept gate | `experiment_queue` + budget | ⬜ | $/claim table |
-| II-7 | **Are reviewer scores calibrated** vs realized ΔR²? | claims + trace join | ⬜ | Calibration plot |
+| II-6 | **Cost per accepted claim** under the human-accept gate | `council_metrics.cost_per_claim` | ✅ (dashboard Cost page) | $/claim table |
+| II-7 | **Are reviewer scores calibrated** vs realized ΔR²? | `council_metrics.reviewer_discrimination` | ✅ | Calibration plot |
 | II-8 | **Does the full council beat a single agent** on the trap battery? (the MAD control) | `council_eval` (no_critics / single) | ✅ full 0.0 vs no-critics 0.8 false-accept | Single-vs-council |
 
 ---

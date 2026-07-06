@@ -1,5 +1,15 @@
 # Methodology audit & critique
 
+> **STATUS (point-in-time audit, now largely resolved).** The S1–S5 / C1–C12 findings below were the
+> ORIGINAL critique; most are since implemented — see `docs/DECISIONS.md`: C1 BH-FDR (+G2 joint FDR),
+> C2 repeat asymmetry (validate_runspec warns <5 repeats), C3 bootstrap-unit fence, C4 feature-scaling
+> axis, C5 param counts + fair capacity, C6 deterministic CNN, C7 config-sourced min_delta, C9
+> human-review gate, C11 prompt templates+versions, S1 patch-only-for-HPO, S2 declared selection
+> bonuses, S3 anchored rubric, S4 hypothesis-coherence fix, S5 per-model list prices. Remaining
+> caveats: C10 (authority/diversity split is real only on a keyed live run), C12 (whole-JSON prompts —
+> fine at this scale), S5 (list prices, untested vs a specific contract). Kept below as the historical
+> record; do not read it as current status.
+
 A deliberately critical pass over seq2yield-agent: are statistics/metrics applied correctly
 across every question axis, and where is "AI slop" (plausible-looking but unjustified
 machinery) creeping in? Findings are split into **fixed in this pass**, **known caveats**, and
