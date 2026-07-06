@@ -465,6 +465,26 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #49 — C4: best-algorithm-per-scope tournament (the MAJOR GOAL — best model per scope)
+- **Why.** Every prior comparison was PAIRWISE (candidate vs one baseline). The project's headline
+  question is "which model actually wins on this dataset / series / subspace?" — a family-wide
+  question that needs a leaderboard + multiple-comparison control, not a chain of pairwise runs.
+- **What.** `experiments/tournament.py`: `run_tournament(dataset, subregion, family, …)` /
+  `best_model(...)`. Runs a whole family (default `ridge/rf/mlp/cnn`; svr/transformer opt-in) on a
+  common held-out test set, ranks by R², paired-bootstraps the winner vs every other contender,
+  BH-FDR-corrects that family, and declares the winner SIGNIFICANT only if it beats the **runner-up**
+  by ≥ `min_delta` AND that comparison survives correction (the hardest, most honest bar).
+- **Unit-aware (reuses the C3 fence).** pooled dataset or a single E. coli series → **sequence-unit**
+  paired bootstrap (`paired_bootstrap_r2`); E. coli across series → **series-unit** (`paired_bootstrap_ci`
+  over per-series ΔR²). Recorded `bootstrap_unit` keeps tournament claims from being mixed.
+- **Fair + biology-informed.** Each contender is configured by the C3 prior (conv widths matched to
+  the biology), `feature_scaling='auto'` keeps flat models on fair footing, torch param counts are
+  surfaced (C5 capacity). `tune=True` tunes each contender through the C10 gate → C2 search.
+- **Recorded.** Full leaderboard → `experiments/claims/tournaments.jsonl`; the headline
+  winner-vs-runner-up comparison → the main claim ledger (joins the dashboard + FDR family). Real
+  run: **CNN wins sample_2019** (5'UTR), R² 0.23 at train=800, Δ0.21 over rf, q=0.000, significant.
+- CLI `scripts/run_tournament.py`; `test_tournament.py` (7). 240 passing.
+
 ## #48 — C3: proposing Biologist (architecture priors + C2 region/seeds → RunSpec)
 - **What.** New `agents/biology_architect.py` — the first Council role that PROPOSES (not just
   critiques). `propose(dataset, model)` reads the `DatasetSpec` (modality/organism/seq_len) and emits
