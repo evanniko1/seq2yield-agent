@@ -45,6 +45,17 @@ figure/table/section it becomes).
 
 ---
 
+## Added from the infra audit (docs/INFRA_AUDIT.md) — grounded, non-slop
+| # | Question | Track | Why it matters |
+|---|---|---|---|
+| I-11 | **Label-noise ceiling** per dataset from replicates (dream2022/tewhey) | I / DS | a model can't beat the assay's own reproducibility — the real R² bar |
+| I-12 | **Shuffled-label negative control** returns R²≈0? | I / method | cheap per-run leakage/bug sanity |
+| I-13 | **Multi-seed CNN R² variance** | I / ML | how much of the SOTA gap is seed noise vs capacity? |
+| II-9 | **Debate round** (reviewers see each other) vs independent scoring | II | cheap agentic upgrade; measurable effect |
+| II-10 | **LLM decision reproducibility** across temperature/seed | II | chair stability / determinism |
+| II-11 | **Online credit-assignment** (OpenOPC-style) vs offline ablation | II | do they agree on which roles matter? |
+| M-1 | **Selection-on-test correction** (nested holdout: select on val, report on untouched test) | method | does the tournament winner change? |
+
 ## Notes on framing
 - **Track II is the more novel contribution.** The multi-agent-LLM literature repeatedly finds that
   personas *don't reliably help* — and II-1/II-2 give a concrete, reproducible instance (two of five
