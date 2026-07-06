@@ -44,6 +44,7 @@ class Contender:
     r2: float
     rank: int
     hyperparameters_source: str
+    hyperparameters: dict = field(default_factory=dict)   # the config this contender ran (C7 source)
     n_params: int | None = None
     delta_vs_winner: float | None = None      # winner_r2 − this_r2 (0 for the winner)
     ci: list | None = None                    # paired-bootstrap CI of (winner − this)
@@ -171,12 +172,14 @@ def _rank_and_correct(dataset: str, scored: dict, basis: dict, *, min_delta: flo
             if m in ("cnn", "transformer") else None
         if m == winner:
             board.append(Contender(model=m, r2=round(info["r2"], 4), rank=rank,
-                                   hyperparameters_source=info["source"], n_params=np_,
+                                   hyperparameters_source=info["source"],
+                                   hyperparameters=info["hparams"], n_params=np_,
                                    delta_vs_winner=0.0))
         else:
             md, ci, p, q, rej = qmap[m]
             board.append(Contender(model=m, r2=round(info["r2"], 4), rank=rank,
-                                   hyperparameters_source=info["source"], n_params=np_,
+                                   hyperparameters_source=info["source"],
+                                   hyperparameters=info["hparams"], n_params=np_,
                                    delta_vs_winner=round(scored[winner]["r2"] - info["r2"], 4),
                                    ci=[round(x, 4) for x in ci], p_value=round(p, 4),
                                    q_value=round(q, 4), survives_fdr=rej))

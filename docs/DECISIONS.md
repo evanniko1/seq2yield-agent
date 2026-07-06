@@ -465,6 +465,24 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #52 — C7: config_transfer intervention (does A's winner help B?)
+- **Why.** C5 shows the best hyperparameters can differ across scopes; the natural follow-up is
+  whether a config that WON on one scope still helps on another — "what worked on A, try on B".
+- **What.** `experiments/config_transfer.py`: `transfer(model, source_dataset, target_dataset,
+  source_subregion, target_subregion, config)`. Source config resolves in order: an explicit `config`
+  → the winner of a recorded tournament on the source (`tournaments.jsonl`; C4's `Contender` now
+  stores its config) → a bounded C2 search on the source (under the C10 gate). Evaluation trains the
+  model twice on the **same** target train subsample — once with the transferred config, once with
+  the target's OWN default (the C3 biology prior) — and predicts the **same** held-out target test
+  set, so the paired ΔR² bootstrap is clean. Verdict: `beats_default` / `ties_default` /
+  `worse_than_default` (± min_delta and CI excludes 0). Recorded to the claim ledger with
+  `intervention_type=config_transfer`.
+- **Scope-aware.** Target frames come from the same dispatch as the tournament: whole pooled dataset,
+  a C6 strata subregion (`gc_bin=high`), or a single E. coli series. Bootstrap unit is sequence.
+- Real smoke: an explicit RF config transferred cuperus_2017 → sample_2019 tied the target default
+  (RF knobs barely move that task) — a correct, honest null. CLI `scripts/run_config_transfer.py`;
+  `test_config_transfer.py` (7). 262 passing.
+
 ## #51 — C5: per-series / per-subregion HPO-distribution study (the Nat Comms question)
 - **The question.** The original E. coli benchmark (56 mutational series) never asked whether every
   series prefers the SAME architecture or a different one. C5 answers it: run the search per unit and
