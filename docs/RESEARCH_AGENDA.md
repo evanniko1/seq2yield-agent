@@ -29,7 +29,7 @@ figure/table/section it becomes).
 | I-8 | **uORF generalization**: does a model trained on uORF-free 5'UTRs generalize to uORF-bearing ones? | C6 `has_uorf` + C7 | ⬜ (novel; papers never asked) | Transfer verdict |
 | I-9 | **Which architecture degrades least in the hard expression tail?** | C4 + C6 (expression_quantile) | ⬜ (DREAM surfaced the gap; nobody resolved it per-architecture) | Per-model tail-robustness |
 | I-10 | **Biology-informed filter widths**: does matching kernel to motif scale help per modality? | C3 proposing Biologist | ✅ priors flow to RunSpec; effect-size study pending | Ablation: biology prior vs default |
-| I-14 | **Per-series heterogeneity as a variance component** (ICC): is there a universal optimum or genuine between-series variation? | **mixed_effects** (promoted) | ⬜ promoted (fits the grouped data) | ICC + random-effects table |
+| I-14 | **Per-series heterogeneity as a variance component** (ICC): is there a universal optimum or genuine between-series variation? | **mixed_effects** | ✅ CNN ICC 0.81 / RF 0.83 / MLP 0.81 (p≈0) — REAL between-series structure, model-agnostic | ICC + random-effects table |
 
 ## Track II — the council as the research object (agentic-AI)
 

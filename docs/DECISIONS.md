@@ -465,6 +465,24 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #62 — Mixed-effects / ICC: the grouped E. coli series get their proper estimator
+- **Why (promoted from deferred).** The benchmark is a grouped design (56 mutational series × MC-CV
+  iterations); bootstrapping over series gives a CI but a **random-effects model** answers the
+  flagship Nat Comms question directly — *universal optimum vs per-series heterogeneity*. This was the
+  one deferred item that fits the data's structure (see the ML/DS assessment).
+- **What.** `statistics/mixed_effects.py`: `variance_components(groups, values)` — a dependency-free
+  unbalanced one-way random-effects ANOVA decomposing a per-series metric into BETWEEN- vs
+  WITHIN-series variance, reporting the **ICC** + an F-test of H0 "no between-series variance".
+  `from_metrics(df, model, train_size)` runs it over a runner/registry metrics frame;
+  `mixedlm_random_intercept` is an optional REML wrapper (statsmodels `[stats]` extra) for fixed
+  effects. `scripts/run_mixed_effects.py`.
+- **Real result (full56 baseline, train=2000).** Across ALL model families the per-series R² is
+  strongly structured: **CNN ICC 0.81, RF 0.83, MLP 0.81, all p≈0** — ~80% of the per-series R²
+  variance is genuine *between-series* structure, not iteration noise. So there is **real per-series
+  heterogeneity** (some series are intrinsically more learnable), NOT a universal difficulty — and it
+  is model-agnostic. This is the principled, scalar complement to the C5 bootstrap.
+- `test_mixed_effects.py` (7; REML test skips without statsmodels). 338 passing.
+
 ## #61 — Hardening: G7 calibration · R5 per-role memory · trace-context test isolation
 - **G7 (calibration; last audit gap).** Point R² ignores predictive uncertainty. `calibration.
   residual_interval_coverage` builds a prediction interval from TRAIN residual quantiles and measures
