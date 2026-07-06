@@ -58,12 +58,14 @@ def test_negative_control_ok_threshold():
     assert not C.negative_control_ok(0.20)
 
 
-def test_real_shuffled_label_is_near_zero():
+def test_real_shuffled_label_is_near_zero(require_data):
+    require_data("sample_2019")
     r2 = C.shuffled_label_r2("sample_2019", "rf", train_size=500, seed=0)
     assert abs(r2) < 0.1 and C.negative_control_ok(r2)             # no leakage: shuffled -> ~0
 
 
-def test_real_nested_tournament_has_val_and_test():
+def test_real_nested_tournament_has_val_and_test(require_data):
+    require_data("sample_2019")
     res = T.run_tournament("sample_2019", family=["ridge", "rf"], train_size=500, n_boot=300, seed=0)
     assert res.selection == "nested_val"
     assert all(c.r2_val is not None for c in res.leaderboard)     # every contender selected on val

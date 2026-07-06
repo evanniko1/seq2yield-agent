@@ -97,7 +97,8 @@ def test_per_series_needs_series_subregion(monkeypatch):
 
 
 # ---- real explicit-config smoke (fast rf) ----
-def test_real_transfer_smoke_rf():
+def test_real_transfer_smoke_rf(require_data):
+    require_data("cuperus_2017", "sample_2019")
     r = C.transfer("rf", source_dataset="cuperus_2017", target_dataset="sample_2019",
                    config={"n_estimators": 500, "max_depth": 12}, train_size=350, n_boot=300,
                    record=False)

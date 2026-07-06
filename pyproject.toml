@@ -21,6 +21,7 @@ dependencies = [
 [project.optional-dependencies]
 deep = ["torch"]                       # CNN / MLP / Transformer (Tier 0/1)
 agents = ["anthropic", "httpx"]        # provider clients (MVP: Anthropic + local)
+ui = ["flask"]                         # K5 config app + the read-only progress dashboard
 dev = ["pytest", "ruff", "mypy"]
 
 [build-system]

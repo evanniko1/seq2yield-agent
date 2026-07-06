@@ -88,7 +88,8 @@ def test_record_study_writes_json(tmp_path, monkeypatch):
 
 
 # ---- one small real series search end-to-end ----
-def test_real_series_search_rf_two_units():
+def test_real_series_search_rf_two_units(require_data):
+    require_data("ecoli")
     res = H.run_hpo_distribution("ecoli", "rf", unit_type="series", n_units=2, train_size=250,
                                  min_action="light", gate_kwargs={"deadline_s": 240})
     assert len(res.per_unit) == 2 and res.units == ["1", "2"]

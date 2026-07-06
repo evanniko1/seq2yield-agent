@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install (CPU torch + project)
+        run: |
+          python -m pip install -U pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -e ".[agents,ui,dev]"
+      - name: Lint (advisory)
+        run: ruff check src tests scripts || true
+      - name: Test
+        # The multi-GB datasets are gitignored; the ~5 real-data smoke tests skip via the
+        # `require_data` fixture, so every logic / agentic / methodology test runs on CI.
+        run: pytest -q

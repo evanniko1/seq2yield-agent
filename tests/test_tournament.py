@@ -111,7 +111,8 @@ def test_malformed_subregion_is_rejected():
 
 
 # ---- light real smoke (2 fast models, small train) ----
-def test_real_pooled_smoke_two_models():
+def test_real_pooled_smoke_two_models(require_data):
+    require_data("sample_2019")
     res = T.run_tournament("sample_2019", family=["ridge", "rf"], train_size=400, n_boot=400, seed=0)
     assert res.winner in ("ridge", "rf") and res.n_units > 0
     assert res.leaderboard[0].rank == 1 and res.leaderboard[1].rank == 2
