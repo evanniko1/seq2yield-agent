@@ -73,9 +73,10 @@ _CONTEXT = (
 )
 
 
-def generator_prompt(n: int, prior: str = "", targets=None, open_flags=None) -> Prompt:
+def generator_prompt(n: int, prior: str = "", targets=None, open_flags=None,
+                     directives: str = "") -> Prompt:
     sys = roles.persona("proposal_generator") + "\n\n" + _CONTEXT
-    prior_block = ""
+    prior_block = directives or ""          # human-directed questions go FIRST (highest priority)
     if prior:
         prior_block = ("\n\nALREADY-TESTED comparisons (from research memory) — do NOT "
                        "re-propose these; explore NOVEL model pairs/hypotheses instead:\n"

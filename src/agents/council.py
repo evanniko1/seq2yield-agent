@@ -257,15 +257,35 @@ class Council:
             focus, pi_rationale, pi_who = planner.INTERVENTIONS, "planner disabled", "none"
         targets = planner.rank_targets(prior, focus_types=focus)
         flags = methodology_critic.open_flags(prior)     # K4: surface unresolved methodology flags
+        # Human question injection (mixed-initiative): a human authority may have queued directives.
+        from . import human_directives
+        directives = human_directives.pending()
         # RL-trace: PI focus is a decision (which axes to prioritize given coverage)
         trace.log_event("focus_planning", candidate_actions=planner.INTERVENTIONS,
                         selected_action=focus, policy=f"pi:{pi_who}", reason=pi_rationale,
                         state={"coverage": question_space.summarize(prior)})
         prompt = prompting.generator_prompt(n, prior_summary(prior) if prior else "",
-                                            targets=targets, open_flags=flags)
+                                            targets=targets, open_flags=flags,
+                                            directives=human_directives.as_prompt_block(directives))
         batch, who = self._ask("proposal_generator", prompt, ProposalBatch,
                                temperature=0.6, max_tokens=1800)
         kept, dropped = filter_unsettled(batch.proposals, settled)
+        # force-add structured human directives as MUST-CONSIDER proposals (bypass the novelty
+        # filter — the human chose to ask this) and log the injection.
+        injected = []
+        for d in directives:
+            if not d.get("must_consider"):
+                continue
+            hp = human_directives.to_proposal(d)
+            if hp is not None and proposal_cell_id(hp) not in {proposal_cell_id(k) for k in kept}:
+                kept.insert(0, hp)
+                injected.append(d["id"])
+        if directives:
+            trace.log_event("human_directive", candidate_actions=[d["id"] for d in directives],
+                            selected_action=injected, policy="mixed_initiative",
+                            reason="human-injected question(s) added to the cycle",
+                            state={"n_pending": len(directives), "n_forced": len(injected)})
+            human_directives.mark_consumed([d["id"] for d in directives])
         n_normalized = 0
         for i, p in enumerate(kept):
             p.proposal_id = p.proposal_id or f"H{i+1:03d}"
@@ -277,6 +297,7 @@ class Council:
                              "n_untested": len(question_space.uncovered(prior)),
                              "dropped": dropped, "hypotheses_normalized": n_normalized,
                              "open_methodology_flags": [f.get("id") for f in flags],
+                             "injected_directives": injected,
                              "kept_cells": [proposal_cell_id(p) for p in kept]}
         return kept, who
 
