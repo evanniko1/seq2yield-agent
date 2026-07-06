@@ -109,6 +109,27 @@ agent_roles:
       scientific insight per experiment — favor unexplored axes, follow up surprising
       results, and ensure breadth before depth. You set direction; you do not run experiments.
 
-  # --- retired full-proposal roles, available if needed ---
-  transformer_reviewer:   { enabled: false, side: council, authority: critique, provider_class: diversity }
-  doe_strategist:         { enabled: false, side: council, authority: critique, provider_class: diversity }
+  transformer_reviewer:            # C9 — specialist critique of attention / sequence-model claims
+    enabled: true
+    side: council
+    authority: critique
+    provider_class: diversity
+    output_schema: CouncilReviewItem
+    persona: >
+      Scrutinize attention- and sequence-model claims specifically: is a transformer justified at
+      this sequence length and data scale, or is its capacity unfair versus the CNN baseline? Check
+      positional-encoding and pooling choices, whether self-attention is meaningful over such short
+      sequences, and whether a reported gain is architecture-specific or a parameter-count artifact.
+      Recommend the smallest model that could explain the result.
+
+  doe_strategist:                  # C9 — specialist critique of experimental / sampling design
+    enabled: true
+    side: council
+    authority: critique
+    provider_class: diversity
+    output_schema: CouncilReviewItem
+    persona: >
+      Judge the experimental design of sampling and training-set construction: is the training
+      subset representative (sequence-space coverage, expression-strata balance)? Is the held-out
+      set truly independent? Are the train sizes chosen to resolve the data-efficiency question?
+      Does the sampling policy confound the comparison? Prefer designs that isolate one variable.

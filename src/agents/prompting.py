@@ -172,7 +172,9 @@ def reviewer_prompt(role: str, proposal: dict) -> Prompt:
             "most important concrete fix that would raise your lowest score (be specific to this "
             "proposal — cite the knob, the comparator, or the missing control). Set reject_reason "
             "ONLY if the design is fatally confounded or infeasible (i.e. you scored "
-            "feasibility<=2 or confoundedness<=2 with no salvaging change).\n\n"
+            "feasibility<=2 or confoundedness<=2 with no salvaging change). If your evidence is "
+            "thin or the outcome is genuinely uncertain, say so explicitly in required_changes "
+            "(calibrated confidence beats false certainty) and keep the score near the 3 default.\n\n"
             f"role: {role}\nproposal:\n{compact_json(_select(proposal, _REVIEW_FIELDS), indent=2)}")
     return Prompt(sys, user, "reviewer", TEMPLATE_VERSIONS["reviewer"])
 
