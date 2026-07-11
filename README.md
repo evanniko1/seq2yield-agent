@@ -1,5 +1,7 @@
 # seq2yield-agent
 
+### An Agentic Council for Sequence-to-Expression Modeling: Autonomous, Auditable, Multi-Assay ML Research
+
 A **bounded, auditable, agentic ML-research workflow** that reproduces and extends the
 protein-expression prediction benchmark from:
 
