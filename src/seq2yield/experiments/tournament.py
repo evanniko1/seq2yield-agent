@@ -240,6 +240,9 @@ def run_tournament(dataset: str, *, subregion: str | None = None, family: list[s
     family = list(family or DEFAULT_FAMILY)
     md = _min_delta() if min_delta is None else min_delta
     ds = datasets.spec(dataset)
+    if subregion is not None and ds.structure == "pooled":       # fail fast on a malformed subregion
+        from ..data import strata                                # BEFORE loading any data (CI-safe)
+        strata.parse_subregion(subregion)                        # raises ValueError if not 'stratum=level'
 
     if ds.structure == "per_series" and subregion is None:
         scored_raw, series_ids = _series_unit_family(

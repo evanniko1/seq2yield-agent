@@ -36,7 +36,8 @@ def test_summary_numeric_and_categorical_heterogeneity():
 
 
 # ---- unit enumeration ----
-def test_units_series_and_strata():
+def test_units_series_and_strata(require_data):
+    require_data("ecoli", "sample_2019")                   # loads ecoli splits + sample_2019 strata
     series = H._units("ecoli", "series", 5)
     assert len(series) == 5 and all(s.isdigit() for s in series)
     strata_units = H._units("sample_2019", "gc_bin", 99)

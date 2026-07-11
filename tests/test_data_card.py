@@ -21,6 +21,11 @@ def test_card_computes_distribution_and_strata(monkeypatch):
     seqs = ["".join(rng.choice(bases, 50)) for _ in range(300)]
     df = pd.DataFrame({SEQ_COL: seqs, TARGET_COL: rng.normal(5, 1, 300)})
     monkeypatch.setattr(data_card, "_frame", lambda ds: df)
+    from seq2yield.experiments import pooled_runner
+    from seq2yield.data import strata
+    monkeypatch.setattr(data_card.datasets, "data_present", lambda d: True)   # pass the ready gate (CI)
+    monkeypatch.setattr(pooled_runner, "_frame", lambda ds: df)   # strata edges use this (offline)
+    strata._edges.cache_clear()
     c = data_card.card("sample_2019")
     assert c["n"] == 300 and c["length_uniform_frac"] == 1.0
     assert "mean" in c["target"] and "skew" in c["target"] and "mean" in c["gc"]

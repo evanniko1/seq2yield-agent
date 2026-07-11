@@ -39,7 +39,9 @@ def _fill(node: dict, defs: dict, rng: np.random.Generator, name: str | None = N
         return _fill(opts[0], defs, rng, name) if opts else None
     if "enum" in node:
         enum = node["enum"]
-        if name == "intervention_type" and "model_architecture" in enum:
+        if name in _HINTS and _HINTS[name] in enum:          # honour hints for enums too, so e.g.
+            return _HINTS[name]                              # model_family=cnn / comparator=rf never
+        if name == "intervention_type" and "model_architecture" in enum:   # collide (self-comparison)
             return "model_architecture"
         return enum[int(rng.integers(0, len(enum)))]
     t = node.get("type")
