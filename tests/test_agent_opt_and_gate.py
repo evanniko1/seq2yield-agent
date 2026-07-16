@@ -104,8 +104,10 @@ def test_log_call_is_thread_safe(tmp_path):
 def test_review_proposal_preserves_order_concurrently(monkeypatch):
     import agents.council as C
 
-    reviewers = C.roles.reviewers()
-    assert len(reviewers) >= 2                                            # concurrency is meaningful
+    # roster-independent: fan out over a fixed multi-reviewer list so concurrency is exercised
+    # regardless of the live roster (post-collapse the live roster is a single critic).
+    reviewers = ["modeling_reviewer", "biology_reviewer", "doe_strategist"]
+    monkeypatch.setattr(C.roles, "reviewers", lambda: reviewers)
     monkeypatch.setattr(C.prompting, "reviewer_prompt",
                         lambda r, p, peer_summary="": ("sys", "usr"))
 

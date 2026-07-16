@@ -66,9 +66,9 @@ def test_variants_cover_the_expected_set():
 # ---- roles-as-data override (the live path) ----
 def test_role_config_shrinks_and_restores_the_roster():
     before = set(roles.reviewers())
-    assert "doe_strategist" in before
-    with E.role_config(disabled={"doe_strategist"}):
-        assert "doe_strategist" not in set(roles.reviewers())
+    assert "adversarial_critic" in before                  # the live post-collapse roster
+    with E.role_config(disabled={"adversarial_critic"}):
+        assert "adversarial_critic" not in set(roles.reviewers())
     assert set(roles.reviewers()) == before                # restored after the block
 
 
@@ -98,8 +98,9 @@ def test_live_council_fn_applies_role_config_and_returns_choice(monkeypatch):
     chosen = CE.live_council_fn(sc, ["methodology_reviewer", "biology_reviewer"])
     assert chosen == "B"
     assert "doe_strategist" not in seen["reviewers"]          # roster was ablated during the run
-    assert "methodology_reviewer" in seen["reviewers"]
-    assert set(roles.reviewers()) == set(E.ALL_REVIEWERS) or "doe_strategist" in set(roles.reviewers())
+    assert "methodology_reviewer" in seen["reviewers"]        # force-enabled retired role for the study
+    assert "adversarial_critic" not in seen["reviewers"]      # default critic excluded from the panel
+    assert roles.reviewers() == ["adversarial_critic"]        # restored to the collapsed default after
 
 
 def test_structure_variants_split_by_provider_class():

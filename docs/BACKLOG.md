@@ -165,6 +165,17 @@ quantitative** readout → regression; ④ **DNA/RNA** cis-regulatory or coding 
 - **Align–ATCC microbe genotype→phenotype** — strain phenotyping, not a sequence-oligo assay.
 - **Genomic enhancer tiles >500 nt / STARR-seq fragments** — exceed the length ceiling.
 
+## Exploration follow-ups (insight / discovery layer)
+- **Per-series covariate loader for E. coli** — the dissection's `difficulty_covariate` question
+  ("*why* are the hard series hard?": correlate per-series R² with GC / length / expression regime)
+  does not yet fire for E. coli, because `pooled_runner._frame` only serves pooled datasets and E.
+  coli is `structure: per_series`. Add a per-series covariate builder (GC mean, length CV, expression
+  mean/std per mutational series) so `insight.correlate_difficulty` runs on E. coli too. The pure
+  `correlate_difficulty` function and the pooled path are already done; this is only the per-series
+  data loader. (Recorded 2026-07-16.)
+- **Phase controller** — run cluster-level (per discovered-neighborhood) exploration first, then shift
+  to full-dataset (global) once neighborhood results are in.
+
 ## Suggested ordering
 Rigor first (these gate the validity of any future claim): **C1 → C4 → C5 → C2**, then
 **C6/C7/C3**. In parallel, cheap agentic/context wins: **C10/S5 (keys+prices) → S2 → S4 →

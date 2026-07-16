@@ -12,8 +12,39 @@ agent_roles:
       Generate diverse, controlled experiment proposals at or below the unlocked maturity
       tier. Each must declare comparators, controls, success criteria, and failure modes.
 
-  modeling_reviewer:                 # merges model-arch + transformer + DoE reviewers
+  # --- COUNCIL COLLAPSE (2026-07) --------------------------------------------------------------
+  # Literature (2025-26): role count/structure barely help; a single strong critic under equal
+  # compute matches a multi-reviewer panel, and multi-agent "debate" tends to conformity not signal.
+  # Our own council_eval ablation already shows modeling_reviewer + transformer_reviewer have
+  # false_accept_delta == 0 (they add nothing). So the 5 specialist reviewers below are RETIRED
+  # (enabled:false) — kept for recoverability + the council_eval ablation harness — and replaced by
+  # ONE strong adversarial_critic that folds their rubrics into a single pass.
+  adversarial_critic:
     enabled: true
+    side: council
+    authority: critique
+    provider_class: authority          # intrinsic reasoning strength matters most -> strong model
+    output_schema: CouncilReviewItem
+    persona: >
+      You are the council's single adversarial critic. Default to caution; try hard to REJECT a
+      proposal before you endorse it. Work through this rubric and score each dimension 1-5 (use the
+      full range; 3 = neutral):
+      (1) METHODOLOGY (skeptic): confounds, metric goalpost-shifts, train/test or split leakage, seed
+      misuse, missing controls/ablations, reproducibility gaps.
+      (2) MODELING / CAPACITY: parameter-count fairness vs the comparator, overfitting risk in low
+      data, whether a gain is method-specific or a capacity artifact; prefer the smallest model that
+      could explain the result.
+      (3) EXPERIMENTAL DESIGN (DoE): training-subset representativeness (sequence-space coverage,
+      expression-strata balance), held-out independence, whether the sampling policy confounds the
+      comparison; prefer designs that isolate one variable.
+      (4) BIOLOGY: sequence-length handling, per-series / neighborhood structure, and whether any
+      protein-LM / translation step is biologically meaningful at this length and data scale.
+      (5) SEQUENCE-MODEL SPECIFICS: is attention / a transformer justified at this length and data
+      scale, or is its capacity unfair vs the CNN baseline; check positional-encoding and pooling.
+      Give ONE concrete, highest-value fix. You critique; the harness decides with bootstrap + FDR.
+
+  modeling_reviewer:                 # RETIRED (council collapse) — folded into adversarial_critic
+    enabled: false
     side: council
     authority: critique
     provider_class: diversity
@@ -23,8 +54,8 @@ agent_roles:
       adequacy, overfitting risk in low data, whether a gain is method-specific or an
       artifact of capacity.
 
-  methodology_reviewer:              # merges statistical reviewer + reproducibility skeptic
-    enabled: true
+  methodology_reviewer:              # RETIRED (council collapse) — folded into adversarial_critic
+    enabled: false
     side: council
     authority: critique
     provider_class: authority
@@ -33,8 +64,8 @@ agent_roles:
       Be the skeptic. Check for confounds, metric goalpost-shifts, split leakage, seed
       misuse, missing controls, and reproducibility gaps. Default to caution.
 
-  biology_reviewer:
-    enabled: true
+  biology_reviewer:                  # RETIRED (council collapse) — folded into adversarial_critic
+    enabled: false
     side: council
     authority: critique
     provider_class: authority
@@ -109,8 +140,8 @@ agent_roles:
       scientific insight per experiment — favor unexplored axes, follow up surprising
       results, and ensure breadth before depth. You set direction; you do not run experiments.
 
-  transformer_reviewer:            # C9 — specialist critique of attention / sequence-model claims
-    enabled: true
+  transformer_reviewer:            # RETIRED (council collapse) — folded into adversarial_critic (§5)
+    enabled: false
     side: council
     authority: critique
     provider_class: diversity
@@ -122,8 +153,8 @@ agent_roles:
       sequences, and whether a reported gain is architecture-specific or a parameter-count artifact.
       Recommend the smallest model that could explain the result.
 
-  doe_strategist:                  # C9 — specialist critique of experimental / sampling design
-    enabled: true
+  doe_strategist:                  # RETIRED (council collapse) — folded into adversarial_critic (§3)
+    enabled: false
     side: council
     authority: critique
     provider_class: diversity

@@ -20,7 +20,7 @@ false_accept (picked a flawed one), missed_value (value gap to the best sound pr
 from __future__ import annotations
 
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from statistics import mean
 
 from . import roles
@@ -189,9 +189,9 @@ def attribute_contributions(results: dict) -> dict:
 
 # ---------------------------------------------------------------- live adapter (real council)
 @contextmanager
-def role_config(disabled=None, persona_overrides=None):
+def role_config(disabled=None, persona_overrides=None, enabled=None):
     """Apply a roles-as-data ablation for the duration of a block, then restore."""
-    roles.configure(disabled=disabled, persona_overrides=persona_overrides)
+    roles.configure(disabled=disabled, persona_overrides=persona_overrides, enabled=enabled)
     try:
         yield
     finally:
@@ -213,8 +213,10 @@ def live_council_fn(scenario: Scenario, enabled_reviewers: list[str], *,
     providers — call only from `--live`. The SAME trap battery + metric layer as the offline sim, so
     this measures whether real reviewer LLMs actually catch the flaws each role guards."""
     from .council import Council
-    disabled = set(ALL_REVIEWERS) - set(enabled_reviewers)
-    with role_config(disabled=disabled):
+    # Study exactly the requested specialist panel: force-enable it, and disable the rest of the
+    # specialists AND the post-collapse adversarial_critic (which is on by default).
+    disabled = (set(ALL_REVIEWERS) - set(enabled_reviewers)) | {"adversarial_critic"}
+    with role_config(disabled=disabled, enabled=set(enabled_reviewers)):
         council = Council(use_planner=False, allow_local_fallback=allow_local_fallback)
         cps = [_to_council_proposal(p) for p in scenario.proposals]
         reviews = council.review(cps)
