@@ -231,6 +231,16 @@ def _render(msg: str = "", verify_rows: list[tuple[str, bool, str]] | None = Non
     # --- Step 2: API keys (keychain) -------------------------------------------------------------
     b.append('<div class=step><h2><span class=num>2</span> API keys '
              '<span class=hint style="display:inline;font-weight:400">→ OS keychain</span></h2>')
+    env_keys = secrets.dotenv_keys() if kr_ok else []
+    if env_keys:
+        b.append('<div class="banner warn" style="flex-direction:column;align-items:stretch">'
+                 f'<div>📄 Found <b>{len(env_keys)}</b> API key(s) in a plaintext <code>.env</code>: '
+                 f'<span class=mono>{", ".join(env_keys)}</span>. Move them into the keychain and '
+                 'retire the file — keys are verified in the keychain before <code>.env</code> is '
+                 'touched.</div>'
+                 '<form method=post action=/migrate_env style="margin-top:.55em">'
+                 '<button class=primary type=submit>Migrate .env → keychain &amp; remove file</button>'
+                 '</form></div>')
     if mode == "local":
         b.append('<div class=hint>Local mode needs no API keys. Add them anyway if you plan to '
                  'switch to hybrid/api later.</div>')
@@ -341,6 +351,23 @@ def delete_key():
         os.environ.pop(env, None)
         return _page(_render(f'<div class="banner ok">✓ Removed <b>{env}</b> from the keychain.</div>'))
     return _page(_render('<div class="banner warn">Unknown key name.</div>'))
+
+
+@app.post("/migrate_env")
+def migrate_env():
+    rep = secrets.migrate_dotenv()
+    if not rep["migrated"]:
+        why = rep.get("error", "nothing to migrate")
+        return _page(_render(f'<div class="banner warn">Nothing migrated: {why}.</div>'))
+    parts = [f'moved <b>{", ".join(rep["migrated"])}</b> into the keychain']
+    if rep["env_removed"]:
+        parts.append('removed the now-empty <code>.env</code>')
+    elif rep["env_updated"]:
+        parts.append('stripped those keys from <code>.env</code> (other lines kept)')
+    if rep["failed"]:
+        parts.append(f'<b>failed</b> (left in .env): {", ".join(rep["failed"])}')
+    cls = "warn" if rep["failed"] else "ok"
+    return _page(_render(f'<div class="banner {cls}">✓ ' + "; ".join(parts) + ".</div>"))
 
 
 @app.post("/local_model")

@@ -64,7 +64,7 @@ stopping rule; `scripts/show_coverage.py` prints the frontier.
 
 | Console | Run | What it does |
 |---|---|---|
-| **Onboarding** | `python scripts/run_onboarding.py` → :5058 | Boot the council: pick a provider mode, **store API keys in the OS keychain (BYOK)**, set the local model, test connectivity, launch a cycle. |
+| **Onboarding** | `python scripts/run_onboarding.py` → :5058 | Boot the council: pick a provider mode, **store API keys in the OS keychain (BYOK)** (or one-click **migrate an existing `.env`** into the keychain and retire the plaintext file), set the local model, test connectivity, launch a cycle. |
 | **Operator** | `python scripts/config_app.py` → :5001 | Edit budgets / unlocked tier / selection bonuses; set the C9 approver; launch a cycle. |
 | **Dashboard** | `python scripts/run_dashboard.py` → :5057 | Read-only scoreboard, per-query agent trails, datasets, cost. |
 

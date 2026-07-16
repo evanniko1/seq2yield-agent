@@ -23,6 +23,10 @@ untouched.
 from __future__ import annotations
 
 import os
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+DOTENV_PATH = ROOT / ".env"
 
 SERVICE = "seq2yield-agent"
 
@@ -145,3 +149,84 @@ def _mask(secret: str) -> str:
     if len(s) <= 4:
         return "•" * len(s)
     return "••••…" + s[-4:]
+
+
+def _clean_val(raw: str) -> str:
+    """Strip whitespace and surrounding quotes from a .env value."""
+    return raw.strip().strip('"').strip("'")
+
+
+def dotenv_keys(path: Path = DOTENV_PATH, names: tuple[str, ...] = MANAGED_ENV_VARS) -> list[str]:
+    """Managed key NAMES physically present (with a non-empty value) in the .env file. Names only —
+    never returns the values. Drives the 'migrate' prompt in the onboarding UI."""
+    if not path.exists():
+        return []
+    out: list[str] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        s = line.strip()
+        if not s or s.startswith("#") or "=" not in s:
+            continue
+        key, val = s.split("=", 1)
+        if key.strip() in names and _clean_val(val):
+            out.append(key.strip())
+    return out
+
+
+def migrate_dotenv(path: Path = DOTENV_PATH,
+                   names: tuple[str, ...] = MANAGED_ENV_VARS) -> dict:
+    """Move managed API keys from a plaintext .env into the OS keychain, then retire the plaintext.
+
+    Safe by construction: each key is stored AND read back from the keychain before its line is
+    removed from the file — a failed write never loses a key (that key stays in .env, reported under
+    'failed'). After stripping the migrated lines, the file is deleted iff nothing but blanks/comments
+    remains; otherwise the non-key lines are preserved. Returns a report (never the secret values):
+
+        {available, migrated:[...], failed:[...], env_updated:bool, env_removed:bool, error?:str}
+    """
+    report: dict = {"available": available(), "migrated": [], "failed": [],
+                    "env_updated": False, "env_removed": False}
+    if not available():
+        report["error"] = "no OS keychain backend available"
+        return report
+    if not path.exists():
+        report["error"] = "no .env file found"
+        return report
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    found: dict[str, tuple[int, str]] = {}          # name -> (line index, value)
+    for i, line in enumerate(lines):
+        s = line.strip()
+        if not s or s.startswith("#") or "=" not in s:
+            continue
+        key, val = s.split("=", 1)
+        key, val = key.strip(), _clean_val(val)
+        if key in names and val:
+            found[key] = (i, val)
+    if not found:
+        report["error"] = "no managed API keys found in .env"
+        return report
+
+    migrated_idx: list[int] = []
+    for key, (idx, val) in found.items():
+        try:
+            set_secret(key, val)
+            if get(key) == val:                     # verify the write stuck before we strip the line
+                report["migrated"].append(key)
+                migrated_idx.append(idx)
+            else:
+                report["failed"].append(key)
+        except Exception:                           # noqa: BLE001 — any backend error -> keep in .env
+            report["failed"].append(key)
+
+    if migrated_idx:
+        drop = set(migrated_idx)
+        kept = [ln for i, ln in enumerate(lines) if i not in drop]
+        meaningful = [ln for ln in kept
+                      if ln.strip() and not ln.strip().startswith("#") and "=" in ln]
+        if meaningful:
+            path.write_text("\n".join(kept).rstrip("\n") + "\n", encoding="utf-8")
+            report["env_updated"] = True
+        else:
+            path.unlink()                           # nothing but blanks/comments left -> retire it
+            report["env_removed"] = True
+    return report

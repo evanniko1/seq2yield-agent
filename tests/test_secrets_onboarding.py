@@ -87,6 +87,49 @@ def test_set_secret_rejects_empty(monkeypatch):
         secrets.set_secret("ANTHROPIC_API_KEY", "   ")
 
 
+# ------------------------------------------------------------------- .env -> keychain migration ---
+def test_dotenv_keys_lists_only_present_managed_keys(tmp_path):
+    env = tmp_path / ".env"
+    env.write_text("ANTHROPIC_API_KEY=x\n# OPENAI_API_KEY=commented-out\nUNRELATED=bar\n",
+                   encoding="utf-8")
+    assert secrets.dotenv_keys(path=env) == ["ANTHROPIC_API_KEY"]
+
+
+def test_migrate_dotenv_moves_keys_and_retires_empty_file(monkeypatch, tmp_path):
+    fake = _FakeKeyring()
+    monkeypatch.setattr(secrets, "_keyring", lambda: fake)
+    env = tmp_path / ".env"
+    env.write_text('ANTHROPIC_API_KEY=sk-ant-123\nOPENAI_API_KEY="sk-oai-456"\n', encoding="utf-8")
+    rep = secrets.migrate_dotenv(path=env)
+    assert set(rep["migrated"]) == {"ANTHROPIC_API_KEY", "OPENAI_API_KEY"} and not rep["failed"]
+    assert rep["env_removed"] is True and not env.exists()          # only keys were in it -> removed
+    assert fake.get_password(secrets.SERVICE, "ANTHROPIC_API_KEY") == "sk-ant-123"
+    assert fake.get_password(secrets.SERVICE, "OPENAI_API_KEY") == "sk-oai-456"
+
+
+def test_migrate_dotenv_preserves_nonkey_lines(monkeypatch, tmp_path):
+    fake = _FakeKeyring()
+    monkeypatch.setattr(secrets, "_keyring", lambda: fake)
+    env = tmp_path / ".env"
+    env.write_text("ANTHROPIC_API_KEY=sk-ant-123\nUNRELATED=keepme\n", encoding="utf-8")
+    rep = secrets.migrate_dotenv(path=env)
+    assert rep["migrated"] == ["ANTHROPIC_API_KEY"] and rep["env_updated"] is True and env.exists()
+    txt = env.read_text(encoding="utf-8")
+    assert "ANTHROPIC_API_KEY" not in txt and "UNRELATED=keepme" in txt
+
+
+def test_migrate_dotenv_keeps_key_when_write_cannot_be_verified(monkeypatch, tmp_path):
+    class _LossyKeyring(_FakeKeyring):
+        def set_password(self, service, name, value):   # pretend to store, but nothing persists
+            pass
+    monkeypatch.setattr(secrets, "_keyring", lambda: _LossyKeyring())
+    env = tmp_path / ".env"
+    env.write_text("ANTHROPIC_API_KEY=sk-ant-123\n", encoding="utf-8")
+    rep = secrets.migrate_dotenv(path=env)
+    assert rep["migrated"] == [] and rep["failed"] == ["ANTHROPIC_API_KEY"]
+    assert env.exists() and "ANTHROPIC_API_KEY=sk-ant-123" in env.read_text(encoding="utf-8")
+
+
 # ------------------------------------------------------------------------------- onboarding app ---
 def _load_onboarding():
     spec = importlib.util.spec_from_file_location("run_onboarding", ROOT / "scripts/run_onboarding.py")
