@@ -33,3 +33,20 @@ def test_status_endpoint_reports_every_app():
     js = m.app.test_client().get("/status").get_json()
     assert set(js.keys()) == {a["id"] for a in m.APPS}
     assert all(isinstance(v, bool) for v in js.values())
+
+
+def test_signal_endpoint_returns_a_stable_fingerprint():
+    m = _load_hub()
+    c = m.app.test_client()
+    fp1 = c.get("/signal").get_json()["fp"]
+    assert isinstance(fp1, str) and len(fp1) == 32                    # md5 hex
+    assert c.get("/signal").get_json()["fp"] == fp1                  # stable when nothing changed
+
+
+def test_only_the_dashboard_tab_carries_the_new_badge():
+    m = _load_hub()
+    html = m.app.test_client().get("/").data.decode("utf-8", "replace")
+    assert html.count("badge data-badge") == 1                       # exactly one badge...
+    # ...and it sits on the dashboard tab button
+    dash_btn = html.split('data-tab=dashboard')[1].split("</button>")[0]
+    assert "badge data-badge" in dash_btn

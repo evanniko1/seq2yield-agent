@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 import yaml
-from flask import Flask, redirect, request
+from flask import Flask, request
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -63,14 +63,74 @@ def _status():
     }
 
 
-PAGE = """<!doctype html><meta charset=utf-8><title>seq2yield operator</title>
-<style>body{{font:14px system-ui;max-width:900px;margin:2rem auto;color:#222}}
-h1{{font-size:20px}} h2{{font-size:15px;margin-top:1.6rem;border-bottom:1px solid #eee}}
-input{{width:90px}} .row{{margin:.3rem 0}} .chip{{background:#eef;border-radius:10px;padding:1px 8px;margin:2px;display:inline-block}}
-.sev-high{{background:#fdd}} .sev-medium{{background:#fe8}} .sev-low{{background:#efe}}
-button{{padding:.4rem .8rem;margin-right:.5rem}} .ok{{color:#080}} table{{border-collapse:collapse;width:100%}}
-td,th{{border-bottom:1px solid #eee;padding:3px 6px;text-align:left;font-size:13px}}</style>
-<h1>seq2yield — operator console <small style=color:#888>(K5)</small></h1>
+_SHELL = """<!doctype html><meta charset=utf-8><title>seq2yield · operator</title>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<style>
+:root{
+  --paper:#F5F3EE;--paper-2:#FAF9F5;--card:#FFFFFF;
+  --ink:#22201C;--ink-2:#6B675F;--ink-3:#9C978C;--line:#E7E3DA;--line-2:#EFEDE6;
+  --accent:#2C8C7C;--accent-ink:#1F6E62;--accent-tint:#E1F0EC;
+  --ok:#3F7E4C;--ok-tint:#E4F0E6;--no:#B0463B;--no-tint:#F6E2DE;--warn-tint:#F6EEDD;--warn-ink:#8A6D2F;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,ui-serif,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+  --shadow:0 1px 2px rgba(30,28,24,.05),0 8px 22px rgba(30,28,24,.05);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){
+  --paper:#1A1917;--paper-2:#211F1D;--card:#252320;
+  --ink:#ECE8E0;--ink-2:#A8A299;--ink-3:#787269;--line:#33302B;--line-2:#2C2A26;
+  --accent:#5FC7B4;--accent-ink:#7FD6C6;--accent-tint:#1E2E2A;
+  --ok:#6FBF7E;--ok-tint:#182E1D;--no:#E08A7F;--no-tint:#331B18;--warn-tint:#2E2717;--warn-ink:#D9B25F;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 26px rgba(0,0,0,.3);
+}}
+:root[data-theme="dark"]{
+  --paper:#1A1917;--paper-2:#211F1D;--card:#252320;
+  --ink:#ECE8E0;--ink-2:#A8A299;--ink-3:#787269;--line:#33302B;--line-2:#2C2A26;
+  --accent:#5FC7B4;--accent-ink:#7FD6C6;--accent-tint:#1E2E2A;
+  --ok:#6FBF7E;--ok-tint:#182E1D;--no:#E08A7F;--no-tint:#331B18;--warn-tint:#2E2717;--warn-ink:#D9B25F;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 26px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+body{font-family:var(--sans);font-size:14.5px;line-height:1.55;margin:0;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased}
+header{display:flex;align-items:center;gap:12px;background:var(--paper-2);border-bottom:1px solid var(--line);padding:11px 22px;position:sticky;top:0;z-index:5}
+.brand{display:flex;align-items:center;gap:9px}
+.brand-mark{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:12px;background:radial-gradient(120% 120% at 30% 20%,#57C3B1,var(--accent));box-shadow:var(--shadow)}
+.brand b{font-family:var(--serif);font-size:18px;font-weight:600}
+.hlabel{color:var(--ink-3);font-size:13px}
+.spacer{margin-left:auto}
+.theme-btn{border:1px solid var(--line);background:var(--card);color:var(--ink-2);border-radius:20px;padding:5px 12px;font:inherit;font-size:12.5px;cursor:pointer}
+.theme-btn:hover{border-color:var(--accent);color:var(--accent-ink)}
+main{padding:22px 26px;max-width:900px;margin:0 auto}
+h1{font-family:var(--serif);font-size:23px;font-weight:600;margin:.1em 0 .4em}
+h1 .k5{font-family:var(--sans);font-size:12px;color:var(--ink-3);font-weight:600}
+h2{font-family:var(--serif);font-size:15.5px;font-weight:600;color:var(--ink-2);margin:1.7em 0 .5em;padding-bottom:.25em;border-bottom:1px solid var(--line)}
+.row{margin:.45rem 0}
+input{width:90px;padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:var(--paper-2);color:var(--ink);font:inherit;font-size:13px}
+input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-tint)}
+button{padding:7px 13px;margin-right:.5rem;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:9px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:.12s}
+button:hover{border-color:var(--accent);color:var(--accent-ink)}
+.ok{color:var(--ok);font-weight:600}
+.chip{background:var(--accent-tint);color:var(--accent-ink);border-radius:20px;padding:2px 9px;margin:2px;display:inline-block;font-size:12px;font-weight:600}
+.sev-high{background:var(--no-tint);color:var(--no)} .sev-medium{background:var(--warn-tint);color:var(--warn-ink)} .sev-low{background:var(--ok-tint);color:var(--ok)}
+table{border-collapse:separate;border-spacing:0;width:100%;margin:.5em 0;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+td,th{border-bottom:1px solid var(--line);padding:8px 12px;text-align:left;font-size:13px}
+tr:last-child td{border-bottom:none}
+th{color:var(--ink-3);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em;background:var(--paper-2)}
+b{color:var(--ink)}
+</style>
+<header>
+ <span class=brand><span class=brand-mark>s2</span><b>seq2yield</b></span>
+ <span class=hlabel>operator</span>
+ <span class=spacer></span>
+ <button class=theme-btn id=themebtn onclick="toggleTheme()">theme</button>
+</header><main>__BODY__</main>
+<script>
+function applyTheme(t){document.documentElement.setAttribute('data-theme',t);localStorage.setItem('s2theme',t);var b=document.getElementById('themebtn');if(b)b.textContent=(t==='dark'?'\\u2600 light':'\\u263e dark')}
+function toggleTheme(){var cur=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');applyTheme(cur==='dark'?'light':'dark')}
+(function(){var s=localStorage.getItem('s2theme');if(s){applyTheme(s)}else{var d=matchMedia('(prefers-color-scheme:dark)').matches;var b=document.getElementById('themebtn');if(b)b.textContent=(d?'\\u2600 light':'\\u263e dark')}})();
+</script>"""
+
+
+PAGE = """<h1>Operator console <span class=k5>K5</span></h1>
 {msg}
 <form method=post action=/save>
 <h2>Selection bonuses (chair exploration knob)</h2>{bonuses}
@@ -103,12 +163,13 @@ def _render(msg=""):
                         for f in st["flags"]) or "<i>none</i>"
     rows = "".join(f"<tr><td>{r.get('run_id','')[:34]}</td><td>{r.get('dataset','ecoli')}</td>"
                    f"<td>{r.get('status')}</td><td>{r.get('mean_delta')}</td></tr>" for r in st["recent"])
-    return PAGE.format(
+    body = PAGE.format(
         msg=msg, bonuses=bhtml, cost=caps["max_total_cost_usd"], tokens=caps["max_total_tokens"],
         calls=caps["max_calls"], tier=tier, approver=st["approver"],
         ds_ready=", ".join(st["datasets_ready"]), ds_all=", ".join(st["datasets_all"]),
         spend=st["cost"]["total_cost_usd"], ncalls=st["cost"]["n_calls"],
         ntok=st["cost"]["total_tokens"], flagchips=flagchips, rows=rows)
+    return _SHELL.replace("__BODY__", body)
 
 
 @app.get("/")

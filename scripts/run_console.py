@@ -85,6 +85,28 @@ def status():
     return jsonify({a["id"]: _up(a["port"]) for a in APPS})
 
 
+# Files a council run appends to as it works — their combined size+mtime is a cheap "something
+# landed" fingerprint that lets the hub flag the Dashboard tab when you're looking elsewhere.
+_SIGNAL_FILES = (
+    "experiments/claims/registry.jsonl",
+    "experiments/claims/tournaments.jsonl",
+    "reports/model_calls.jsonl",
+    "reports/decision_events.jsonl",
+)
+
+
+@app.get("/signal")
+def signal():
+    import hashlib
+    h = hashlib.md5()
+    for rel in _SIGNAL_FILES:
+        p = ROOT / rel
+        if p.exists():
+            st = p.stat()
+            h.update(f"{rel}:{st.st_size}:{int(st.st_mtime)}".encode())
+    return jsonify({"fp": h.hexdigest()})
+
+
 _SHELL = """<!doctype html><meta charset=utf-8><title>seq2yield · console</title>
 <meta name=viewport content="width=device-width,initial-scale=1">
 <style>
@@ -121,6 +143,9 @@ header{display:flex;align-items:center;gap:6px;background:var(--paper-2);border-
 .tab.active{background:var(--card);border-color:var(--line);color:var(--ink);box-shadow:var(--shadow)}
 .tab .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-3);flex:none}
 .tab .dot.up{background:var(--ok)} .tab .dot.down{background:var(--no)}
+.tab .badge{display:none;align-items:center;gap:4px;margin-left:4px;font-size:10.5px;font-weight:700;color:#fff;background:var(--accent);border-radius:20px;padding:1px 7px}
+.tab .badge.show{display:inline-flex;animation:s2pulse 1.6s ease-in-out infinite}
+@keyframes s2pulse{0%,100%{opacity:1}50%{opacity:.45}}
 .spacer{margin-left:auto}
 .theme-btn{border:1px solid var(--line);background:var(--card);color:var(--ink-2);border-radius:20px;padding:5px 12px;font:inherit;font-size:12.5px;cursor:pointer}
 .theme-btn:hover{border-color:var(--accent);color:var(--accent-ink)}
@@ -172,7 +197,23 @@ function pick(id){
    var on=f.dataset.tab===id; f.classList.toggle('show',on);
    if(on&&!f.src){f.src=f.dataset.src;}   // lazy-load the app the first time its tab is opened
  });
+ if(id==='dashboard'){var b=document.querySelector('.badge[data-badge]'); if(b)b.classList.remove('show');}
 }
+// Light the Dashboard tab's "new" badge when council artifacts change while you're on another tab.
+var _lastFp=null;
+function checkSignal(){
+ fetch('/signal',{cache:'no-store'}).then(function(r){return r.json()}).then(function(s){
+  if(_lastFp===null){_lastFp=s.fp;return;}          // first sample: establish a baseline, no badge
+  if(s.fp!==_lastFp){
+   _lastFp=s.fp;
+   var active=document.querySelector('.tab.active');
+   if(!active||active.dataset.tab!=='dashboard'){
+    var b=document.querySelector('.badge[data-badge]'); if(b)b.classList.add('show');
+   }
+  }
+ }).catch(function(){});
+}
+setInterval(checkSignal,4000); checkSignal();
 function refreshStatus(){
  fetch('/status',{cache:'no-store'}).then(function(r){return r.json()}).then(function(s){
   document.querySelectorAll('.tab[data-tab]').forEach(function(t){
@@ -193,9 +234,10 @@ def _render() -> str:
     tabs, cards, frames = [], [], []
     for a in APPS:
         url = f"http://127.0.0.1:{a['port']}/"
+        badge = ' <span class=badge data-badge>new</span>' if a["id"] == "dashboard" else ""
         tabs.append(
             f'<button class=tab data-tab={a["id"]} onclick="pick(\'{a["id"]}\')">'
-            f'<span class=dot></span>{a["emoji"]} {a["name"]}</button>')
+            f'<span class=dot></span>{a["emoji"]} {a["name"]}{badge}</button>')
         cards.append(
             f'<div class=hcard data-tab={a["id"]} onclick="pick(\'{a["id"]}\')">'
             f'<span class=ico>{a["emoji"]}</span><div style="flex:1">'
