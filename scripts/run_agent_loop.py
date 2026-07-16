@@ -28,7 +28,7 @@ from datetime import datetime, timezone  # noqa: E402
 
 import pandas as pd  # noqa: E402
 
-from agents import memory, methodology_critic, ml_engineer, postmortem, question_space, trace  # noqa: E402
+from agents import memory, methodology_critic, ml_engineer, mode_policy, postmortem, question_space, trace  # noqa: E402
 from agents.council import Council  # noqa: E402
 from agents.patch_reviewer import review as review_patch  # noqa: E402
 from orchestration import approvals, execution_harness, patch_manager  # noqa: E402
@@ -114,7 +114,8 @@ def _data_efficiency_curve(spec, run_dir) -> list:
     return curve
 
 
-def cycle(fb: bool, n_proposals: int = 4, approver: str | None = None, fast: bool = False) -> dict:
+def cycle(fb: bool, n_proposals: int = 4, approver: str | None = None, fast: bool = False,
+          auto: bool = False) -> dict:
     """One full agentic cycle. Returns a summary dict (status / cell_id / revisit / run_id).
 
     approver: name of the human who has pre-authorized conditional-protected edits for this run
@@ -124,6 +125,9 @@ def cycle(fb: bool, n_proposals: int = 4, approver: str | None = None, fast: boo
     fast: EXPLORATORY triage cycle — small sweep, and the test gate is skipped on no-patch axes.
     Its verdict is PROVISIONAL: it is recorded to memory for visibility (tagged provisional) but is
     NEVER written to the claim registry and never settles a coverage cell. Use full cycles for claims.
+
+    auto: let the deterministic mode_policy decide fast-vs-full per cycle (overrides `fast`), logged
+    to the RL-trace. Safe to delegate because the claim firewall makes the choice low-stakes.
     """
     # RL-trace: one trajectory id spans the WHOLE cycle (deliberation + execution + postmortem)
     tid = trace.new_trajectory_id()
@@ -144,7 +148,22 @@ def cycle(fb: bool, n_proposals: int = 4, approver: str | None = None, fast: boo
         proposal["comparator_model"], proposal.get("feature_set", "one_hot"),
         proposal.get("sampling_policy", "random"), proposal.get("scope", "global"))
     trace.set_context(tid, task_id=cid)              # RL-trace: now the task (cell) is known
-    cov = question_space.coverage(memory.load())
+    records = memory.load()
+    cov = question_space.coverage(records)
+    # --auto: the deterministic policy chooses fast (cheap probe) vs full (confirm) for THIS
+    # cell/dataset, given coverage + phase + prior provisional signal + budget. Logged to the trace.
+    if auto:
+        from orchestration import budget as _budget
+        caps, _, _ = _budget.load_config()
+        spend = _budget.summarize(_budget.load_calls())["total_cost_usd"]
+        budget_tight = spend >= 0.7 * caps["max_total_cost_usd"]
+        uncovered_frac = sum(1 for c in cov.values() if c["status"] == "untested") / max(1, len(cov))
+        mode, reason = mode_policy.decide(cid, proposal.get("dataset", "ecoli"), records,
+                                          budget_tight=budget_tight, uncovered_frac=uncovered_frac)
+        fast = (mode == "fast")
+        trace.log_event("mode_decision", candidate_actions=["fast", "full"], selected_action=mode,
+                        policy="mode_policy_v1", reason=reason)
+        print(f"  AUTO MODE: {mode} — {reason}")
     revisit = cov.get(cid, {}).get("status") == "inconclusive"
     if revisit:
         print(f"  REVISIT: cell {cid} is inconclusive -> escalating statistical power")
@@ -338,9 +357,12 @@ def main() -> int:
                          "test gate on no-patch axes, and mark the verdict PROVISIONAL — it is never "
                          "written as a durable claim and never settles a coverage cell. Use full "
                          "cycles (default) for claims.")
+    ap.add_argument("--auto", action="store_true",
+                    help="let the agent decide fast-vs-full per cycle via the deterministic "
+                         "mode_policy (overrides --fast); the choice is logged to the RL-trace.")
     args = ap.parse_args()
     cycle(args.allow_local_fallback, n_proposals=args.n, approver=args.approve_conditional,
-          fast=args.fast)
+          fast=args.fast, auto=args.auto)
     return 0
 
 
