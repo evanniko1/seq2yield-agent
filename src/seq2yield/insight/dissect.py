@@ -217,26 +217,47 @@ def dissect_metrics(df: pd.DataFrame, dataset: str = "unknown",
     return sorted(qs, key=lambda q: q.priority, reverse=True)
 
 
+def _covariate_frame(dataset: str):
+    """Raw (series, Sequence, Protein) frame keyed by SERIES_COL, for BOTH structures:
+    per-series datasets (E. coli) read the split working set; pooled datasets use the pooled frame."""
+    from ..data import datasets
+    from ..data.cleaning import SEQ_COL, SERIES_COL, TARGET_COL
+    ds = datasets.spec(dataset) if datasets.exists(dataset) else None
+    structure = ds.structure if ds else ("pooled" if dataset == "yeast" else "per_series")
+    if structure == "per_series":                     # E. coli: all series' training rows
+        from ..data.loaders import load_split_csv
+        from ..data.splits import load_manifest
+        m = load_manifest(ROOT / "data/splits")
+        it = list(m["iterations"])[0]
+        frame = load_split_csv(m["iterations"][it]["working_set"]["path"])
+    else:
+        from ..experiments import pooled_runner
+        frame = pooled_runner._frame(dataset)
+    cols = [c for c in (SERIES_COL, SEQ_COL, TARGET_COL) if c in frame.columns]
+    return frame[cols] if SERIES_COL in cols else None
+
+
 def _series_covariates(dataset: str):
-    """Per-series covariates (gc mean, length CV, expression mean/std) from the raw dataset, or None
-    when the data isn't present. Best-effort: any failure returns None so the pure dissections still
-    run. (The covariate loader is intentionally defensive — the harness never depends on it.)"""
+    """Per-series covariates (gc mean, length CV, expression mean/std) keyed by the SAME series id as
+    the baseline metrics — so `correlate_difficulty` can answer 'why are the hard series hard?'.
+    Best-effort: any failure returns None so the pure dissections still run (the harness never
+    depends on it). Works for E. coli (natural mutational series) and pooled datasets with groups."""
     try:
         from ..data import datasets
         if not datasets.data_present(dataset):
             return None
-        from ..data.cleaning import SEQ_COL, TARGET_COL
-        from ..experiments import pooled_runner
-        frame = pooled_runner._frame(dataset)
-        if "series" not in frame.columns:
+        from ..data.cleaning import SEQ_COL, SERIES_COL, TARGET_COL
+        frame = _covariate_frame(dataset)
+        if frame is None or SERIES_COL not in frame.columns:
             return None
         rows = {}
-        for sid, g in frame.groupby("series"):
+        for sid, g in frame.groupby(SERIES_COL):
             seqs = g[SEQ_COL].astype(str)
             gc = seqs.apply(lambda s: (s.count("G") + s.count("C")) / max(1, len(s))).mean()
             lens = seqs.str.len()
             y = pd.to_numeric(g[TARGET_COL], errors="coerce")
-            rows[sid] = {"gc": float(gc),
+            key = int(sid) if str(sid).lstrip("-").isdigit() else sid
+            rows[key] = {"gc": float(gc),
                          "length_cv": float(lens.std() / lens.mean()) if lens.mean() else 0.0,
                          "expr_mean": float(y.mean()), "expr_std": float(y.std())}
         return pd.DataFrame.from_dict(rows, orient="index") if rows else None

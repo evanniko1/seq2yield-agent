@@ -257,12 +257,12 @@ class Council:
         cov = question_space.coverage(prior)
         settled = {cid for cid, e in cov.items() if e["status"] == "settled"}
         # PI sets strategic focus; planner turns it into prioritized concrete target cells.
-        # Fold in data-driven priors from dataset dissection so exploration follows the observed
-        # structure (per-series for E. coli, discovered neighborhoods for pooled) — graceful if no
-        # baselines exist yet.
+        # Fold in PHASE-AWARE data-driven priors: chase the interesting neighborhoods first (hard
+        # series / discovered clusters) and only broaden to full-dataset exploration once those axes
+        # have runs. Graceful if no baselines exist yet.
         try:
-            from seq2yield.insight import aggregate_focus_hints
-            insight_hints, _ = aggregate_focus_hints()
+            from seq2yield.insight import aggregate_phase_hints
+            insight_hints, _phases = aggregate_phase_hints(prior)
         except Exception:
             insight_hints = []
         if self.use_planner:

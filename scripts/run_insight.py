@@ -57,6 +57,15 @@ def main() -> int:
         print()
     hints = dissect.to_focus_hints(questions)
     print(f"data-driven focus hints for the PI: {hints or '(none)'}")
+    try:                                                     # two-phase exploration state
+        from agents import memory
+        from seq2yield.insight import dataset_phase
+        ph = dataset_phase(args.dataset, memory.load())
+        print(f"exploration phase: {ph['phase']}  ({ph['reason']})")
+        if ph["neighborhoods"]:
+            print(f"  focus neighborhoods: {ph['neighborhoods'][:12]}")
+    except Exception:
+        pass
     print(f"written: {out.relative_to(ROOT)}  (the PI reads this next cycle)")
     return 0
 

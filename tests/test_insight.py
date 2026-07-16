@@ -163,3 +163,43 @@ def test_pooled_neighborhoods_on_real_yeast(require_data):
     qs = dissect.dissect_pooled_predictions(seqs, y, pred, "yeast", k=8, min_n=20)
     assert isinstance(qs, list)
     assert all(q.evidence.get("unit") == "discovered_neighborhood" for q in qs)
+
+
+def test_perseries_covariate_question_fires_on_real_ecoli(require_data):
+    require_data("ecoli")
+    cov = dissect._series_covariates("ecoli")
+    assert cov is not None and cov.shape[0] > 10 and "gc" in cov.columns   # per-series covariates
+    qs = dissect.dissect_dataset("ecoli", dissect.default_metrics_path("ecoli"))
+    assert any(q.kind == "difficulty_covariate" for q in qs)               # the 'why' now fires
+
+
+# ------------------------------------------------- two-phase exploration controller ---
+from seq2yield.insight import phase  # noqa: E402
+
+
+def _mkq(sugg, series):
+    return dissect.GeneratedQuestion(id="q", dataset="ecoli", kind="series_difficulty",
+                                     observation="o", hypothesis="h",
+                                     suggested_intervention=sugg, evidence={"series": series})
+
+
+def test_dataset_phase_advances_neighborhood_to_global(monkeypatch):
+    qs = [_mkq("dissect covariates / add a mechanistic feature", [1, 2]),   # feature_representation
+          _mkq("architecture comparison on the sensitive series", [3])]      # model_architecture
+    monkeypatch.setattr(phase.dissect, "hints_for_dataset", lambda d: ([], qs))
+    ph = phase.dataset_phase("ecoli", [])                                    # no runs -> neighborhood
+    assert ph["phase"] == "neighborhood"
+    assert ph["focus_hints"] == ["feature_representation", "model_architecture"]
+    assert ph["neighborhoods"] == [1, 2, 3]
+    recs = [{"dataset": "ecoli", "intervention_type": "feature_representation"},
+            {"dataset": "ecoli", "intervention_type": "model_architecture"}]
+    assert phase.dataset_phase("ecoli", recs)["phase"] == "global"          # both axes run -> broaden
+
+
+def test_aggregate_phase_hints_only_from_neighborhood_datasets(monkeypatch):
+    qs = [_mkq("dissect covariates / add a mechanistic feature", [1])]
+    monkeypatch.setattr(phase.dissect, "hints_for_dataset", lambda d: ([], qs))
+    recs = [{"dataset": "yeast", "intervention_type": "feature_representation"}]  # yeast addressed
+    hints, phases = phase.aggregate_phase_hints(recs, datasets=["ecoli", "yeast"])
+    assert hints == ["feature_representation"]                               # only ecoli contributes
+    assert phases["ecoli"]["phase"] == "neighborhood" and phases["yeast"]["phase"] == "global"
