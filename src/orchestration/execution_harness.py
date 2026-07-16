@@ -139,6 +139,9 @@ def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
             return _verdict(run_dir, "rejected",
                             {"run_id": spec.run_id, "stage": "tests",
                              "reasons": ["pytest failed; see test_log.txt"]})
+    else:                                               # caller skipped the gate (e.g. no-patch fast)
+        audit_log.append(run_dir, "tests", {"skipped": True,
+                                            "reason": "run_tests=False (no changeset to validate)"})
 
     # 4. execute experiment
     audit_log.append(run_dir, "execute_start", {})

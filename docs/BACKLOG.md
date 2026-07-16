@@ -165,6 +165,19 @@ quantitative** readout → regression; ④ **DNA/RNA** cis-regulatory or coding 
 - **Align–ATCC microbe genotype→phenotype** — strain phenotyping, not a sequence-oligo assay.
 - **Genomic enhancer tiles >500 nt / STARR-seq fragments** — exceed the length ceiling.
 
+## Performance / GPU
+- **(c) vmap-batched per-series CNN/Transformer fitting — DEFERRED, and distrusted even if it passes
+  equivalence tests.** The per-series models are tiny, so the GPU (RTX 4070) is underutilized and the
+  ~10-min cycle is dominated by 200× per-fit overhead, not compute. Vectorizing the independent
+  per-series nets with `torch.func.vmap` (padding ragged sizes) would fill the GPU and turn 200 tiny
+  kernel launches into a handful. BUT: it changes the numerics, so it would ship only behind a
+  numerical-equivalence gate (vmapped per-series R² must reproduce the sequential values). Decision
+  (2026-07-16): **do not adopt even with multiple passing equivalence tests** — a per-dataset
+  asymmetry (different length/GC/expression regimes across MPRAs) could surface a divergence the tests
+  didn't cover, and the per-series R² is claim-load-bearing. Revisit only if per-fit overhead becomes
+  the binding constraint AND we have a dataset-agnostic equivalence argument, not just empirics.
+  (Speed today comes from `--fast` triage + skipping the test gate on no-patch cycles, not from this.)
+
 ## Exploration follow-ups (insight / discovery layer)
 - **Per-series covariate loader for E. coli** — the dissection's `difficulty_covariate` question
   ("*why* are the hard series hard?": correlate per-series R² with GC / length / expression regime)

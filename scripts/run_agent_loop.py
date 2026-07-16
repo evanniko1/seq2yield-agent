@@ -37,18 +37,33 @@ from seq2yield.experiments.run_spec import RunSpec, validate_runspec  # noqa: E4
 from seq2yield.experiments.runner import per_series_r2  # noqa: E402
 
 
-def _bound(spec: RunSpec, high_power: bool = False) -> RunSpec:
+# A run may become a DURABLE (accepted) claim only if it clears these floors — enough resampling
+# units for a trustworthy bootstrap CI, and enough seeds that the per-series R² isn't seed-noise.
+# Anything below is forced PROVISIONAL (exploratory), never a claim (see the firewall in cycle()).
+CLAIM_MIN_SERIES = 8
+CLAIM_MIN_ITERS = 5
+
+
+def _bound(spec: RunSpec, high_power: bool = False, fast: bool = False) -> RunSpec:
     # Bound runtime via series, but HONOR the council's train_sizes (so a data_efficiency sweep
     # actually sweeps). Verdict at the largest swept size.
-    # C2: always use 5 MC-CV repeats so the candidate's per-series R² is a 5-repeat mean,
+    # C2: full cycles use 5 MC-CV repeats so the candidate's per-series R² is a 5-repeat mean,
     # SYMMETRIC with the registry baseline (also 5 repeats) — removes the 3-vs-5 asymmetry.
     # high_power: a REVISIT of an inconclusive cell widens the series set for more power.
-    spec.n_series = 20 if high_power else 10
+    # fast: an EXPLORATORY triage sweep (few series/seeds/sizes) — deliberately below the claim
+    #       floors, so the firewall marks its verdict provisional. NOT for claims.
+    if fast:
+        spec.n_series = 5
+        spec.iterations = [1, 2]                         # 2 seeds (C6 determinism keeps variance low)
+        spec.train_sizes = [max(sorted(set(spec.train_sizes)) or [500])]   # single size
+        spec.max_runtime_minutes = 8
+    else:
+        spec.n_series = 20 if high_power else 10
+        spec.iterations = [1, 2, 3, 4, 5]
+        spec.train_sizes = sorted(set(spec.train_sizes)) or [500]
+        spec.max_runtime_minutes = 45 if high_power else 35
     spec.series = None
-    spec.iterations = [1, 2, 3, 4, 5]
-    spec.train_sizes = sorted(set(spec.train_sizes)) or [500]
     spec.acceptance_policy.comparison_train_size = max(spec.train_sizes)
-    spec.max_runtime_minutes = 45 if high_power else 35
     return spec
 
 
@@ -74,12 +89,16 @@ def _data_efficiency_curve(spec, run_dir) -> list:
     return curve
 
 
-def cycle(fb: bool, n_proposals: int = 4, approver: str | None = None) -> dict:
+def cycle(fb: bool, n_proposals: int = 4, approver: str | None = None, fast: bool = False) -> dict:
     """One full agentic cycle. Returns a summary dict (status / cell_id / revisit / run_id).
 
     approver: name of the human who has pre-authorized conditional-protected edits for this run
     (C9). If a patch touches a conditional file and no approver is given, the run HALTS with
     status='awaiting_human_review'. Strict-protected files are never approvable.
+
+    fast: EXPLORATORY triage cycle — small sweep, and the test gate is skipped on no-patch axes.
+    Its verdict is PROVISIONAL: it is recorded to memory for visibility (tagged provisional) but is
+    NEVER written to the claim registry and never settles a coverage cell. Use full cycles for claims.
     """
     # RL-trace: one trajectory id spans the WHOLE cycle (deliberation + execution + postmortem)
     tid = trace.new_trajectory_id()
@@ -108,8 +127,12 @@ def cycle(fb: bool, n_proposals: int = 4, approver: str | None = None) -> dict:
                         selected_action="run_high_power", policy="revisit_v1",
                         reason=f"cell {cid} inconclusive in memory -> escalate statistical power")
 
-    spec = _bound(RunSpec(**res["runspec"]), high_power=revisit)
-    spec.run_id = f"{spec.run_id}{'-revisit' if revisit else ''}-{datetime.now(timezone.utc):%H%M%S}"
+    spec = _bound(RunSpec(**res["runspec"]), high_power=revisit, fast=fast)
+    # CLAIM FIREWALL: a fast run — or ANY run below the claim floors — is provisional (exploratory),
+    # never a durable claim. Defensive: even a non-fast run that somehow falls under the floor is caught.
+    provisional = fast or spec.n_series < CLAIM_MIN_SERIES or len(spec.iterations) < CLAIM_MIN_ITERS
+    spec.run_id = (f"{spec.run_id}{'-fast' if fast else ''}{'-revisit' if revisit else ''}"
+                   f"-{datetime.now(timezone.utc):%H%M%S}")
     vr = validate_runspec(spec, unlocked_tier="tier_1")
     print(f"STATE: RUNSPEC_VALIDATED ({'ok' if vr.ok else vr.errors})  -> {spec.run_id}")
     if not vr.ok:
@@ -162,10 +185,16 @@ def cycle(fb: bool, n_proposals: int = 4, approver: str | None = None) -> dict:
         eng_who = rev_who = "n/a (no-patch axis)"
         print("STATE: PATCH skipped (no-patch axis — RunSpec fully specifies the experiment)")
 
-    print("STATE: EXECUTED -> EVALUATED (harness: guard -> tests -> train -> compare)")
+    # (b) the test gate protects against a code patch breaking the pipeline. On a fast/exploratory
+    # cycle we skip it ONLY when nothing changed (no-patch axis) — the suite result would be identical
+    # to the last green run. A patch cycle (changed non-empty) always runs tests; a full cycle always
+    # runs tests (belt-and-suspenders for a durable claim).
+    run_tests = True if not fast else bool(changed)
+    print("STATE: EXECUTED -> EVALUATED (harness: guard -> "
+          f"{'tests -> ' if run_tests else 'tests SKIPPED (no-patch fast) -> '}train -> compare)")
     try:
         verdict = execution_harness.run(spec, changed_files=changed,
-                                        human_review=human_review, run_tests=True)
+                                        human_review=human_review, run_tests=run_tests)
     except Exception as e:
         if undo:
             patch_manager.revert(undo)
@@ -232,13 +261,21 @@ def cycle(fb: bool, n_proposals: int = 4, approver: str | None = None) -> dict:
                    "n_series": spec.n_series, "n_repeats": len(spec.iterations),
                    "status": status, "mean_delta": cmp.get("mean_delta"),
                    "ci": cmp.get("paired_bootstrap_ci"), "p_value": cmp.get("p_value"),
-                   "claim_allowed": pm.claim_allowed,
+                   # firewall: a provisional run's claim is never allowed and never settles a cell
+                   "provisional": provisional,
+                   "claim_allowed": (False if provisional else pm.claim_allowed),
                    # K4: record the methodology flags so the next cycle can chase open concerns
                    "methodology_flags": flags, "methodology_severity": crit.severity,
                    "data_efficiency": curve, "crossover": crossover,
                    "heterogeneity": het or None})
-    claim_registry.record(run_id=spec.run_id, proposal_id=proposal["proposal_id"],
-                          status=status, comparison=cmp, claim_allowed=pm.claim_allowed)
+    if provisional:
+        why = "fast/exploratory" if fast else f"below claim floor (n_series<{CLAIM_MIN_SERIES} or repeats<{CLAIM_MIN_ITERS})"
+        print(f"  FIREWALL: verdict '{status}' is PROVISIONAL ({why}) — recorded to memory for "
+              f"visibility, but NOT written to the claim registry and it does not settle the cell. "
+              f"Run a full cycle to confirm.")
+    else:
+        claim_registry.record(run_id=spec.run_id, proposal_id=proposal["proposal_id"],
+                              status=status, comparison=cmp, claim_allowed=pm.claim_allowed)
 
     # RL-trace: the trajectory OUTCOME — joins every decision in this cycle to the verdict
     trace.log_event("outcome", selected_action=spec.run_id, policy="harness_verdict",
@@ -265,8 +302,14 @@ def main() -> int:
                     help="name of the human authorizing conditional-protected edits this run "
                          "(C9). Without it, a conditional-targeting patch halts for review; "
                          "strict-protected files are never approvable.")
+    ap.add_argument("--fast", action="store_true",
+                    help="EXPLORATORY triage cycle: small sweep (5 series, 2 seeds, 1 size), skip the "
+                         "test gate on no-patch axes, and mark the verdict PROVISIONAL — it is never "
+                         "written as a durable claim and never settles a coverage cell. Use full "
+                         "cycles (default) for claims.")
     args = ap.parse_args()
-    cycle(args.allow_local_fallback, n_proposals=args.n, approver=args.approve_conditional)
+    cycle(args.allow_local_fallback, n_proposals=args.n, approver=args.approve_conditional,
+          fast=args.fast)
     return 0
 
 

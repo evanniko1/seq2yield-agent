@@ -163,6 +163,8 @@ def coverage(records: list[dict]) -> dict:
     cov = {cid: {"status": "untested", "n_runs": 0, "statuses": [], "last_delta": None,
                  "in_catalogue": True, "describe": c.describe()} for cid, c in cells.items()}
     for rec in records:
+        if rec.get("provisional"):                      # fast/exploratory runs never settle a cell
+            continue
         cid = record_cell_id(rec)
         if cid not in cov:
             if not _valid_cell(cid):                    # degenerate -> skip

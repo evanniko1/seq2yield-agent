@@ -29,7 +29,9 @@ def dataset_phase(dataset: str, records: list[dict]) -> dict:
     if not q_types:
         return {"phase": "global", "reason": "no neighborhood questions yet",
                 "focus_hints": [], "neighborhoods": []}
-    addressed = {r.get("intervention_type") for r in records if r.get("dataset") == dataset}
+    # only DURABLE runs close a neighborhood axis; provisional (fast) runs don't advance the phase
+    addressed = {r.get("intervention_type") for r in records
+                 if r.get("dataset") == dataset and not r.get("provisional")}
     unaddressed = [t for t in q_types if t not in addressed]
     if unaddressed:
         neigh = sorted({int(s) for q in questions if q.intervention_type in unaddressed
