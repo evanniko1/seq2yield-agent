@@ -145,7 +145,8 @@ button:hover{border-color:var(--accent);color:var(--accent-ink)}
 button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 button.primary:hover{background:var(--accent-ink);color:#fff}
 button.danger:hover{border-color:var(--no);color:var(--no)}
-.banner{border-radius:11px;padding:11px 14px;font-size:13px;margin:.5em 0;display:flex;gap:9px;align-items:flex-start}
+.banner{border-radius:11px;padding:11px 14px;font-size:13px;line-height:1.5;margin:.5em 0}
+.embedded header{display:none}   /* hide our own header when embedded in the console hub iframe */
 .banner.info{background:var(--accent-tint);color:var(--accent-ink)}
 .banner.warn{background:var(--no-tint);color:var(--no)}
 .banner.ok{background:var(--ok-tint);color:var(--ok)}
@@ -167,6 +168,7 @@ button.danger:hover{border-color:var(--no);color:var(--no)}
 a{color:var(--accent-ink)}
 code{font-family:var(--mono);font-size:.88em;color:var(--accent-ink);background:var(--accent-tint);padding:1px 5px;border-radius:5px}
 </style>
+<script>if(window.self!==window.top){document.documentElement.classList.add('embedded')}</script>
 <header>
  <span class=brand><span class=brand-mark>s2</span><b>seq2yield</b></span>
  <span style="color:var(--ink-3);font-size:13px">onboarding</span>
@@ -233,7 +235,7 @@ def _render(msg: str = "", verify_rows: list[tuple[str, bool, str]] | None = Non
              '<span class=hint style="display:inline;font-weight:400">→ OS keychain</span></h2>')
     env_keys = secrets.dotenv_keys() if kr_ok else []
     if env_keys:
-        b.append('<div class="banner warn" style="flex-direction:column;align-items:stretch">'
+        b.append('<div class="banner warn">'
                  f'<div>📄 Found <b>{len(env_keys)}</b> API key(s) in a plaintext <code>.env</code>: '
                  f'<span class=mono>{", ".join(env_keys)}</span>. Move them into the keychain and '
                  'retire the file — keys are verified in the keychain before <code>.env</code> is '

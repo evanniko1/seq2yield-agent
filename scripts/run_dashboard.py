@@ -79,7 +79,9 @@ a{color:var(--accent-ink);text-decoration:none} a:hover{text-decoration:underlin
 code{font-family:var(--mono);font-size:.9em;color:var(--accent-ink);background:var(--accent-tint);padding:1px 5px;border-radius:5px}
 .live{display:flex;align-items:center;gap:6px;color:var(--ink-3);font-size:12px;white-space:nowrap}
 .live .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
+.embedded .brand,.embedded .theme-btn{display:none}   /* de-dupe chrome when embedded in the hub */
 </style>
+<script>if(window.self!==window.top){document.documentElement.classList.add('embedded')}</script>
 <header>
  <span class=brand><span class=brand-mark>s2</span><b>seq2yield</b></span>
  <a href="/">Scoreboard</a><a href="/queries">Council queries</a><a href="/datasets">Datasets</a><a href="/cost">Cost</a>

@@ -116,7 +116,9 @@ td,th{border-bottom:1px solid var(--line);padding:8px 12px;text-align:left;font-
 tr:last-child td{border-bottom:none}
 th{color:var(--ink-3);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em;background:var(--paper-2)}
 b{color:var(--ink)}
+.embedded header{display:none}   /* hide our own header when embedded in the console hub iframe */
 </style>
+<script>if(window.self!==window.top){document.documentElement.classList.add('embedded')}</script>
 <header>
  <span class=brand><span class=brand-mark>s2</span><b>seq2yield</b></span>
  <span class=hlabel>operator</span>
