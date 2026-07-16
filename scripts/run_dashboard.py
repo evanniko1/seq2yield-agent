@@ -236,5 +236,5 @@ def cost():
 
 
 if __name__ == "__main__":
-    print("seq2yield dashboard → http://127.0.0.1:5057  (provider mode:", runtime_mode(), ")")
+    print("seq2yield dashboard -> http://127.0.0.1:5057  (provider mode:", runtime_mode(), ")")
     app.run(host="127.0.0.1", port=5057, debug=False)
