@@ -37,6 +37,6 @@ def test_set_scalar_missing_key_is_noop():
 
 def test_app_renders_operator_console():
     html = A.app.test_client().get("/").get_data(as_text=True)
-    assert "operator console" in html
+    assert "operator console" in html.lower()          # heading text, case-insensitive to styling
     for section in ("Selection bonuses", "Budget caps", "Unlocked tier", "datasets ready", "Recent runs"):
         assert section in html
