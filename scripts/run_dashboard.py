@@ -22,24 +22,74 @@ from orchestration import store  # noqa: E402
 app = Flask(__name__)
 
 _SHELL = """<!doctype html><meta charset=utf-8><title>seq2yield</title>
+<meta name=viewport content="width=device-width,initial-scale=1">
 <style>
- body{font:14px/1.5 system-ui,sans-serif;margin:0;background:#0f1115;color:#d7dbe0}
- header{background:#161a21;padding:10px 18px;border-bottom:1px solid #262c36}
- header a{color:#8ab4f8;text-decoration:none;margin-right:16px;font-weight:600}
- main{padding:18px 24px;max-width:1100px}
- h1{font-size:18px;margin:.2em 0 .6em} h2{font-size:15px;color:#9aa4b2;margin-top:1.4em}
- table{border-collapse:collapse;width:100%;margin:.4em 0}
- th,td{border-bottom:1px solid #262c36;padding:6px 9px;text-align:left;vertical-align:top}
- th{color:#9aa4b2;font-weight:600} tr:hover td{background:#161a21}
- .chip{display:inline-block;padding:1px 7px;border-radius:9px;font-size:12px}
- .ok{background:#14351f;color:#79d18b} .no{background:#3a1620;color:#e88}
- .mut{color:#6b7480} a{color:#8ab4f8;text-decoration:none} code{color:#c8b6ff}
+/* Claude-editorial aesthetic (warm paper, serif headings, soft cards) with a distinct TEAL/PINE
+   accent (vs Cellarium's clay). Light + dark: system default via prefers-color-scheme, overridable
+   by a header toggle that stamps data-theme on <html>. */
+:root{
+  --paper:#F5F3EE; --paper-2:#FAF9F5; --card:#FFFFFF;
+  --ink:#22201C; --ink-2:#6B675F; --ink-3:#9C978C;
+  --line:#E7E3DA; --line-2:#EFEDE6;
+  --accent:#2C8C7C; --accent-ink:#1F6E62; --accent-tint:#E1F0EC;
+  --ok:#3F7E4C; --ok-tint:#E4F0E6; --no:#B0463B; --no-tint:#F6E2DE;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,ui-serif,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+  --mono:"SF Mono",ui-monospace,"Cascadia Code",Consolas,monospace;
+  --shadow:0 1px 2px rgba(30,28,24,.05),0 8px 22px rgba(30,28,24,.05);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){
+  --paper:#1A1917; --paper-2:#211F1D; --card:#252320;
+  --ink:#ECE8E0; --ink-2:#A8A299; --ink-3:#787269; --line:#33302B; --line-2:#2C2A26;
+  --accent:#5FC7B4; --accent-ink:#7FD6C6; --accent-tint:#1E2E2A;
+  --ok:#6FBF7E; --ok-tint:#182E1D; --no:#E08A7F; --no-tint:#331B18;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 26px rgba(0,0,0,.3);
+}}
+:root[data-theme="dark"]{
+  --paper:#1A1917; --paper-2:#211F1D; --card:#252320;
+  --ink:#ECE8E0; --ink-2:#A8A299; --ink-3:#787269; --line:#33302B; --line-2:#2C2A26;
+  --accent:#5FC7B4; --accent-ink:#7FD6C6; --accent-tint:#1E2E2A;
+  --ok:#6FBF7E; --ok-tint:#182E1D; --no:#E08A7F; --no-tint:#331B18;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 26px rgba(0,0,0,.3);
+}
+*{box-sizing:border-box}
+body{font-family:var(--sans);font-size:14.5px;line-height:1.55;margin:0;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased}
+header{display:flex;align-items:center;gap:14px;background:var(--paper-2);border-bottom:1px solid var(--line);padding:11px 22px;position:sticky;top:0;z-index:5}
+.brand{display:flex;align-items:center;gap:9px;margin-right:4px}
+.brand-mark{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:12px;background:radial-gradient(120% 120% at 30% 20%,#57C3B1,var(--accent));box-shadow:var(--shadow)}
+.brand b{font-family:var(--serif);font-size:18px;font-weight:600;letter-spacing:.2px}
+header a{color:var(--ink-2);text-decoration:none;font-weight:600;font-size:13.5px;padding:5px 10px;border-radius:8px;transition:.12s}
+header a:hover{background:var(--accent-tint);color:var(--accent-ink)}
+.spacer{margin-left:auto}
+.mode{color:var(--ink-3);font-size:12.5px}
+.theme-btn{border:1px solid var(--line);background:var(--card);color:var(--ink-2);border-radius:20px;padding:5px 12px;font:inherit;font-size:12.5px;cursor:pointer;transition:.12s}
+.theme-btn:hover{border-color:var(--accent);color:var(--accent-ink)}
+main{padding:24px 26px;max-width:1120px;margin:0 auto}
+h1{font-family:var(--serif);font-size:23px;font-weight:600;margin:.1em 0 .5em;letter-spacing:.2px}
+h2{font-family:var(--serif);font-size:16px;font-weight:600;color:var(--ink-2);margin:1.7em 0 .5em}
+table{border-collapse:separate;border-spacing:0;width:100%;margin:.5em 0;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+th,td{border-bottom:1px solid var(--line);padding:8px 12px;text-align:left;vertical-align:top;font-size:13.5px}
+tr:last-child td{border-bottom:none}
+th{color:var(--ink-3);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.05em;background:var(--paper-2)}
+tr:hover td{background:var(--line-2)}
+.chip{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600}
+.ok{background:var(--ok-tint);color:var(--ok)} .no{background:var(--no-tint);color:var(--no)}
+.mut{color:var(--ink-3)}
+a{color:var(--accent-ink);text-decoration:none} a:hover{text-decoration:underline}
+code{font-family:var(--mono);font-size:.9em;color:var(--accent-ink);background:var(--accent-tint);padding:1px 5px;border-radius:5px}
 </style>
 <header>
- <a href="/">Scoreboard</a><a href="/queries">Council queries</a>
- <a href="/datasets">Datasets</a><a href="/cost">Cost</a>
- <span class=mut style="float:right">provider mode: <b>{{mode}}</b></span>
-</header><main>{{body|safe}}</main>"""
+ <span class=brand><span class=brand-mark>s2</span><b>seq2yield</b></span>
+ <a href="/">Scoreboard</a><a href="/queries">Council queries</a><a href="/datasets">Datasets</a><a href="/cost">Cost</a>
+ <span class=spacer></span>
+ <span class=mode>provider: <b>{{mode}}</b></span>
+ <button class=theme-btn id=themebtn onclick="toggleTheme()">theme</button>
+</header><main>{{body|safe}}</main>
+<script>
+function applyTheme(t){document.documentElement.setAttribute('data-theme',t);localStorage.setItem('s2theme',t);var b=document.getElementById('themebtn');if(b)b.textContent=(t==='dark'?'\\u2600 light':'\\u263e dark')}
+function toggleTheme(){var cur=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');applyTheme(cur==='dark'?'light':'dark')}
+(function(){var s=localStorage.getItem('s2theme');if(s){applyTheme(s)}else{var d=matchMedia('(prefers-color-scheme:dark)').matches;var b=document.getElementById('themebtn');if(b)b.textContent=(d?'\\u2600 light':'\\u263e dark')}})();
+</script>"""
 
 
 def _page(body: str):
