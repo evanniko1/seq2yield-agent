@@ -106,7 +106,10 @@ def data_present(dataset_id: str) -> bool:
     if not s:
         return False
     if s.adapter is None:                                # built-in E. coli per-series splits
-        return (ROOT / "data/splits").exists()
+        # check the actual SPLITS MANIFEST, not just the dir: on CI only data/splits/.gitkeep is
+        # committed (the dir exists) but the manifest + CSVs are gitignored/absent — checking the
+        # dir would falsely report data present and make the ecoli tests FileNotFound.
+        return (ROOT / "data/splits/splits_manifest.json").exists()
     if s.adapter == "yeast":
         return (ROOT / "data/extracted/seq2yield/to_import/yeast_data.csv").exists()
     local = s.source.get("local")
