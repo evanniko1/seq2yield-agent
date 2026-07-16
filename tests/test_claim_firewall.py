@@ -48,6 +48,41 @@ def test_provisional_records_never_settle_a_coverage_cell():
     assert total_runs([base]) >= 1                           # durable -> counted (and settles)
 
 
+def test_fast_cycle_scopes_to_the_hard_series_and_full_does_not(monkeypatch):
+    m = _load_loop()
+    monkeypatch.setattr(m, "_is_per_series", lambda d: True)
+    monkeypatch.setattr(m, "dataset_phase", lambda d, recs: {
+        "phase": "neighborhood", "neighborhoods": [33, 37, 50, 88], "focus_hints": [], "reason": ""})
+
+    fast = RunSpec(run_id="t", dataset="ecoli", model_family="cnn",
+                   intervention_type="model_architecture", train_sizes=[500])
+    m._bound(fast, fast=True)
+    hood = m._neighborhood_scope(fast, [], fast=True)
+    assert hood == [33, 37, 50, 88]                       # chases exactly the flagged hard series
+    assert fast.series == [33, 37, 50, 88] and fast.n_series == 4
+    assert fast.n_series < m.CLAIM_MIN_SERIES             # -> firewalled provisional (a probe)
+
+    full = RunSpec(run_id="t", dataset="ecoli", model_family="cnn", train_sizes=[500])
+    m._bound(full, fast=False)
+    assert m._neighborhood_scope(full, [], fast=False) is None and full.series is None  # global claim
+
+
+def test_neighborhood_scope_skips_pooled_and_non_neighborhood(monkeypatch):
+    m = _load_loop()
+    # pooled dataset -> not scoped (needs cluster->subregion plumbing)
+    monkeypatch.setattr(m, "_is_per_series", lambda d: False)
+    s = RunSpec(run_id="t", dataset="yeast", model_family="cnn", train_sizes=[500])
+    m._bound(s, fast=True)
+    assert m._neighborhood_scope(s, [], fast=True) is None
+    # per-series but already in GLOBAL phase -> not scoped
+    monkeypatch.setattr(m, "_is_per_series", lambda d: True)
+    monkeypatch.setattr(m, "dataset_phase", lambda d, recs: {
+        "phase": "global", "neighborhoods": [], "focus_hints": [], "reason": ""})
+    s2 = RunSpec(run_id="t", dataset="ecoli", model_family="cnn", train_sizes=[500])
+    m._bound(s2, fast=True)
+    assert m._neighborhood_scope(s2, [], fast=True) is None
+
+
 def test_provisional_run_does_not_advance_the_phase(monkeypatch):
     qs = [dissect.GeneratedQuestion(
         id="q", dataset="ecoli", kind="series_difficulty", observation="o", hypothesis="h",

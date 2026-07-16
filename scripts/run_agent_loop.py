@@ -32,9 +32,11 @@ from agents import memory, methodology_critic, ml_engineer, postmortem, question
 from agents.council import Council  # noqa: E402
 from agents.patch_reviewer import review as review_patch  # noqa: E402
 from orchestration import approvals, execution_harness, patch_manager  # noqa: E402
+from seq2yield.data import datasets  # noqa: E402
 from seq2yield.experiments import claim_registry  # noqa: E402
 from seq2yield.experiments.run_spec import RunSpec, validate_runspec  # noqa: E402
 from seq2yield.experiments.runner import per_series_r2  # noqa: E402
+from seq2yield.insight import dataset_phase  # noqa: E402
 
 
 # A run may become a DURABLE (accepted) claim only if it clears these floors — enough resampling
@@ -42,6 +44,29 @@ from seq2yield.experiments.runner import per_series_r2  # noqa: E402
 # Anything below is forced PROVISIONAL (exploratory), never a claim (see the firewall in cycle()).
 CLAIM_MIN_SERIES = 8
 CLAIM_MIN_ITERS = 5
+
+
+def _is_per_series(dataset: str) -> bool:
+    return datasets.exists(dataset) and datasets.spec(dataset).structure == "per_series"
+
+
+def _neighborhood_scope(spec: RunSpec, records: list[dict], *, fast: bool) -> list | None:
+    """CHASE A HARD SERIES. On a fast/exploratory cycle whose per-series dataset is in its
+    NEIGHBORHOOD phase, scope the experiment to the dissection-flagged hard series (spec.series), so
+    the comparison is run *on those series specifically* rather than globally. This is inherently
+    small-n, so the claim firewall marks it provisional — a targeted probe ("does this intervention
+    help where the models struggle?"), never a durable claim. A full cycle stays global (claim-capable).
+    Returns the series it scoped to, or None. Only applies to per-series datasets (E. coli); pooled
+    neighborhoods need cluster->subregion plumbing (backlog)."""
+    if not fast or spec.scope not in ("global", "per_series") or not _is_per_series(spec.dataset):
+        return None
+    ph = dataset_phase(spec.dataset, records)
+    if ph["phase"] != "neighborhood" or not ph["neighborhoods"]:
+        return None
+    hood = ph["neighborhoods"]
+    spec.series = hood
+    spec.n_series = len(hood)
+    return hood
 
 
 def _bound(spec: RunSpec, high_power: bool = False, fast: bool = False) -> RunSpec:
@@ -128,11 +153,16 @@ def cycle(fb: bool, n_proposals: int = 4, approver: str | None = None, fast: boo
                         reason=f"cell {cid} inconclusive in memory -> escalate statistical power")
 
     spec = _bound(RunSpec(**res["runspec"]), high_power=revisit, fast=fast)
+    # CHASE A HARD SERIES: a fast cycle on a per-series dataset in its neighborhood phase scopes the
+    # experiment to the flagged hard series (shrinks n further -> caught by the firewall below).
+    hood = _neighborhood_scope(spec, memory.load(), fast=fast)
+    if hood:
+        print(f"  NEIGHBORHOOD SCOPE: chasing hard series {hood} (targeted probe on {spec.dataset})")
     # CLAIM FIREWALL: a fast run — or ANY run below the claim floors — is provisional (exploratory),
     # never a durable claim. Defensive: even a non-fast run that somehow falls under the floor is caught.
     provisional = fast or spec.n_series < CLAIM_MIN_SERIES or len(spec.iterations) < CLAIM_MIN_ITERS
-    spec.run_id = (f"{spec.run_id}{'-fast' if fast else ''}{'-revisit' if revisit else ''}"
-                   f"-{datetime.now(timezone.utc):%H%M%S}")
+    spec.run_id = (f"{spec.run_id}{'-fast' if fast else ''}{'-hood' if hood else ''}"
+                   f"{'-revisit' if revisit else ''}-{datetime.now(timezone.utc):%H%M%S}")
     vr = validate_runspec(spec, unlocked_tier="tier_1")
     print(f"STATE: RUNSPEC_VALIDATED ({'ok' if vr.ok else vr.errors})  -> {spec.run_id}")
     if not vr.ok:
@@ -259,6 +289,7 @@ def cycle(fb: bool, n_proposals: int = 4, approver: str | None = None, fast: boo
                    "feature_set": spec.feature_set, "sampling_policy": spec.sampling_policy,
                    "scope": spec.scope, "train_sizes": spec.train_sizes, "revisit": revisit,
                    "n_series": spec.n_series, "n_repeats": len(spec.iterations),
+                   "scope_series": spec.series,          # the hard series chased (neighborhood scope)
                    "status": status, "mean_delta": cmp.get("mean_delta"),
                    "ci": cmp.get("paired_bootstrap_ci"), "p_value": cmp.get("p_value"),
                    # firewall: a provisional run's claim is never allowed and never settles a cell
