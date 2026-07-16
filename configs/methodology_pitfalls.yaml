@@ -11,6 +11,7 @@ pitfalls:
     op: ">"
     threshold: 0.0
     severity: high
+    blocking: true            # HARD gate: an accepted result with this flag is withheld (harness)
     description: >
       Test sequences also appear in the training set, so reported performance is leaked/inflated.
     suggested: deduplicate sequences across splits, then re-run the same comparison

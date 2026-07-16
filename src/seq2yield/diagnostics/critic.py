@@ -55,6 +55,7 @@ def evaluate(diagnostics: dict, kb: list[dict] | None = None) -> list[dict]:
             flags.append({
                 "id": p["id"], "severity": p["severity"], "signal": p["signal"],
                 "value": value, "threshold": p.get("threshold"),
+                "blocking": bool(p.get("blocking", False)),   # (b) hard-gates the harness verdict
                 "description": " ".join(p["description"].split()),
                 "suggested": p["suggested"], "intervention_hint": p["intervention_hint"],
             })

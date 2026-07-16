@@ -54,6 +54,27 @@ def _attach_diagnostics(spec, cmp: dict, run_dir: Path) -> None:
         audit_log.append(run_dir, "diagnostics_error", {"error": str(e)[:200]})
 
 
+def _flag_gate(cmp: dict, run_dir: Path) -> None:
+    """(b) HARD methodology gate. Most diagnostic flags stay advisory, but flags marked
+    `blocking: true` in configs/methodology_pitfalls.yaml (e.g. train/test leakage) mean the
+    comparison itself can't be trusted — so an ACCEPTED result is withheld: downgraded to
+    inconclusive with the blocking flag ids recorded. This only ever WITHHOLDS a claim; it never
+    upgrades a verdict, and it leaves rejected/inconclusive runs unchanged. If the diagnostic probe
+    itself failed (no flags computed) the gate is a no-op — the diagnostics_error is already logged."""
+    if cmp.get("status") != "accepted":
+        return
+    blocking = [f for f in cmp.get("methodology_flags", []) if f.get("blocking")]
+    if not blocking:
+        return
+    cmp["status"] = "inconclusive"
+    cmp["gated_by_flags"] = [f["id"] for f in blocking]
+    cmp.setdefault("reasons", []).append(
+        "accepted result withheld — blocking methodology flag(s): "
+        + ", ".join(f"{f['id']}({f['severity']})" for f in blocking))
+    audit_log.append(run_dir, "flag_gate",
+                     {"downgraded": "accepted->inconclusive", "flags": cmp["gated_by_flags"]})
+
+
 def _verdict(run_dir: Path, status: str, detail: dict) -> dict:
     out = {"run_id": detail.get("run_id"), "status": status, **detail}
     (run_dir / "verdict.json").write_text(__import__("json").dumps(out, indent=2), encoding="utf-8")
@@ -196,6 +217,7 @@ def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
         cmp["per_size"] = per_size
         cmp["crossover"] = compare_mod.crossover_analysis(per_size)
     _attach_diagnostics(spec, cmp, run_dir)            # K4: advisory methodology flags
+    _flag_gate(cmp, run_dir)                            # (b): blocking flags withhold an accept
     audit_log.append(run_dir, "compare", cmp)
 
     return _verdict(run_dir, cmp["status"],
@@ -273,6 +295,7 @@ def _run_pooled(spec: RunSpec, run_dir: Path, vres) -> dict:
                                "reason": f"source run {spec.transfer_of_run_id} not found"}
 
     _attach_diagnostics(spec, cmp, run_dir)            # K4: advisory methodology flags
+    _flag_gate(cmp, run_dir)                            # (b): blocking flags withhold an accept
     audit_log.append(run_dir, "compare", cmp)
     return _verdict(run_dir, cmp["status"],
                     {"run_id": spec.run_id, "stage": "complete", "comparison": cmp,

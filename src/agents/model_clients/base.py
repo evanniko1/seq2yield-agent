@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -90,11 +91,17 @@ def prompt_hash(system: str, user: str) -> str:
     return hashlib.sha256((system + "\x00" + user).encode("utf-8")).hexdigest()
 
 
+_LOG_LOCK = threading.Lock()
+
+
 def log_call(record: ModelCallRecord, path: str | Path = DEFAULT_LOG) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "a", encoding="utf-8") as f:
-        f.write(record.model_dump_json() + "\n")
+    # One JSONL line per call. Guarded by a lock so concurrent callers (parallel reviewer fan-out)
+    # never interleave partial lines into the audit log.
+    line = record.model_dump_json() + "\n"
+    with _LOG_LOCK, open(path, "a", encoding="utf-8") as f:
+        f.write(line)
 
 
 class BaseStructuredClient:

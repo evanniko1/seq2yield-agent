@@ -4,7 +4,10 @@ approved proposal so small/local models need not emit a full spec.
 """
 from __future__ import annotations
 
+import concurrent.futures as _fut
+import contextvars
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -235,6 +238,9 @@ class Council:
         self.fallback = allow_local_fallback
         self.use_planner = use_planner
         self.selection_bonuses = _selection_bonuses()
+        # Reviewers are independent per proposal -> fan them out concurrently (agent-optimization:
+        # latency, not just cost). Bounded; SEQ2YIELD_REVIEW_WORKERS=1 restores serial execution.
+        self.review_workers = max(1, int(os.environ.get("SEQ2YIELD_REVIEW_WORKERS", "4")))
 
     def _ask(self, role: str, prompt, schema, **kw):
         # prompt is a prompting.Prompt(system, user, template, version); thread template+version
@@ -310,24 +316,38 @@ class Council:
         for rnd in range(max(1, rounds)):
             out = {}
             for p in proposals:
-                items = []
-                for r in roles.reviewers():
-                    prompt = prompting.reviewer_prompt(r, p.model_dump(),
-                                                       peer_summary=peer.get(p.proposal_id, ""))
-                    try:
-                        item, _ = self._ask(r, prompt, CouncilReviewItem,
-                                            temperature=0.2, max_tokens=600)
-                        items.append(item)
-                    except Exception as e:  # one reviewer failing must not sink the round
-                        items.append(CouncilReviewItem(role=r, score_feasibility=3,
-                                     score_scientific_value=3, score_confoundedness=3,
-                                     score_reproducibility=3, reject_reason=f"review_error:{e}"[:120]))
-                out[p.proposal_id] = items
+                out[p.proposal_id] = self._review_proposal(p, peer.get(p.proposal_id, ""))
             if rnd + 1 < rounds:            # summarize this round for the next debate round
                 agg = self._mean_scores(out, proposals)
                 peer = {pid: f"overall={a['overall']}, sound={a['sound']}, "
                              f"mean_confoundedness={a['confoundedness']}" for pid, a in agg.items()}
         return out
+
+    def _review_proposal(self, p, peer_summary: str):
+        """Fan the reviewers out over one proposal. They are independent, so run them concurrently
+        when review_workers > 1 (bounded pool), preserving reviewer order. The current trace context
+        is copied into each worker so RL-trace linkage (trajectory_id/task_id) survives the thread
+        hop; one reviewer failing is caught and never sinks the round."""
+        reviewers = roles.reviewers()
+
+        def _one(r):
+            prompt = prompting.reviewer_prompt(r, p.model_dump(), peer_summary=peer_summary)
+            try:
+                item, _ = self._ask(r, prompt, CouncilReviewItem, temperature=0.2, max_tokens=600)
+                return item
+            except Exception as e:  # one reviewer failing must not sink the round
+                return CouncilReviewItem(role=r, score_feasibility=3, score_scientific_value=3,
+                                         score_confoundedness=3, score_reproducibility=3,
+                                         reject_reason=f"review_error:{e}"[:120])
+
+        workers = min(self.review_workers, len(reviewers))
+        if workers <= 1 or len(reviewers) <= 1:
+            return [_one(r) for r in reviewers]
+        with _fut.ThreadPoolExecutor(max_workers=workers) as ex:
+            # copy_context() is evaluated here on the main thread (capturing the trace context);
+            # .run executes _one on the worker with that context. Order preserved via the futs list.
+            futs = [ex.submit(contextvars.copy_context().run, _one, r) for r in reviewers]
+            return [f.result() for f in futs]
 
     def _mean_scores(self, reviews, proposals=None):
         # Selection bonuses (configs/council_policy.yaml) additively steer EXPLORATION by

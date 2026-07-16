@@ -33,16 +33,34 @@ class AnthropicClient(BaseStructuredClient):
             self._client = anthropic.Anthropic(api_key=self.api_key)
         return self._client
 
-    def _raw(self, *, system, user, schema: Type[BaseModel], temperature, max_tokens):
+    def _raw(self, *, system, user, schema: Type[BaseModel], temperature, max_tokens,
+             cache: bool = True):
         client = self._ensure()
         tool = {"name": _TOOL,
                 "description": f"Return a {schema.__name__} object.",
                 "input_schema": schema.model_json_schema()}
+        # Prompt caching (Anthropic ephemeral breakpoints). Two large static prefixes recur across
+        # the council's ~11 calls per cycle: the tool schema is identical for a given output type
+        # (every reviewer emits CouncilReviewItem), and the system prompt is identical across all
+        # calls for a given role. Marking both caches the prefix, so repeated same-schema /
+        # same-role calls (reviewers over N proposals, debate rounds, later cycles within the TTL)
+        # read it at ~10% of the input cost. Cache read/write tokens are surfaced in usage so the
+        # telemetry shows caching working. Below the model's min cacheable length Anthropic simply
+        # ignores the marker — safe to always set.
+        system_param = system
+        if cache:
+            tool["cache_control"] = {"type": "ephemeral"}
+            if system:
+                system_param = [{"type": "text", "text": system,
+                                 "cache_control": {"type": "ephemeral"}}]
         resp = client.messages.create(
             model=self.model, max_tokens=max_tokens, temperature=temperature,
-            system=system, messages=[{"role": "user", "content": user}],
+            system=system_param, messages=[{"role": "user", "content": user}],
             tools=[tool], tool_choice={"type": "tool", "name": _TOOL})
-        usage = {"input": resp.usage.input_tokens, "output": resp.usage.output_tokens}
+        u = resp.usage
+        usage = {"input": u.input_tokens, "output": u.output_tokens,
+                 "cache_read": getattr(u, "cache_read_input_tokens", 0) or 0,
+                 "cache_write": getattr(u, "cache_creation_input_tokens", 0) or 0}
         for block in resp.content:
             if getattr(block, "type", None) == "tool_use" and block.name == _TOOL:
                 return block.input, usage          # dict -> validated by base
