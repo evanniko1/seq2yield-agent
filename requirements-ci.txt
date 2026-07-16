@@ -1,0 +1,9 @@
+# CI dependency pins — the validated versions the full suite passes on (338 with data / 329 without).
+# GitHub's runners install the LATEST of everything otherwise (numpy 2.x, torch 2.13, newer
+# pandas/sklearn/scipy/pydantic), which drifts from the local dev env and broke CI runs #1-7.
+# Pinning here makes CI reproduce the known-good environment. Bump deliberately, not implicitly.
+numpy==1.26.4
+pandas==2.2.3
+scikit-learn==1.6.1
+scipy==1.15.1
+pydantic==2.10.6

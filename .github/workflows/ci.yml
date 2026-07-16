@@ -13,15 +13,23 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-      - name: Install (CPU torch + project)
+      - name: Install (pinned CPU torch + project)
         run: |
           python -m pip install -U pip
-          pip install torch --index-url https://download.pytorch.org/whl/cpu
-          pip install -e ".[agents,ui,dev]"
+          # pin to the validated versions (see requirements-ci.txt) — the runner otherwise installs
+          # numpy 2.x / torch 2.13 / newer pandas-sklearn-scipy-pydantic, which drift from the env
+          # the suite is validated on.
+          pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install -c requirements-ci.txt -e ".[agents,ui,dev]"
       - name: Lint (advisory)
         run: ruff check src tests scripts || true
       - name: Test
         # The multi-GB datasets are gitignored; the ~5 real-data smoke tests skip via the
         # `require_data` fixture, so every logic / agentic / methodology test runs on CI.
-        run: pytest -q
+        # On failure, the short summary is written to the run's Summary tab (no log download needed).
+        run: |
+          set +e
+          pytest -q -rf --tb=line 2>&1 | tee pytest.log
+          ec=${PIPESTATUS[0]}
+          { echo "### pytest result"; echo '```'; tail -40 pytest.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit $ec
