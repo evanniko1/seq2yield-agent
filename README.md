@@ -60,6 +60,21 @@ global/per-series/pooled scope), and a **Transformer** candidate. The council re
 coverage map and explores uncovered cells autonomously; `scripts/run_campaign.py` runs to a
 stopping rule; `scripts/show_coverage.py` prints the frontier.
 
+## Local interfaces (three small Flask apps)
+
+| Console | Run | What it does |
+|---|---|---|
+| **Onboarding** | `python scripts/run_onboarding.py` → :5058 | Boot the council: pick a provider mode, **store API keys in the OS keychain (BYOK)**, set the local model, test connectivity, launch a cycle. |
+| **Operator** | `python scripts/config_app.py` → :5001 | Edit budgets / unlocked tier / selection bonuses; set the C9 approver; launch a cycle. |
+| **Dashboard** | `python scripts/run_dashboard.py` → :5057 | Read-only scoreboard, per-query agent trails, datasets, cost. |
+
+**BYOK security contract:** API keys go into the operating-system credential store
+(Windows Credential Manager / macOS Keychain / Linux Secret Service) via `keyring` —
+**never** `.env`, a config file, or the database. AI coding agents read project files, so a
+plaintext `.env` puts every secret one file-read from a model context window. Runtime key
+precedence is: real env var → keychain → `.env`. See `src/agents/secrets.py`. Install the
+backend with `pip install -e ".[secrets]"`.
+
 ## Read these first
 
 | Doc | What it is |

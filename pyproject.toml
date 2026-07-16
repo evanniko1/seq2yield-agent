@@ -21,7 +21,8 @@ dependencies = [
 [project.optional-dependencies]
 deep = ["torch"]                       # CNN / MLP / Transformer (Tier 0/1)
 agents = ["anthropic", "httpx"]        # provider clients (MVP: Anthropic + local)
-ui = ["flask"]                         # K5 config app + the read-only progress dashboard
+secrets = ["keyring"]                  # BYOK: API keys in the OS keychain, never .env / DB
+ui = ["flask", "keyring"]              # K5 config app + dashboard + keyring-backed onboarding
 stats = ["statsmodels"]                # optional REML mixed-effects (variance_components needs only numpy/scipy)
 dev = ["pytest", "ruff", "mypy"]
 

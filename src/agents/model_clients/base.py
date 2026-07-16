@@ -35,7 +35,18 @@ def _load_dotenv(path: Path = ROOT / ".env") -> None:
             os.environ[key] = val
 
 
-_load_dotenv()
+def _load_keychain() -> None:
+    """Fill unset API-key env vars from the OS keychain (BYOK). Runs before _load_dotenv so the
+    precedence is: real env var > keychain > .env. No-op when `keyring` isn't installed."""
+    try:
+        from agents.secrets import load_into_env
+        load_into_env()
+    except Exception:
+        pass
+
+
+_load_keychain()   # keychain first (wins over .env)...
+_load_dotenv()     # ...then .env fills whatever is still unset
 
 
 class ModelCallRecord(BaseModel):
