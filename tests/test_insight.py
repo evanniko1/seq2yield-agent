@@ -86,8 +86,9 @@ def test_empty_or_tiny_corpus_yields_nothing():
 
 
 # ------------------------------------------------------------------ PI wiring ---
-def test_aggregate_focus_hints_is_graceful_without_baselines(monkeypatch):
-    monkeypatch.setattr(dissect, "default_metrics_path", lambda d: None)
+def test_aggregate_focus_hints_is_graceful_without_baselines(monkeypatch, tmp_path):
+    monkeypatch.setattr(dissect, "default_metrics_path", lambda d: None)          # no per-series
+    monkeypatch.setattr(dissect, "_insight_path", lambda d: tmp_path / f"{d}.jsonl")  # no persisted
     hints, per = dissect.aggregate_focus_hints(["ecoli", "yeast"])
     assert hints == [] and set(per) == {"ecoli", "yeast"}
 
@@ -134,5 +135,31 @@ def test_dissect_pooled_predictions_end_to_end_is_safe():
     y = rng.normal(0, 1, 240)
     pred = y + rng.normal(0, 0.3, 240)
     qs = dissect.dissect_pooled_predictions(seqs, y, pred, "yeast", k=4, min_n=10)
+    assert isinstance(qs, list)
+    assert all(q.evidence.get("unit") == "discovered_neighborhood" for q in qs)
+
+
+# ------------------------------------- routing, persistence, real pooled path ---
+def test_save_load_questions_roundtrip(tmp_path, monkeypatch):
+    monkeypatch.setattr(dissect, "_insight_path", lambda d: tmp_path / f"{d}.jsonl")
+    qs = dissect.dissect_metrics(_metrics(), "ecoli")
+    dissect.save_questions("ecoli", qs)
+    back = dissect.load_questions("ecoli")
+    assert [q.id for q in back] == [q.id for q in qs]
+
+
+def test_dissect_any_uses_metrics_for_per_series_and_skips_missing(tmp_path, monkeypatch):
+    p = tmp_path / "metrics.csv"
+    _metrics().to_csv(p, index=False)
+    monkeypatch.setattr(dissect, "default_metrics_path", lambda d: p if d == "ecoli" else None)
+    assert dissect.dissect_any("ecoli")                       # per-series -> from metrics.csv
+    assert dissect.dissect_any("nonexistent_dataset") == []   # no metrics, not a present pooled ds
+
+
+def test_pooled_neighborhoods_on_real_yeast(require_data):
+    require_data("yeast")
+    seqs, y, pred = dissect.pooled_predictions("yeast", max_train=2000)
+    assert len(seqs) == len(y) == len(pred) and len(seqs) > 50
+    qs = dissect.dissect_pooled_predictions(seqs, y, pred, "yeast", k=8, min_n=20)
     assert isinstance(qs, list)
     assert all(q.evidence.get("unit") == "discovered_neighborhood" for q in qs)

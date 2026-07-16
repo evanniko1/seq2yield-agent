@@ -29,22 +29,25 @@ def main() -> int:
     ap.add_argument("--dataset", default="ecoli")
     ap.add_argument("--metrics", help="path to the baseline run's metrics.csv (per-series R²)")
     ap.add_argument("--train-size", type=int, default=None)
+    ap.add_argument("--k", type=int, default=8, help="neighborhoods to discover (pooled datasets)")
     args = ap.parse_args()
 
     metrics = Path(args.metrics) if args.metrics else dissect.default_metrics_path(args.dataset)
-    if not metrics or not metrics.exists():
-        print(f"no baseline metrics for '{args.dataset}'. Pass --metrics <run>/metrics.csv "
-              f"(run scripts/reproduce_baselines.py first).")
-        return 1
+    if metrics and metrics.exists():                          # per-series: dissect baseline metrics
+        questions = dissect.dissect_dataset(args.dataset, metrics, train_size=args.train_size)
+        source = str(metrics.relative_to(ROOT))
+    else:                                                     # pooled: discover neighborhoods first
+        print(f"no per-series baseline for '{args.dataset}' — discovering neighborhoods from a "
+              f"pooled baseline (fitting {args.k}-cluster probe)...")
+        questions = dissect.dissect_any(args.dataset, k=args.k, train_size=args.train_size)
+        source = f"discovered neighborhoods (pooled baseline, k={args.k})"
+        if not questions:
+            print(f"nothing to dissect for '{args.dataset}': no metrics.csv and no pooled data "
+                  f"present. Reproduce baselines or check the dataset is onboarded.")
+            return 1
 
-    questions = dissect.dissect_dataset(args.dataset, metrics, train_size=args.train_size)
-    out_dir = ROOT / "experiments/insights"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out = out_dir / f"{args.dataset}.jsonl"
-    out.write_text("\n".join(q.model_dump_json() for q in questions), encoding="utf-8")
-
-    print(f"=== {len(questions)} generated question(s) for '{args.dataset}' "
-          f"(from {metrics.relative_to(ROOT)}) ===\n")
+    out = dissect.save_questions(args.dataset, questions)
+    print(f"=== {len(questions)} generated question(s) for '{args.dataset}' (from {source}) ===\n")
     for q in questions:
         print(f"[{q.priority:.2f}] {q.kind}")
         print(f"   obs : {q.observation}")
@@ -54,7 +57,7 @@ def main() -> int:
         print()
     hints = dissect.to_focus_hints(questions)
     print(f"data-driven focus hints for the PI: {hints or '(none)'}")
-    print(f"written: {out.relative_to(ROOT)}")
+    print(f"written: {out.relative_to(ROOT)}  (the PI reads this next cycle)")
     return 0
 
 

@@ -276,12 +276,70 @@ def default_metrics_path(dataset: str):
     return p if p and p.exists() else None
 
 
+def _insight_path(dataset: str) -> Path:
+    return ROOT / "experiments" / "insights" / f"{dataset}.jsonl"
+
+
+def save_questions(dataset: str, questions: list[GeneratedQuestion]) -> Path:
+    p = _insight_path(dataset)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text("\n".join(q.model_dump_json() for q in questions), encoding="utf-8")
+    return p
+
+
+def load_questions(dataset: str) -> list[GeneratedQuestion]:
+    """Persisted generated questions for a dataset (written by scripts/run_insight.py), or []."""
+    p = _insight_path(dataset)
+    if not p.exists():
+        return []
+    return [GeneratedQuestion.model_validate_json(ln)
+            for ln in p.read_text(encoding="utf-8").splitlines() if ln.strip()]
+
+
+def pooled_predictions(dataset: str, *, model_family: str = "rf", feature_set: str = "one_hot",
+                       seed: int = 1, frac: float = 0.1, max_train: int = 6000):
+    """A pooled baseline's held-out predictions via the HARNESS pooled path (not a shadow pipeline):
+    returns (test_sequences, y_true, y_pred), positionally aligned. Deterministic given the seed;
+    train rows capped for speed. This is the real prediction source neighborhood dissection needs."""
+    from types import SimpleNamespace
+
+    from ..data.cleaning import SEQ_COL, TARGET_COL
+    from ..experiments import pooled_runner as P
+    spec = SimpleNamespace(dataset=dataset, seed=seed, feature_set=feature_set,
+                           feature_scaling="none", hyperparameters={}, sampling_policy="random")
+    train_full, test = P.holdout(spec, frac=frac)
+    train = P.subsample(train_full, min(max_train, len(train_full)), "random", seed)
+    y_pred = P.fit_predict(spec, model_family, train, test)
+    return test[SEQ_COL].tolist(), test[TARGET_COL].to_numpy(), y_pred
+
+
+def dissect_any(dataset: str, *, k: int = 8, train_size: int | None = None) -> list[GeneratedQuestion]:
+    """Structure-aware dissection. Per-series datasets (E. coli) dissect their baseline registry
+    metrics; pooled datasets (yeast, dream2022, ...) DISCOVER neighborhoods from a real pooled
+    baseline's held-out predictions and dissect those. [] when neither is available."""
+    path = default_metrics_path(dataset)
+    if path:
+        return dissect_dataset(dataset, path, train_size=train_size)
+    try:
+        from ..data import datasets as ds
+        if ds.exists(dataset) and ds.spec(dataset).structure == "pooled" and ds.data_present(dataset):
+            seqs, y_true, y_pred = pooled_predictions(dataset)
+            return dissect_pooled_predictions(seqs, y_true, y_pred, dataset, k=k)
+    except Exception:
+        pass
+    return []
+
+
 def hints_for_dataset(dataset: str, metrics_csv=None) -> tuple[list[str], list[GeneratedQuestion]]:
-    """(focus_hints, questions) for one dataset from its baselines, or ([], []) when absent."""
+    """(focus_hints, questions) for one dataset — the CHEAP path used inside the council loop:
+    per-series datasets dissect their metrics.csv live (no training); pooled datasets read the
+    persisted insight file (computed once by scripts/run_insight.py, which does the pooled fit).
+    Graceful ([], []) when neither exists."""
     path = metrics_csv or default_metrics_path(dataset)
-    if not path or not Path(path).exists():
-        return [], []
-    qs = dissect_dataset(dataset, path)
+    if path and Path(path).exists():
+        qs = dissect_dataset(dataset, path)
+    else:
+        qs = load_questions(dataset)                 # persisted pooled-neighborhood questions
     return to_focus_hints(qs), qs
 
 

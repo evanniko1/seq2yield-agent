@@ -21,6 +21,7 @@ experiments/rejected/*
 experiments/council_reviews/*
 experiments/postmortems/*
 experiments/claims/*
+experiments/insights/*
 !experiments/**/.gitkeep
 reports/static/*
 reports/dashboard_exports/*
