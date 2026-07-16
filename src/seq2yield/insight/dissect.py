@@ -436,16 +436,41 @@ def neighborhoods_to_metrics_frame(labels, y_true, y_pred, *, model: str = "pool
     return pd.DataFrame(rows)
 
 
+def _neighborhood_covariates(sequences, labels, y_true) -> pd.DataFrame:
+    """Per-neighborhood covariates (gc mean, length CV, expression mean/std) keyed by cluster id —
+    the pooled analogue of _series_covariates, so the discovered neighborhoods get a 'why' too."""
+    labels = np.asarray(labels)
+    y = np.asarray(y_true, float)
+    seqs = pd.Series([str(s).upper() for s in sequences])
+    rows = {}
+    for c in np.unique(labels):
+        m = labels == c
+        sc = seqs[m]
+        gc = sc.apply(lambda s: (s.count("G") + s.count("C")) / max(1, len(s))).mean()
+        lens = sc.str.len()
+        yc = y[m]
+        rows[int(c)] = {"gc": float(gc),
+                        "length_cv": float(lens.std() / lens.mean()) if lens.mean() else 0.0,
+                        "expr_mean": float(yc.mean()), "expr_std": float(yc.std())}
+    return pd.DataFrame.from_dict(rows, orient="index")
+
+
 def dissect_pooled_predictions(sequences, y_true, y_pred, dataset: str = "unknown", *,
                                k: int = 8, seed: int = 0, min_n: int = 20) -> list[GeneratedQuestion]:
     """Discover neighborhoods in a pooled dataset and dissect them: cluster the held-out sequences,
     compute per-neighborhood R² from an existing pooled model's predictions, and generate questions
-    (difficulty / ceiling; sensitivity needs multiple models). Pure over the arrays it is given —
-    the loop calls it once a pooled baseline has produced test predictions."""
+    (difficulty / ceiling; sensitivity needs multiple models) PLUS the covariate 'why' — which
+    neighborhood property (GC / length / expression) explains the hard clusters. Pure over the arrays
+    it is given — the loop calls it once a pooled baseline has produced test predictions."""
     labels = cluster_sequences(sequences, k=k, seed=seed)
     frame = neighborhoods_to_metrics_frame(labels, y_true, y_pred,
                                            train_size=len(y_true), min_n=min_n)
     qs = dissect_metrics(frame, dataset)
+    if not frame.empty:                     # covariate correlation over the SURVIVING neighborhoods
+        kept = set(frame["series"])
+        cov = _neighborhood_covariates(sequences, labels, y_true)
+        cov = cov.loc[[c for c in cov.index if c in kept]]
+        qs += correlate_difficulty(frame.set_index("series")["r2"], cov, dataset)
     for q in qs:                            # mark that the unit was discovered, not a natural series
         q.evidence["unit"] = "discovered_neighborhood"
-    return qs
+    return sorted(qs, key=lambda q: q.priority, reverse=True)

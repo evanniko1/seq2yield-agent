@@ -139,6 +139,26 @@ def test_dissect_pooled_predictions_end_to_end_is_safe():
     assert all(q.evidence.get("unit") == "discovered_neighborhood" for q in qs)
 
 
+def test_pooled_neighborhoods_get_a_covariate_why(monkeypatch):
+    # 6 planted neighborhoods (30 each); GC increases 0->1 across them and R² tracks GC
+    labels = np.array([i // 30 for i in range(180)])
+    monkeypatch.setattr(dissect, "cluster_sequences", lambda seqs, **kw: labels)
+    rng = np.random.default_rng(0)
+    seqs, y, pred = [], [], []
+    for i in range(6):
+        n_gc = int(96 * i / 5)                                   # GC fraction = i/5
+        base = "G" * n_gc + "A" * (96 - n_gc)
+        yc = rng.normal(0, 1, 30)
+        pc = yc + rng.normal(0, max(0.05, 1.0 - i * 0.19), 30)   # better fit as GC (i) rises
+        seqs += [base] * 30
+        y += list(yc)
+        pred += list(pc)
+    qs = dissect.dissect_pooled_predictions(seqs, np.array(y), np.array(pred), "yeast", k=6, min_n=10)
+    cov = [q for q in qs if q.kind == "difficulty_covariate"]
+    assert cov and cov[0].evidence["covariate"] == "gc"          # 'why the hard clusters are hard'
+    assert all(q.evidence.get("unit") == "discovered_neighborhood" for q in qs)
+
+
 # ------------------------------------- routing, persistence, real pooled path ---
 def test_save_load_questions_roundtrip(tmp_path, monkeypatch):
     monkeypatch.setattr(dissect, "_insight_path", lambda d: tmp_path / f"{d}.jsonl")
