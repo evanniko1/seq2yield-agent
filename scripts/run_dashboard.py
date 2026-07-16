@@ -77,18 +77,42 @@ tr:hover td{background:var(--line-2)}
 .mut{color:var(--ink-3)}
 a{color:var(--accent-ink);text-decoration:none} a:hover{text-decoration:underline}
 code{font-family:var(--mono);font-size:.9em;color:var(--accent-ink);background:var(--accent-tint);padding:1px 5px;border-radius:5px}
+.live{display:flex;align-items:center;gap:6px;color:var(--ink-3);font-size:12px;white-space:nowrap}
+.live .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
 </style>
 <header>
  <span class=brand><span class=brand-mark>s2</span><b>seq2yield</b></span>
  <a href="/">Scoreboard</a><a href="/queries">Council queries</a><a href="/datasets">Datasets</a><a href="/cost">Cost</a>
  <span class=spacer></span>
  <span class=mode>provider: <b>{{mode}}</b></span>
+ <span class=live title="auto-refreshing every 5s"><span class=dot></span><span id=liveTime>live</span></span>
  <button class=theme-btn id=themebtn onclick="toggleTheme()">theme</button>
 </header><main>{{body|safe}}</main>
 <script>
 function applyTheme(t){document.documentElement.setAttribute('data-theme',t);localStorage.setItem('s2theme',t);var b=document.getElementById('themebtn');if(b)b.textContent=(t==='dark'?'\\u2600 light':'\\u263e dark')}
 function toggleTheme(){var cur=document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');applyTheme(cur==='dark'?'light':'dark')}
 (function(){var s=localStorage.getItem('s2theme');if(s){applyTheme(s)}else{var d=matchMedia('(prefers-color-scheme:dark)').matches;var b=document.getElementById('themebtn');if(b)b.textContent=(d?'\\u2600 light':'\\u263e dark')}})();
+/* Flicker-free auto-refresh: re-fetch the current page, and swap ONLY <main>'s innerHTML when the
+   content actually changed. No full reload, so no white flash / scroll jump. Pauses when the tab is
+   hidden; a request in flight blocks the next tick. The live label shows the last refresh time. */
+(function(){
+ var BUSY=false;
+ function tick(){
+  if(document.hidden||BUSY)return; BUSY=true;
+  fetch(location.pathname+location.search,{cache:'no-store'})
+   .then(function(r){return r.text()})
+   .then(function(t){
+     var d=new DOMParser().parseFromString(t,'text/html');
+     var nx=d.querySelector('main'), cur=document.querySelector('main');
+     if(nx&&cur&&nx.innerHTML!==cur.innerHTML){cur.innerHTML=nx.innerHTML;}
+     var lt=document.getElementById('liveTime');
+     if(lt){lt.textContent='updated '+new Date().toLocaleTimeString();}
+   })
+   .catch(function(){})
+   .finally(function(){BUSY=false;});
+ }
+ setInterval(tick,5000);
+})();
 </script>"""
 
 

@@ -60,13 +60,18 @@ global/per-series/pooled scope), and a **Transformer** candidate. The council re
 coverage map and explores uncovered cells autonomously; `scripts/run_campaign.py` runs to a
 stopping rule; `scripts/show_coverage.py` prints the frontier.
 
-## Local interfaces (three small Flask apps)
+## Local interfaces
+
+**One entry point — `python scripts/run_console.py` → :5056** — boots all three apps below and
+embeds them as tabs in a single window, so you launch one thing and click through. The apps stay
+architecturally decoupled (they coordinate only through config files + durable artifacts); the hub
+just launches them and hosts them side by side. You can still run any app on its own:
 
 | Console | Run | What it does |
 |---|---|---|
 | **Onboarding** | `python scripts/run_onboarding.py` → :5058 | Boot the council: pick a provider mode, **store API keys in the OS keychain (BYOK)** (or one-click **migrate an existing `.env`** into the keychain and retire the plaintext file), set the local model, test connectivity, launch a cycle. |
 | **Operator** | `python scripts/config_app.py` → :5001 | Edit budgets / unlocked tier / selection bonuses; set the C9 approver; launch a cycle. |
-| **Dashboard** | `python scripts/run_dashboard.py` → :5057 | Read-only scoreboard, per-query agent trails, datasets, cost. |
+| **Dashboard** | `python scripts/run_dashboard.py` → :5057 | Read-only scoreboard, per-query agent trails, datasets, cost. **Auto-refreshes** (swaps only changed content — no reload flicker). |
 
 **BYOK security contract:** API keys go into the operating-system credential store
 (Windows Credential Manager / macOS Keychain / Linux Secret Service) via `keyring` —
