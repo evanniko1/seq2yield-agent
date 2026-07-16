@@ -23,8 +23,6 @@ except Exception:
 
 from seq2yield.insight import dissect  # noqa: E402
 
-_DEFAULT_METRICS = {"ecoli": ROOT / "experiments/runs/2026-06-04-full56/metrics.csv"}
-
 
 def main() -> int:
     ap = argparse.ArgumentParser()
@@ -33,7 +31,7 @@ def main() -> int:
     ap.add_argument("--train-size", type=int, default=None)
     args = ap.parse_args()
 
-    metrics = Path(args.metrics) if args.metrics else _DEFAULT_METRICS.get(args.dataset)
+    metrics = Path(args.metrics) if args.metrics else dissect.default_metrics_path(args.dataset)
     if not metrics or not metrics.exists():
         print(f"no baseline metrics for '{args.dataset}'. Pass --metrics <run>/metrics.csv "
               f"(run scripts/reproduce_baselines.py first).")

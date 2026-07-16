@@ -256,11 +256,21 @@ class Council:
         prior = memory.load()
         cov = question_space.coverage(prior)
         settled = {cid for cid, e in cov.items() if e["status"] == "settled"}
-        # PI sets strategic focus; planner turns it into prioritized concrete target cells
+        # PI sets strategic focus; planner turns it into prioritized concrete target cells.
+        # Fold in data-driven priors from dataset dissection so exploration follows the observed
+        # structure (per-series for E. coli, discovered neighborhoods for pooled) — graceful if no
+        # baselines exist yet.
+        try:
+            from seq2yield.insight import aggregate_focus_hints
+            insight_hints, _ = aggregate_focus_hints()
+        except Exception:
+            insight_hints = []
         if self.use_planner:
-            focus, pi_rationale, pi_who = planner.pi_plan(prior, allow_local_fallback=self.fallback)
+            focus, pi_rationale, pi_who = planner.pi_plan(
+                prior, insight_hints=insight_hints, allow_local_fallback=self.fallback)
         else:
-            focus, pi_rationale, pi_who = planner.INTERVENTIONS, "planner disabled", "none"
+            focus = planner._merge_hints(planner.INTERVENTIONS, insight_hints)
+            pi_rationale, pi_who = "planner disabled", "none"
         targets = planner.rank_targets(prior, focus_types=focus)
         flags = methodology_critic.open_flags(prior)     # K4: surface unresolved methodology flags
         # Human question injection (mixed-initiative): a human authority may have queued directives.

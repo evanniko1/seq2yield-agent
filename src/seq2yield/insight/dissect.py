@@ -18,10 +18,16 @@ correlations (why are the hard series hard?).
 from __future__ import annotations
 
 import hashlib
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from pydantic import BaseModel, Field
+
+ROOT = Path(__file__).resolve().parents[3]
+# baseline registry metrics per dataset (per-series R²). ecoli's full 56-series registry is the
+# canonical one; other datasets resolve as they are onboarded (missing -> no hints, gracefully).
+_DEFAULT_METRICS = {"ecoli": ROOT / "experiments/runs/2026-06-04-full56/metrics.csv"}
 
 # thresholds (tunable; kept explicit rather than hidden constants)
 _POOR_R2 = 0.30            # even the best model is weak here -> likely an irreducible ceiling
@@ -261,3 +267,106 @@ def to_focus_hints(questions: list[GeneratedQuestion]) -> list[str]:
             seen.add(it)
             out.append(it)
     return out
+
+
+# --------------------------------------------------------------------- PI wiring ---
+def default_metrics_path(dataset: str):
+    """Path to a dataset's baseline metrics.csv, or None if it hasn't been reproduced yet."""
+    p = _DEFAULT_METRICS.get(dataset)
+    return p if p and p.exists() else None
+
+
+def hints_for_dataset(dataset: str, metrics_csv=None) -> tuple[list[str], list[GeneratedQuestion]]:
+    """(focus_hints, questions) for one dataset from its baselines, or ([], []) when absent."""
+    path = metrics_csv or default_metrics_path(dataset)
+    if not path or not Path(path).exists():
+        return [], []
+    qs = dissect_dataset(dataset, path)
+    return to_focus_hints(qs), qs
+
+
+def aggregate_focus_hints(datasets=None) -> tuple[list[str], dict]:
+    """Union of data-driven focus hints across ready datasets (order preserved), plus each dataset's
+    questions. Graceful: datasets without baselines contribute nothing. This is what the PI folds in
+    so exploration follows the observed structure across the whole corpus."""
+    if datasets is None:
+        try:
+            from ..data import datasets as ds_mod
+            datasets = ds_mod.ready_ids()
+        except Exception:
+            datasets = list(_DEFAULT_METRICS)
+    hints: list[str] = []
+    per: dict = {}
+    for d in datasets:
+        h, qs = hints_for_dataset(d)
+        per[d] = qs
+        for x in h:
+            if x not in hints:
+                hints.append(x)
+    return hints, per
+
+
+# ------------------------------------------ neighborhood discovery (pooled datasets) ---
+# E. coli is naturally partitioned into mutational series; pooled datasets (yeast, dream2022, ...)
+# are not. To dissect them per-neighborhood we DISCOVER clusters in sequence space first, treat each
+# cluster as a series-like unit, then dissect exactly as for E. coli. Cluster-level exploration comes
+# first; full-dataset (global) exploration follows once the per-neighborhood results are in.
+def _kmer_matrix(sequences, k: int = 3) -> np.ndarray:
+    from itertools import product
+    idx = {"".join(p): i for i, p in enumerate(product("ACGT", repeat=k))}
+    X = np.zeros((len(sequences), len(idx)), dtype=float)
+    for r, s in enumerate(sequences):
+        s = str(s).upper()
+        for i in range(len(s) - k + 1):
+            j = idx.get(s[i:i + k])
+            if j is not None:
+                X[r, j] += 1
+    row = X.sum(1, keepdims=True)
+    row[row == 0] = 1.0
+    return X / row                          # length-normalized k-mer composition
+
+
+def cluster_sequences(sequences, k: int = 8, *, seed: int = 0, kmer: int = 3) -> np.ndarray:
+    """Discover k neighborhoods in sequence space (length-normalized k-mer composition -> KMeans).
+    Deterministic for a given seed. Clamps k to the sample size; k<=1 -> a single neighborhood."""
+    n = len(sequences)
+    if n == 0:
+        return np.array([], dtype=int)
+    k = max(1, min(k, n))
+    if k == 1:
+        return np.zeros(n, dtype=int)
+    from sklearn.cluster import KMeans
+    X = _kmer_matrix(sequences, kmer)
+    return KMeans(n_clusters=k, random_state=seed, n_init=10).fit_predict(X).astype(int)
+
+
+def neighborhoods_to_metrics_frame(labels, y_true, y_pred, *, model: str = "pooled",
+                                   train_size: int = 0, min_n: int = 20) -> pd.DataFrame:
+    """Per-neighborhood R² from a pooled model's held-out predictions -> a dissect-compatible frame
+    (series = neighborhood id). Neighborhoods with < min_n test points are dropped (unstable R²)."""
+    from ..statistics.bootstrap import _r2
+    y_true, y_pred, labels = np.asarray(y_true, float), np.asarray(y_pred, float), np.asarray(labels)
+    rows = []
+    for c in np.unique(labels):
+        m = labels == c
+        if int(m.sum()) < min_n:
+            continue
+        rows.append({"iteration": "iteration_1", "series": int(c), "model": model,
+                     "train_size": int(train_size), "r2": _r2(y_true[m], y_pred[m]),
+                     "n": int(m.sum())})
+    return pd.DataFrame(rows)
+
+
+def dissect_pooled_predictions(sequences, y_true, y_pred, dataset: str = "unknown", *,
+                               k: int = 8, seed: int = 0, min_n: int = 20) -> list[GeneratedQuestion]:
+    """Discover neighborhoods in a pooled dataset and dissect them: cluster the held-out sequences,
+    compute per-neighborhood R² from an existing pooled model's predictions, and generate questions
+    (difficulty / ceiling; sensitivity needs multiple models). Pure over the arrays it is given —
+    the loop calls it once a pooled baseline has produced test predictions."""
+    labels = cluster_sequences(sequences, k=k, seed=seed)
+    frame = neighborhoods_to_metrics_frame(labels, y_true, y_pred,
+                                           train_size=len(y_true), min_n=min_n)
+    qs = dissect_metrics(frame, dataset)
+    for q in qs:                            # mark that the unit was discovered, not a natural series
+        q.evidence["unit"] = "discovered_neighborhood"
+    return qs

@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -82,3 +83,56 @@ def test_empty_or_tiny_corpus_yields_nothing():
     tiny = pd.DataFrame({"series": [1, 2], "model": ["rf", "rf"], "train_size": [10, 10],
                          "r2": [0.5, 0.5]})
     assert dissect.dissect_metrics(tiny, "x") == []          # < _MIN_SERIES
+
+
+# ------------------------------------------------------------------ PI wiring ---
+def test_aggregate_focus_hints_is_graceful_without_baselines(monkeypatch):
+    monkeypatch.setattr(dissect, "default_metrics_path", lambda d: None)
+    hints, per = dissect.aggregate_focus_hints(["ecoli", "yeast"])
+    assert hints == [] and set(per) == {"ecoli", "yeast"}
+
+
+def test_pi_plan_leads_with_data_driven_hints(monkeypatch):
+    import agents.planner as P
+
+    class _BadRouter:                       # force the deterministic path (no provider needed)
+        def resolve(self, *a, **k):
+            raise RuntimeError("no provider")
+
+    monkeypatch.setattr(P, "Router", lambda: _BadRouter())
+    focus, rationale, who = P.pi_plan([], insight_hints=["feature_representation"])
+    assert focus[0] == "feature_representation"              # data-driven prior leads
+    assert set(focus) >= set(P.INTERVENTIONS) and who == "deterministic"
+
+
+# ---------------------------------------- neighborhood discovery (pooled datasets) ---
+def test_cluster_sequences_deterministic_and_separates_groups():
+    seqs = ["GCGC" * 24 for _ in range(20)] + ["ATAT" * 24 for _ in range(20)]
+    a = dissect.cluster_sequences(seqs, k=2, seed=0)
+    assert list(a) == list(dissect.cluster_sequences(seqs, k=2, seed=0))    # deterministic
+    assert len(set(a)) == 2
+    assert len(set(a[:20])) == 1 and len(set(a[20:])) == 1 and a[0] != a[20]  # clean split
+    assert len(dissect.cluster_sequences(["ACGT"], k=8)) == 1               # k clamped to n
+
+
+def test_discovered_neighborhoods_dissect_like_series():
+    rng = np.random.default_rng(0)
+    labels = np.array([i // 30 for i in range(180)])          # 6 neighborhoods of 30
+    y = rng.normal(0, 1, 180)
+    pred = y + rng.normal(0, 0.2, 180)                        # good fit everywhere...
+    pred[:60] = rng.normal(0, 1, 60)                          # ...except neighborhoods 0,1 (noise)
+    frame = dissect.neighborhoods_to_metrics_frame(labels, y, pred, min_n=10)
+    assert set(frame["series"]) == {0, 1, 2, 3, 4, 5}
+    qs = dissect.dissect_metrics(frame, "yeast")
+    assert any(q.kind in ("series_difficulty", "model_agnostic_ceiling") for q in qs)
+
+
+def test_dissect_pooled_predictions_end_to_end_is_safe():
+    rng = np.random.default_rng(1)
+    seqs = (["GCGC" * 24 for _ in range(60)] + ["ATAT" * 24 for _ in range(60)]
+            + ["ACAC" * 24 for _ in range(60)] + ["TGTG" * 24 for _ in range(60)])
+    y = rng.normal(0, 1, 240)
+    pred = y + rng.normal(0, 0.3, 240)
+    qs = dissect.dissect_pooled_predictions(seqs, y, pred, "yeast", k=4, min_n=10)
+    assert isinstance(qs, list)
+    assert all(q.evidence.get("unit") == "discovered_neighborhood" for q in qs)
