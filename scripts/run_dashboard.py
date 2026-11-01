@@ -14,6 +14,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from urllib.parse import quote  # noqa: E402
+
 from flask import Flask, render_template_string, request  # noqa: E402
 from markupsafe import escape  # noqa: E402
 
@@ -22,9 +24,11 @@ from orchestration import store  # noqa: E402
 
 app = Flask(__name__)
 
-# Catalogue rows carry text harvested from publications and repository listings — untrusted data.
-# Everything from those columns goes through _e() before it reaches the page, and a DOI only becomes
-# a link when it looks like a DOI (never an arbitrary string that could be a javascript: URL).
+# EVERY value interpolated into a page is untrusted: council rows carry LLM prose (hypotheses,
+# reject reasons), catalogue rows carry text harvested from publications and repository listings, and
+# path parameters come from the URL. The body is rendered with `|safe`, so Jinja will not escape
+# anything for us — every interpolation goes through _e(), and a DOI only becomes a link when it
+# looks like a DOI (never an arbitrary string that could be a javascript: URL).
 _DOI_OK = __import__("re").compile(r"^10\.\d{4,9}/[^\s\"'<>]+$")
 
 
@@ -140,7 +144,7 @@ def _page(body: str):
 
 def _con():
     con = store.connect()
-    store.ingest_all(con)           # idempotent refresh
+    store.ingest_all_if_changed(con)    # idempotent, and a no-op unless an artifact stream changed
     return con
 
 
@@ -154,14 +158,17 @@ def scoreboard():
     for t in tours or [{"dataset": "—", "scope": "", "winner": "(no tournaments recorded yet)",
                         "winner_significant": 0, "selection": "", "ts": ""}]:
         sig = "<span class='chip ok'>yes</span>" if t.get("winner_significant") else "<span class='chip no'>no</span>"
-        b.append(f"<tr><td>{t.get('dataset')}</td><td>{t.get('scope','')}</td><td><b>{t.get('winner')}</b></td>"
-                 f"<td>{sig}</td><td class=mut>{t.get('selection','')}</td><td class=mut>{t.get('ts','')}</td></tr>")
+        b.append(f"<tr><td>{_e(t.get('dataset'))}</td><td>{_e(t.get('scope',''))}</td>"
+                 f"<td><b>{_e(t.get('winner'))}</b></td>"
+                 f"<td>{sig}</td><td class=mut>{_e(t.get('selection',''))}</td>"
+                 f"<td class=mut>{_e(t.get('ts',''))}</td></tr>")
     b.append("</table><h2>Accepted claims</h2><table>"
              "<tr><th>run</th><th>dataset</th><th>candidate vs baseline</th><th>ΔR²</th><th>unit</th><th>claim</th></tr>")
     for c in claims:
-        b.append(f"<tr><td class=mut>{c['run_id']}</td><td>{c['dataset']}</td>"
-                 f"<td>{c['candidate_model']} vs {c['baseline_model']}</td><td>{c['mean_delta_r2']}</td>"
-                 f"<td class=mut>{c['bootstrap_unit']}</td><td>{c['claim']}</td></tr>")
+        b.append(f"<tr><td class=mut>{_e(c['run_id'])}</td><td>{_e(c['dataset'])}</td>"
+                 f"<td>{_e(c['candidate_model'])} vs {_e(c['baseline_model'])}</td>"
+                 f"<td>{_e(c['mean_delta_r2'])}</td>"
+                 f"<td class=mut>{_e(c['bootstrap_unit'])}</td><td>{_e(c['claim'])}</td></tr>")
     b.append("</table>")
     con.close()
     return _page("".join(b))
@@ -174,9 +181,11 @@ def queries():
     b = ["<h1>Council queries</h1><table><tr><th>id</th><th>when</th><th>chair</th>"
          "<th>chosen</th><th>#proposals</th></tr>"]
     for q in qs:
-        b.append(f"<tr><td><a href='/query/{q['trajectory_id']}'>{q['trajectory_id']}</a></td>"
-                 f"<td class=mut>{q['ts']}</td><td>{q.get('chair_status') or ''}</td>"
-                 f"<td>{q.get('chosen_proposal_id') or ''}</td><td>{q.get('n_proposals') or ''}</td></tr>")
+        tid = _e(q["trajectory_id"])
+        b.append(f"<tr><td><a href='/query/{quote(q['trajectory_id'] or '', safe='')}'>{tid}</a></td>"
+                 f"<td class=mut>{_e(q['ts'])}</td><td>{_e(q.get('chair_status') or '')}</td>"
+                 f"<td>{_e(q.get('chosen_proposal_id') or '')}</td>"
+                 f"<td>{_e(q.get('n_proposals') or '')}</td></tr>")
     b.append("</table>")
     con.close()
     return _page("".join(b))
@@ -188,28 +197,32 @@ def query_detail(tid):
     d = store.query_detail(con, tid)
     con.close()
     if not d["query"]:
-        return _page(f"<h1>{tid}</h1><p class=mut>not found</p>")
-    b = [f"<h1>Council query <code>{tid}</code></h1>",
-         f"<p class=mut>chair: {d['query'].get('chair_status') or '—'} · "
-         f"chosen: {d['query'].get('chosen_proposal_id') or '—'}</p>"]
+        return _page(f"<h1>{_e(tid)}</h1><p class=mut>not found</p>")
+    b = [f"<h1>Council query <code>{_e(tid)}</code></h1>",
+         f"<p class=mut>chair: {_e(d['query'].get('chair_status')) or '—'} · "
+         f"chosen: {_e(d['query'].get('chosen_proposal_id')) or '—'}</p>"]
     b.append("<h2>Proposals</h2><table><tr><th>id</th><th>model vs comparator</th><th>intervention</th>"
              "<th>dataset</th><th>hypothesis</th></tr>")
     for p in d["proposals"]:
-        b.append(f"<tr><td>{p['proposal_id']}</td><td>{p['model_family']} vs {p['comparator_model']}</td>"
-                 f"<td class=mut>{p['intervention_type']}</td><td>{p['dataset']}"
-                 f"{'/'+p['subregion'] if p.get('subregion') not in (None,'all') else ''}</td>"
-                 f"<td>{p['hypothesis']}</td></tr>")
+        sub = f"/{_e(p['subregion'])}" if p.get("subregion") not in (None, "all") else ""
+        b.append(f"<tr><td>{_e(p['proposal_id'])}</td>"
+                 f"<td>{_e(p['model_family'])} vs {_e(p['comparator_model'])}</td>"
+                 f"<td class=mut>{_e(p['intervention_type'])}</td><td>{_e(p['dataset'])}{sub}</td>"
+                 f"<td>{_e(p['hypothesis'])}</td></tr>")
     b.append("</table><h2>Reviews</h2><table><tr><th>proposal</th><th>role</th><th>feas</th>"
              "<th>value</th><th>clean</th><th>repro</th><th>reject</th></tr>")
     for r in d["reviews"]:
-        b.append(f"<tr><td>{r['proposal_id']}</td><td>{r['role']}</td><td>{r['feasibility']}</td>"
-                 f"<td>{r['scientific_value']}</td><td>{r['confoundedness']}</td>"
-                 f"<td>{r['reproducibility']}</td><td class=mut>{r['reject_reason'] or ''}</td></tr>")
+        b.append(f"<tr><td>{_e(r['proposal_id'])}</td><td>{_e(r['role'])}</td>"
+                 f"<td>{_e(r['feasibility'])}</td>"
+                 f"<td>{_e(r['scientific_value'])}</td><td>{_e(r['confoundedness'])}</td>"
+                 f"<td>{_e(r['reproducibility'])}</td>"
+                 f"<td class=mut>{_e(r['reject_reason'] or '')}</td></tr>")
     b.append("</table><h2>Decision trail (RL-trace)</h2><table><tr><th>when</th><th>decision</th>"
              "<th>action</th><th>policy</th><th>reason</th></tr>")
     for e in d["events"]:
-        b.append(f"<tr><td class=mut>{e['ts']}</td><td>{e['decision_type']}</td>"
-                 f"<td>{e['selected_action']}</td><td class=mut>{e['policy']}</td><td>{e['reason']}</td></tr>")
+        b.append(f"<tr><td class=mut>{_e(e['ts'])}</td><td>{_e(e['decision_type'])}</td>"
+                 f"<td>{_e(e['selected_action'])}</td><td class=mut>{_e(e['policy'])}</td>"
+                 f"<td>{_e(e['reason'])}</td></tr>")
     b.append("</table>")
     return _page("".join(b))
 
@@ -224,9 +237,11 @@ def datasets():
     for d in ds:
         ready = "<span class='chip ok'>ready</span>" if d["ready"] else "<span class='chip no'>—</span>"
         strata = ", ".join(json.loads(d.get("strata") or "[]"))
-        b.append(f"<tr><td><a href='/dataset/{d['id']}'><b>{d['id']}</b></a></td><td>{d['organism']}</td>"
-                 f"<td>{d['modality']}</td><td>{d['seq_len']}</td><td>{d['structure']}</td>"
-                 f"<td class=mut>{d['bootstrap_unit']}</td><td class=mut>{strata}</td><td>{ready}</td></tr>")
+        b.append(f"<tr><td><a href='/dataset/{quote(d['id'] or '', safe='')}'><b>{_e(d['id'])}</b></a></td>"
+                 f"<td>{_e(d['organism'])}</td>"
+                 f"<td>{_e(d['modality'])}</td><td>{_e(d['seq_len'])}</td><td>{_e(d['structure'])}</td>"
+                 f"<td class=mut>{_e(d['bootstrap_unit'])}</td><td class=mut>{_e(strata)}</td>"
+                 f"<td>{ready}</td></tr>")
     b.append("</table>")
     return _page("".join(b))
 
@@ -234,12 +249,15 @@ def datasets():
 @app.route("/dataset/<did>")
 def dataset_card(did):
     from seq2yield.data import data_card
-    c = data_card.card(did)
-    b = [f"<h1>Dataset <code>{did}</code></h1>",
-         f"<p class=mut>{c.get('organism')} · {c.get('modality')} · {c.get('seq_len')} bp · "
-         f"{c.get('structure')} ({c.get('bootstrap_unit')} unit)</p>"]
+    try:
+        c = data_card.card(did)
+    except KeyError:                                   # unknown id: say so, do not 500
+        return _page(f"<h1>Dataset <code>{_e(did)}</code></h1><p class=mut>no such dataset</p>"), 404
+    b = [f"<h1>Dataset <code>{_e(did)}</code></h1>",
+         f"<p class=mut>{_e(c.get('organism'))} · {_e(c.get('modality'))} · {_e(c.get('seq_len'))} bp · "
+         f"{_e(c.get('structure'))} ({_e(c.get('bootstrap_unit'))} unit)</p>"]
     if c.get("note"):
-        b.append(f"<p class=no chip>{c['note']}</p>")
+        b.append(f"<p class=no chip>{_e(c['note'])}</p>")
     if c.get("n"):
         t = c["target"]
         b.append(f"<h2>Distribution ({c['n']:,} rows)</h2><table>"
@@ -251,11 +269,11 @@ def dataset_card(did):
                  f"<th>GC mean±std</th><td>{c['gc']['mean']} ± {c['gc']['std']}</td></tr></table>")
         b.append("<h2>Strata balance</h2>")
         for s, bal in (c.get("strata_balance") or {}).items():
-            frac = " · ".join(f"{k}={v}" for k, v in bal.items())
-            b.append(f"<p><b>{s}</b>: {frac}</p>")
+            frac = " · ".join(f"{_e(k)}={_e(v)}" for k, v in bal.items())
+            b.append(f"<p><b>{_e(s)}</b>: {frac}</p>")
     prov = c.get("source") or {}
-    b.append(f"<h2>Provenance</h2><p class=mut>source: {prov} · citation: {c.get('citation') or '—'} "
-             f"· license: {c.get('license') or '—'}</p>")
+    b.append(f"<h2>Provenance</h2><p class=mut>source: {_e(prov)} · "
+             f"citation: {_e(c.get('citation')) or '—'} · license: {_e(c.get('license')) or '—'}</p>")
     return _page("".join(b))
 
 
@@ -331,10 +349,10 @@ def cost():
     b = [f"<h1>Cost</h1><p>{c['n_calls']} model calls · <b>${c['total_cost_usd']}</b> · "
          f"{c['total_tokens']:,} tokens · {c['n_success']} ok</p>"
          f"<p class=mut>cost per accepted claim: <b>${cpc['cost_per_accepted_claim']}</b> "
-         f"({cpc['n_accepted_claims']} accepted; {cpc.get('by_status')})</p>"
+         f"({cpc['n_accepted_claims']} accepted; {_e(cpc.get('by_status'))})</p>"
          "<h2>By role</h2><table><tr><th>role</th><th>calls</th><th>cost</th></tr>"]
     for r in c["by_role"]:
-        b.append(f"<tr><td>{r['role']}</td><td>{r['calls']}</td><td>${round(r['cost'],4)}</td></tr>")
+        b.append(f"<tr><td>{_e(r['role'])}</td><td>{r['calls']}</td><td>${round(r['cost'],4)}</td></tr>")
     b.append("</table>")
     return _page("".join(b))
 

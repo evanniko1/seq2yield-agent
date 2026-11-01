@@ -281,7 +281,8 @@ def test_catalogue_page_escapes_publication_text(tmp_path, monkeypatch):
     spec.loader.exec_module(dash)
 
     from orchestration import store
-    con = store.connect(tmp_path / "db.sqlite")
+    db = tmp_path / "db.sqlite"
+    con = store.connect(db)
     nasty = '<img src=x onerror=alert(1)>'
     cat.save([CatalogueEntry(id="x1", title=nasty, status="candidate", organism="Homo sapiens",
                              modality="promoter", project_value={"score": 1},
@@ -289,11 +290,48 @@ def test_catalogue_page_escapes_publication_text(tmp_path, monkeypatch):
              tmp_path / "c.jsonl")
     store.ingest_catalogue(con, tmp_path / "c.jsonl")
     con.commit()
-    monkeypatch.setattr(dash, "_con", lambda: con)
+    con.close()
+    monkeypatch.setattr(dash, "_con", lambda: store.connect(db))
     html = dash.app.test_client().get("/catalogue").get_data(as_text=True)
     assert nasty not in html and "&lt;img" in html                   # rendered as text, not markup
     assert "href='javascript" not in html                            # a non-DOI is never linkified
     assert "x1" in html
+
+
+def test_council_pages_escape_llm_text(tmp_path, monkeypatch):
+    """The dashboard body is rendered with |safe, so Jinja escapes nothing: every page that prints
+    LLM prose (proposal hypotheses, reviewer reject reasons, claims) must escape it itself, and the
+    path parameter must not be reflected raw."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("dash_council", ROOT / "scripts" / "run_dashboard.py")
+    dash = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(dash)
+
+    from orchestration import store
+    db = tmp_path / "db.sqlite"
+    con = store.connect(db)
+    hyp = "<script>alert('hyp')</script>"
+    rej = "<img src=x onerror=alert('rej')>"
+    claim = "<svg onload=alert('claim')>"
+    con.execute("INSERT OR REPLACE INTO council_query VALUES ('t1','ts','f','r',1,'approve','H1',NULL)")
+    con.execute("INSERT OR REPLACE INTO proposal VALUES ('t1','H1','cnn','rf','model_architecture',"
+                "'ecoli','all','t',?)", (hyp,))
+    con.execute("INSERT OR REPLACE INTO review VALUES ('t1','H1','critic',3,3,3,3,?)", (rej,))
+    con.execute("INSERT OR REPLACE INTO claim VALUES ('R1','ts','cnn','rf',0.03,1,0.01,'series',"
+                "'ecoli',2000,'accepted',?)", (claim,))
+    con.commit()
+    con.close()
+    monkeypatch.setattr(dash, "_con", lambda: store.connect(db))   # each route closes its own
+    c = dash.app.test_client()
+
+    detail = c.get("/query/t1").get_data(as_text=True)
+    assert hyp not in detail and rej not in detail
+    assert "&lt;script&gt;" in detail and "&lt;img" in detail
+    home = c.get("/").get_data(as_text=True)
+    assert claim not in home and "&lt;svg" in home
+    reflected = c.get("/query/<img src=x onerror=alert(1)>").get_data(as_text=True)
+    assert "<img src=x" not in reflected and "&lt;img src=x" in reflected
+    assert c.get("/dataset/no-such-dataset").status_code == 404      # unknown id, not a 500
 
 
 def test_catalogue_page_ignores_an_unknown_status_filter(tmp_path, monkeypatch):
@@ -303,13 +341,17 @@ def test_catalogue_page_ignores_an_unknown_status_filter(tmp_path, monkeypatch):
     spec.loader.exec_module(dash)
 
     from orchestration import store
-    con = store.connect(tmp_path / "db.sqlite")
+    db = tmp_path / "db.sqlite"
+    con = store.connect(db)
     store.ingest_catalogue(con, _catalogue_file(tmp_path))
     con.commit()
-    monkeypatch.setattr(dash, "_con", lambda: con)
+    con.close()
+    monkeypatch.setattr(dash, "_con", lambda: store.connect(db))
     c = dash.app.test_client()
-    assert "d1" in c.get("/catalogue?status=<script>").get_data(as_text=True)
-    assert "d1" not in c.get("/catalogue?status=registered").get_data(as_text=True)
+    bogus = c.get("/catalogue?status=<script>")
+    assert bogus.status_code == 200 and "d1" in bogus.get_data(as_text=True)
+    narrowed = c.get("/catalogue?status=registered")
+    assert narrowed.status_code == 200 and "d1" not in narrowed.get_data(as_text=True)
 
 
 # --------------------------------------------------------------- the real catalogue file is sane

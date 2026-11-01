@@ -4,6 +4,7 @@ dashboard query helpers (scoreboard, per-query trail, cost). Synthetic artifacts
 from __future__ import annotations
 
 import json
+import sqlite3
 import sys
 from pathlib import Path
 
@@ -85,3 +86,54 @@ def test_ingest_is_idempotent(tmp_path):
     store.ingest_all(con, root=root)                       # re-run must not duplicate PK rows
     assert len(store.accepted_claims(con)) == 1 and len(store.scoreboard(con)) == 1
     assert len(store.council_queries(con)) == 2            # T1 (trace) + review:2026-07-01
+
+
+def test_model_calls_and_reviews_do_not_accumulate(tmp_path):
+    """The dashboard re-ingests on navigation; without keys on these two tables every pass appended
+    another copy of every row and the cost card read ~356x the true spend."""
+    root = tmp_path / "repo"
+    _seed(root)
+    con = store.connect(tmp_path / "db.sqlite")
+    for _ in range(3):
+        store.ingest_all(con, root=root)
+    assert con.execute("SELECT COUNT(*) FROM model_call").fetchone()[0] == 2
+    assert con.execute("SELECT COUNT(*) FROM review").fetchone()[0] == 1
+    assert round(store.cost_summary(con)["total_cost_usd"], 4) == 0.01
+    assert store.cost_summary(con)["total_tokens"] == 370
+
+
+def test_connect_rebuilds_a_legacy_keyless_table(tmp_path):
+    """An existing DB keeps its old schema under CREATE TABLE IF NOT EXISTS, so connect() has to
+    rebuild the key-less table — otherwise the fix never reaches anyone's live DB."""
+    root = tmp_path / "repo"
+    _seed(root)
+    db = tmp_path / "legacy.sqlite"
+    con = sqlite3.connect(str(db))
+    con.execute("CREATE TABLE model_call(ts TEXT, trajectory_id TEXT, role TEXT, provider TEXT, "
+                "model TEXT, input_tokens INTEGER, output_tokens INTEGER, cost_usd REAL, success INTEGER)")
+    for _ in range(4):                                     # the duplication this bug produced
+        con.execute("INSERT INTO model_call VALUES ('t1','T1','chair','anthropic','claude',1,1,0.01,1)")
+    con.commit()
+    con.close()
+
+    con = store.connect(db)
+    assert con.execute("SELECT COUNT(*) FROM model_call").fetchone()[0] == 0   # stale rows dropped
+    store.ingest_all(con, root=root)
+    store.ingest_all(con, root=root)
+    assert con.execute("SELECT COUNT(*) FROM model_call").fetchone()[0] == 2
+    assert any(c["pk"] for c in con.execute("PRAGMA table_info(model_call)").fetchall())
+
+
+def test_ingest_all_if_changed_skips_untouched_sources(tmp_path):
+    root = tmp_path / "repo"
+    _seed(root)
+    con = store.connect(tmp_path / "db.sqlite")
+    assert store.ingest_all_if_changed(con, root=root) is not None     # first pass ingests
+    assert store.ingest_all_if_changed(con, root=root) is None         # nothing changed -> no work
+    p = root / "reports/model_calls.jsonl"
+    p.write_text(p.read_text(encoding="utf-8") + "\n" + json.dumps(
+        {"timestamp": "t3", "trajectory_id": "T1", "role": "chair", "provider": "ollama",
+         "model": "llama", "token_usage": {"input": 1, "output": 1}, "cost_usd": 0.0,
+         "success": True}) + "\n", encoding="utf-8")
+    assert store.ingest_all_if_changed(con, root=root) is not None     # a new line is picked up
+    assert con.execute("SELECT COUNT(*) FROM model_call").fetchone()[0] == 3

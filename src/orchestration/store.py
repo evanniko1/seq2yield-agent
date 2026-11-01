@@ -26,7 +26,8 @@ SCHEMA = [
         PRIMARY KEY(trajectory_id, proposal_id))""",
     """CREATE TABLE IF NOT EXISTS review(
         trajectory_id TEXT, proposal_id TEXT, role TEXT, feasibility REAL, scientific_value REAL,
-        confoundedness REAL, reproducibility REAL, reject_reason TEXT)""",
+        confoundedness REAL, reproducibility REAL, reject_reason TEXT,
+        PRIMARY KEY(trajectory_id, proposal_id, role))""",
     """CREATE TABLE IF NOT EXISTS claim(
         run_id TEXT PRIMARY KEY, ts TEXT, candidate_model TEXT, baseline_model TEXT,
         mean_delta_r2 REAL, ci_excludes_zero INTEGER, p_value REAL, bootstrap_unit TEXT,
@@ -34,7 +35,10 @@ SCHEMA = [
     """CREATE TABLE IF NOT EXISTS tournament(
         run_id TEXT PRIMARY KEY, ts TEXT, dataset TEXT, subregion TEXT, scope TEXT, winner TEXT,
         winner_significant INTEGER, selection TEXT, bootstrap_unit TEXT, leaderboard TEXT)""",
+    # `seq` is the record's line number in the append-only log, which makes re-ingest idempotent
+    # WITHOUT collapsing two genuinely identical calls (a content hash would).
     """CREATE TABLE IF NOT EXISTS model_call(
+        seq INTEGER PRIMARY KEY,
         ts TEXT, trajectory_id TEXT, role TEXT, provider TEXT, model TEXT,
         input_tokens INTEGER, output_tokens INTEGER, cost_usd REAL, success INTEGER)""",
     """CREATE TABLE IF NOT EXISTS trace_event(
@@ -58,11 +62,38 @@ SCHEMA = [
 ]
 
 
+def _table_name(stmt: str) -> str:
+    return stmt.split("EXISTS", 1)[1].split("(", 1)[0].strip()
+
+
+def _migrate(con) -> list[str]:
+    """Rebuild any table whose stored schema predates its primary key. The DB is a read-model over
+    append-only artifacts, so dropping a stale table loses nothing — `ingest_all` repopulates it.
+    Without this, `CREATE TABLE IF NOT EXISTS` silently keeps a key-less table and every ingest
+    appends a fresh copy of every row (the $90-vs-$0.26 cost bug)."""
+    dropped = []
+    for stmt in SCHEMA:
+        table = _table_name(stmt)
+        cols = con.execute(f"PRAGMA table_info({table})").fetchall()
+        if not cols:
+            continue                                   # new table: created below
+        has_pk = any(c["pk"] for c in cols)
+        wanted_pk = "PRIMARY KEY" in stmt.upper()
+        if wanted_pk and not has_pk:
+            con.execute(f"DROP TABLE {table}")
+            dropped.append(table)
+    if dropped:
+        con.commit()
+        con.execute("VACUUM")          # DROP alone leaves the freed pages in the file (it was 33 MB)
+    return dropped
+
+
 def connect(path: str | Path | None = None) -> sqlite3.Connection:
     p = Path(path or DB_PATH)
     p.parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(str(p))
     con.row_factory = sqlite3.Row
+    _migrate(con)
     for stmt in SCHEMA:
         con.execute(stmt)
     con.commit()
@@ -84,9 +115,10 @@ def _read_jsonl(path: Path):
 # ---------------------------------------------------------------- ingest
 def ingest_model_calls(con, path: Path) -> int:
     n = 0
-    for r in _read_jsonl(path):
+    for seq, r in enumerate(_read_jsonl(path)):
         u = r.get("token_usage") or {}
         _put(con, "model_call", {
+            "seq": seq,
             "ts": r.get("timestamp") or r.get("ts"), "trajectory_id": r.get("trajectory_id"),
             "role": r.get("role"), "provider": r.get("provider"), "model": r.get("model"),
             "input_tokens": u.get("input", u.get("prompt_tokens")) or 0,
@@ -169,10 +201,13 @@ def ingest_council_reviews(con, review_dir: Path) -> int:
                 "hypothesis": p.get("scientific_hypothesis")})
         for pid, items in (reviews.get("reviews") or {}).items():
             for it in items:
-                con.execute("INSERT INTO review VALUES (?,?,?,?,?,?,?,?)", (
-                    tid, pid, it.get("role"), it.get("score_feasibility"),
-                    it.get("score_scientific_value"), it.get("score_confoundedness"),
-                    it.get("score_reproducibility"), it.get("reject_reason")))
+                _put(con, "review", {
+                    "trajectory_id": tid, "proposal_id": pid, "role": it.get("role"),
+                    "feasibility": it.get("score_feasibility"),
+                    "scientific_value": it.get("score_scientific_value"),
+                    "confoundedness": it.get("score_confoundedness"),
+                    "reproducibility": it.get("score_reproducibility"),
+                    "reject_reason": it.get("reject_reason")})
         n += 1
     return n
 
@@ -226,6 +261,42 @@ def ingest_catalogue(con, path: Path) -> int:
                 "url": a.get("url"), "n_files": len(a.get("files") or [])})
         n += 1
     return n
+
+
+_SOURCES = ("reports/model_calls.jsonl", "reports/decision_events.jsonl",
+            "experiments/claims/registry.jsonl", "experiments/claims/tournaments.jsonl",
+            "experiments/council_reviews", "configs/datasets", "data/catalogue/datasets.jsonl")
+_FINGERPRINTS: dict[str, tuple] = {}
+
+
+def _fingerprint(root: Path) -> tuple:
+    """(path, mtime_ns, size) of every source stream — a directory folds in its children."""
+    out = []
+    for rel in _SOURCES:
+        p = root / rel
+        paths = sorted(p.rglob("*")) if p.is_dir() else [p]
+        for q in paths:
+            try:
+                st = q.stat()
+            except OSError:
+                continue
+            out.append((str(q.relative_to(root)), st.st_mtime_ns, st.st_size))
+    return tuple(out)
+
+
+def ingest_all_if_changed(con, root: Path | None = None) -> dict | None:
+    """Ingest only when a source stream actually changed; otherwise return None.
+
+    The ingest is idempotent, but a 5-second page refresh re-reading every artifact stream is pure
+    waste — and it was the delivery mechanism for the duplicate-row bug before the tables had keys."""
+    root = root or ROOT
+    key = str(Path(con.execute("PRAGMA database_list").fetchone()["file"] or ":memory:"))
+    fp = _fingerprint(root)
+    if _FINGERPRINTS.get(key) == fp:
+        return None
+    counts = ingest_all(con, root)
+    _FINGERPRINTS[key] = fp
+    return counts
 
 
 def ingest_all(con, root: Path | None = None) -> dict:

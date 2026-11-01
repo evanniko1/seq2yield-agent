@@ -9,7 +9,8 @@ from orchestration import store  # noqa: E402
 
 def test_cost_per_claim(tmp_path):
     con = store.connect(tmp_path / "db.sqlite")
-    con.execute("INSERT INTO model_call VALUES (?,?,?,?,?,?,?,?,?)",
+    con.execute("INSERT INTO model_call (ts,trajectory_id,role,provider,model,input_tokens,"
+                "output_tokens,cost_usd,success) VALUES (?,?,?,?,?,?,?,?,?)",
                 ("t", "T1", "chair", "anthropic", "claude", 100, 50, 0.20, 1))
     con.execute("INSERT INTO claim (run_id,status,claim) VALUES ('R1','accepted','cnn wins')")
     con.execute("INSERT INTO claim (run_id,status,claim) VALUES ('R2','rejected',NULL)")
