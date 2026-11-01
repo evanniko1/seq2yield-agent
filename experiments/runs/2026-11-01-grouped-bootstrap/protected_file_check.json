@@ -1,0 +1,61 @@
+{
+  "passed": true,
+  "violations": [],
+  "by_path": {
+    "src/seq2yield/statistics/bootstrap.py": {
+      "class": "conditional",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/experiments/pooled_runner.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/experiments/tournament.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/experiments/config_transfer.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/orchestration/execution_harness.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/diagnostics/signals.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/diagnostics/collect.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/diagnostics/critic.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "configs/methodology_pitfalls.yaml": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_grouped_bootstrap.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/DECISIONS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    }
+  }
+}

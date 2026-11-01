@@ -465,6 +465,39 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #63 — Family-aware (cluster) bootstrap: the resampling unit is the design family
+- **Authorization.** `src/seq2yield/statistics/**` is CONDITIONALLY protected, so this change ran
+  the project's own gate first: `approvals.decide('2026-11-01-grouped-bootstrap', paths,
+  approver=...)` granted, `git_guard.check_paths(..., human_review=True)` passed, record in
+  `experiments/runs/2026-11-01-grouped-bootstrap/`. Human approval given in session ("do the
+  bootstrap too"); no agent may make this edit unprompted.
+- **Why (audit ST-7, the other half of SA-1/ML-03).** Grouped splits fixed WHICH sequences are
+  scored; they did not fix how they are COUNTED. `paired_bootstrap_r2` resampled test rows, so a
+  4-member design family counted as 4 independent observations and the CI came out too narrow.
+  Measured type-I error on an exactly-null but clustered comparison (200 trials, nominal 5%):
+  **46–56% with the sequence unit** vs 5.5–12.5% with the family unit (the full table, by unit
+  count, is in `configs/methodology_pitfalls.yaml`).
+- **What.** `groups=` on `paired_bootstrap_r2` / `bootstrap_r2_ci` resamples whole families (a
+  cluster bootstrap). Invariants, each pinned by a test: without `groups` the behaviour is
+  **bit-for-bit** what it was (legacy run-cards still reproduce); with one label per row it reduces
+  **exactly** to the sequence bootstrap (a random library is unaffected); the point estimate never
+  moves — only the interval. Below 2 units it refuses to report a CI at all instead of redrawing
+  the identical sample and calling any delta significant (the same hole existed in
+  `paired_bootstrap_ci` at n=1 and is now closed).
+- **Wiring.** The pooled harness, tournaments and config-transfer pass the held-out rows' families
+  and record the effective unit as the C3 `bootstrap_unit` (`sequence` | `family` | `series`) plus
+  `n_bootstrap_units`, so a family-unit CI can never be silently compared with a sequence-unit one.
+  Also fixed: C6 subregion runs filtered the bare frame and so fell back to the stratified split —
+  `pooled_runner.scope_frame` attaches families before the filter.
+- **Consequence on real comparisons** (same predictions, two units, train=2000): dream2022
+  `cnn > rf` ΔR²=0.363 survives (CI ±0.042 → ±0.118 wide, 2,064 families) — a real effect stays
+  real. Yeast has only **20 families in the held-out set**: `rf > mlp` ΔR²=0.444 went from
+  p<0.0001, CI [0.285, 0.627] to **p=0.133, CI [-0.099, 1.662] — accepted to inconclusive**. The
+  yeast benchmark's effective n is 20 series, not 397 sequences.
+- **New advisory flag** `too_few_bootstrap_units` (<25 units; measured threshold) — fires on yeast
+  (20) and on the 5–8-series E. coli comparisons, which is audit ST-2 made observable.
+- Tests: `tests/test_grouped_bootstrap.py` (15). 458 passing, 1 skipped.
+
 ## #62 — Mixed-effects / ICC: the grouped E. coli series get their proper estimator
 - **Why (promoted from deferred).** The benchmark is a grouped design (56 mutational series × MC-CV
   iterations); bootstrapping over series gives a CI but a **random-effects model** answers the

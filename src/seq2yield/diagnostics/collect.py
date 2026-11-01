@@ -70,6 +70,24 @@ def _pooled_frames(spec, size):
     return _cap(P.subsample(train_full, size, spec.sampling_policy, spec.seed), spec.seed), test
 
 
+def _unit_labels(spec, test_frame, pooled: bool):
+    """(labels, unit name) for the test rows' RESAMPLING unit — what the paired bootstrap will
+    actually draw: a design family when the frame carries one, else the dataset's declared unit
+    (series for E. coli, one sequence for a pooled library)."""
+    import numpy as np
+
+    from ..data import datasets
+    from ..experiments.pooled_runner import FAMILY_COL
+    if FAMILY_COL in test_frame.columns:
+        return test_frame[FAMILY_COL].to_numpy(), "family"
+    declared = (datasets.spec(spec.dataset).bootstrap_unit if datasets.exists(spec.dataset)
+                else ("sequence" if pooled else "series"))
+    from ..data.cleaning import SERIES_COL
+    if declared == "series" and SERIES_COL in test_frame.columns:
+        return test_frame[SERIES_COL].to_numpy(), "series"
+    return np.arange(len(test_frame)), "sequence"
+
+
 def diagnose(spec, comparison_size: int, per_size=None) -> dict:
     """Run the diagnostic probe and return {diagnostics, methodology_flags, flag_summary}."""
     from ..data import datasets
@@ -81,12 +99,14 @@ def diagnose(spec, comparison_size: int, per_size=None) -> dict:
         spec.model_family, train_frame, test_frame, feature_set=spec.feature_set,
         feature_scaling=spec.feature_scaling, hyperparameters=spec.hyperparameters,
         seed=spec.seed, length=length, dataset=spec.dataset)
+    unit_labels, unit_name = _unit_labels(spec, test_frame, pooled)
     diagnostics = {
         "generalization_gap": S.generalization_gap(ytr, ptr, yte, pte),
         "calibration": S.calibration(yte, pte),
         "residuals": S.residual_diagnostics(yte, pte),
         "representativeness": S.split_representativeness(ytr, yte),
         "leakage": S.sequence_leakage(train_frame[SEQ_COL], test_frame[SEQ_COL]),
+        "bootstrap_units": S.resampling_units(unit_labels, unit=unit_name),
         "coverage": S.target_coverage(ytr, yte),
         "learning_curve": S.learning_curve_shape(per_size or []),
         "probe": {"dataset": spec.dataset, "model_family": spec.model_family,

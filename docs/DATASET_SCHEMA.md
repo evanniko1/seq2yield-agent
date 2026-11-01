@@ -17,10 +17,12 @@ new dataset is a **config + adapter** change — never an edit to a strict prote
 | `target_col` | string | `Protein` | the raw source column the adapter reads |
 | `target_transform` | string | `none` | none / standardize / logit / log1p (parameter-free, leakage-safe) |
 | `structure` | string | `per_series` | per_series / pooled |
-| `bootstrap_unit` | string | `series` | series / sequence (the C3 comparability fence) |
+| `bootstrap_unit` | string | `series` | series / sequence (the C3 comparability fence). The *effective* unit on a run-card is `family` when the dataset declares design families — see below |
 | `throughput_floor` | integer | `10000` | intake-audit minimum row count |
 | `adapter` | string \| null | `None` | module in `data/adapters/` (None = built-in E. coli path) |
-| `split_strategy` | string | `provided` | provided / stratified_holdout |
+| `split_strategy` | string | `provided` | provided / stratified_holdout / **grouped_holdout** (whole design families held out — required for any designed library) |
+| `family_col` | string \| null | `None` | column that already names each row's design family (e.g. `mut_series`); preferred over deriving one |
+| `family_distance` | integer \| null | `None` | if no column: group sequences within this Hamming distance into one family (connected components). Governs the split AND the bootstrap unit (DECISIONS #63) |
 | `applicable_models` | array | `[rf, mlp, cnn]` | |
 | `applicable_feature_sets` | array | `[one_hot, kmer]` | |
 | `applicable_embedders` | array | `[]` | K2a foundation-model embedders that apply |

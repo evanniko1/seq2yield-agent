@@ -89,6 +89,26 @@ def with_families(df: pd.DataFrame, ds) -> tuple[pd.DataFrame, str]:
     return df.assign(**{FAMILY_COL: labels.to_numpy()}), how
 
 
+def scope_frame(dataset_id: str) -> pd.DataFrame:
+    """The dataset's frame with design families already attached (when it declares them).
+
+    This is the frame a C6 subregion filter must start from: `strata.filter` keeps whole rows, so
+    the family label survives the filter and `holdout_frame` can still hold whole families out.
+    Filtering the bare frame instead would silently put a subregion tournament back on the
+    stratified split the grouped-holdout fix removed (audit SA-1/ML-03)."""
+    ds = datasets.spec(dataset_id)
+    df = _frame(dataset_id)
+    if ds.split_strategy == "grouped_holdout":
+        df, _ = with_families(df, ds)
+    return df
+
+
+def families_of(frame: pd.DataFrame):
+    """The design-family label per row, or None when the frame carries no grouping — i.e. the
+    `groups=` argument for the paired bootstrap, whose unit must be the family (audit ST-7)."""
+    return frame[FAMILY_COL].to_numpy() if FAMILY_COL in frame.columns else None
+
+
 def holdout(spec, frac: float = 0.1):
     """(train, test) frames. Provided split if the adapter supplied one; else `grouped_holdout`
     when the dataset declares design families; else a stratified holdout (per-group if a series
@@ -168,5 +188,5 @@ def run_pooled(spec, *, model_family: str | None = None, frac: float = 0.1) -> d
             "test_series": test[SERIES_COL].to_numpy() if SERIES_COL in test.columns else None,
             # Design families of the held-out rows: the correct resampling unit for a dataset whose
             # members are not independent (a 4-member family is not 4 observations).
-            "test_families": test[FAMILY_COL].to_numpy() if FAMILY_COL in test.columns else None,
+            "test_families": families_of(test),
             "preds": preds, "n_train_full": int(len(train_full))}

@@ -50,6 +50,8 @@ class TransferResult:
     n_test: int
     min_delta: float
     verdict: str                     # beats_default | ties_default | worse_than_default
+    bootstrap_unit: str = "sequence"   # sequence | family (C3 fence; family = designed library)
+    n_bootstrap_units: int | None = None
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -70,7 +72,8 @@ def _scope_frames(dataset: str, subregion: str | None, seed: int):
         return work, held
     if subregion is not None:                            # C6 strata subregion of a pooled dataset
         from ..data import strata
-        sub = strata.filter(pooled_runner._frame(dataset), dataset, str(subregion))
+        # families attached BEFORE the filter, so the subregion keeps the grouped split (SA-1)
+        sub = strata.filter(pooled_runner.scope_frame(dataset), dataset, str(subregion))
         return pooled_runner.holdout_frame(sub, seed=seed)
     return pooled_runner.holdout(SimpleNamespace(dataset=dataset, seed=seed))
 
@@ -139,7 +142,8 @@ def transfer(model: str, *, source_dataset: str, target_dataset: str,
                                          feature_set, feature_scaling, seed)
     pred_d = tournament._fit_predict_seq(target_dataset, model, sub, test, default_cfg,
                                          feature_set, feature_scaling, seed)
-    bs = paired_bootstrap_r2(y_test, pred_t, pred_d, n_boot=n_boot, seed=seed)
+    bs = paired_bootstrap_r2(y_test, pred_t, pred_d, groups=pooled_runner.families_of(test),
+                             n_boot=n_boot, seed=seed)
     delta = bs["mean_delta"]
     if bs["excludes_zero"] and delta >= md:
         verdict = "beats_default"
@@ -156,7 +160,8 @@ def transfer(model: str, *, source_dataset: str, target_dataset: str,
         r2_default=round(float(M.r2(y_test, pred_d)), 4),
         mean_delta=round(float(delta), 4), ci=[round(x, 4) for x in bs["ci"]],
         p_value=round(float(bs["p_value"]), 4), excludes_zero=bool(bs["excludes_zero"]),
-        n_test=int(len(y_test)), min_delta=md, verdict=verdict)
+        n_test=int(len(y_test)), min_delta=md, verdict=verdict,
+        bootstrap_unit=bs["unit"], n_bootstrap_units=int(bs["n_units"]))
     if record:
         record_transfer(res)
     return res
@@ -175,6 +180,6 @@ def record_transfer(res: TransferResult, claims_dir: str | Path | None = None) -
         comparison={"candidate_model": res.model, "baseline_model": res.model,
                     "mean_delta": res.mean_delta, "paired_bootstrap_ci": res.ci,
                     "ci_excludes_zero": res.excludes_zero, "p_value": res.p_value,
-                    "bootstrap_unit": "sequence", "dataset": res.target_dataset,
+                    "bootstrap_unit": res.bootstrap_unit, "dataset": res.target_dataset,
                     "comparison_train_size": None, "intervention_type": "config_transfer"},
         claim_allowed=claim, claims_dir=claims_dir)

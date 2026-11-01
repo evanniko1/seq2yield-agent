@@ -4,7 +4,7 @@
 # narrates. Flags are ADVISORY — they never change the harness's statistical verdict.
 #
 # signal: dotted path into the diagnostics dict (top-level key . field).
-# op: ">" | "abs_gt" | "far_from_one" | "is_true"   threshold: numeric (where applicable)
+# op: ">" | "<" | "abs_gt" | "far_from_one" | "is_true"   threshold: numeric (where applicable)
 pitfalls:
   - id: train_test_leakage
     signal: leakage.leak_frac
@@ -34,6 +34,28 @@ pitfalls:
     suggested: >
       declare the dataset's design families (family_col or family_distance) and re-run with
       split_strategy grouped_holdout, then compare the two numbers
+    intervention_hint: sampling_design
+
+  - id: too_few_bootstrap_units
+    signal: bootstrap_units.n_units
+    op: "<"
+    threshold: 25
+    severity: medium
+    # Advisory, and the threshold is MEASURED, not guessed. Simulated type-I error of the cluster
+    # bootstrap on an exactly-null clustered comparison (200 trials, nominal 5%):
+    #   units:   5     10    20    40    80   200
+    #   rate: 12.5% 12.5%  7.5%  6.0%  8.0%  5.5%
+    # It settles near nominal from roughly 20-25 units upward and runs 2-3x hot below that, so the
+    # flag fires under 25. (The same table with the SEQUENCE unit on the same clustered data:
+    # 46-56% — which is the error this whole fix removes.) The bootstrap itself already refuses to
+    # report any CI below 2 units; between 2 and 25 the number is reported and flagged.
+    description: >
+      The paired bootstrap has very few INDEPENDENT resampling units (series, or design families
+      on a designed library), however many test rows there are. A CI from a handful of units is
+      unreliable and the type-I error rate is well above the nominal alpha.
+    suggested: >
+      widen the comparison to more series/families, or hold out a larger share of families, before
+      treating the verdict as settled
     intervention_hint: sampling_design
 
   - id: unrepresentative_split

@@ -86,6 +86,22 @@ def sequence_leakage(train_seqs, test_seqs, *, near_dist: int = 2) -> dict:
     return out
 
 
+def resampling_units(labels, *, unit: str) -> dict:
+    """How many INDEPENDENT units the test set actually contains, and how clustered it is.
+
+    A bootstrap CI's width is governed by this count, not by the row count: 400 held-out sequences
+    drawn from 20 mutational series carry 20 series' worth of information, and resampling them as
+    400 independent rows is what makes a CI too narrow (audit ST-7). `clustering` is the share of
+    rows that are repeats of a unit already counted — 0 for a random library, high for a designed
+    one. Few units also means the bootstrap itself is unreliable however many rows it has (ST-2)."""
+    ids = np.asarray(labels)
+    n_rows = int(ids.shape[0])
+    n_units = int(len(set(ids.tolist()))) if n_rows else 0
+    return {"unit": unit, "n_rows": n_rows, "n_units": n_units,
+            "rows_per_unit": (round(n_rows / n_units, 2) if n_units else None),
+            "clustering": (round(1 - n_units / n_rows, 4) if n_rows else None)}
+
+
 def target_coverage(y_train, y_test) -> dict:
     """Extrapolation: fraction of test targets outside the train target range (the model is asked
     to predict beyond what it saw)."""

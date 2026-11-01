@@ -36,6 +36,8 @@ def _trips(op: str, value, threshold) -> bool:
         return False
     if op == ">":
         return value > threshold
+    if op == "<":
+        return value < threshold
     if op == "abs_gt":
         return abs(value) > threshold
     if op == "far_from_one":

@@ -45,7 +45,9 @@ source:
   repo: "https://github.com/pjsample/human_5utr_modeling"
   local: data/extracted/sample_2019/        # where the CSVs land (gitignored)
 adapter: sample_2019           # -> src/seq2yield/data/adapters/sample_2019.py
-split_strategy: provided       # provided | stratified_holdout
+split_strategy: provided       # provided | stratified_holdout | grouped_holdout
+# A DESIGNED library (variant sets, tiling, mutational series) must also declare its families —
+# family_col: <column> or family_distance: 2 — which sets the split AND the bootstrap unit (#63).
 applicable_models: [rf, mlp, ridge, svr, cnn, transformer]
 applicable_feature_sets: [one_hot, kmer]        # NOT mechanistic/mixed (E.coli-coding-specific)
 applicable_embedders: [hyenadna-tiny, nt-50m, nt-250m, utr-lm, rna-fm]   # NOT codonbert (noncoding)

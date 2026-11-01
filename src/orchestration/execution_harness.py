@@ -235,9 +235,10 @@ def _is_pooled(dataset_id: str) -> bool:
 
 def _run_pooled(spec: RunSpec, run_dir: Path, vres) -> dict:
     """K6: generic pooled path (any `structure: pooled` dataset). Trains candidate + in-run baseline
-    pooled, evaluates on a fixed held-out set with a SEQUENCE-LEVEL paired bootstrap
-    (bootstrap_unit=sequence, C3 — never pooled with per-series CIs). If the run links a source
-    finding (transfer_of_run_id), attaches a cross-dataset concordance verdict (replication)."""
+    pooled, evaluates on a fixed held-out set with a paired bootstrap whose unit is the design
+    FAMILY when the dataset declares one and the test sequence otherwise (recorded as the C3
+    `bootstrap_unit` — never pooled with per-series CIs). If the run links a source finding
+    (transfer_of_run_id), attaches a cross-dataset concordance verdict (replication)."""
     import json
 
     from seq2yield.experiments import pooled_runner, transfer
@@ -265,10 +266,18 @@ def _run_pooled(spec: RunSpec, run_dir: Path, vres) -> dict:
                      "r2": M.r2(y, base["preds"][size])})
     pd.DataFrame(rows).to_csv(run_dir / "metrics.csv", index=False)
 
-    per_size = []
+    # The resampling unit: whole design families when the dataset declares them, else one test
+    # sequence. A family is ONE draw repeated, so resampling its members as if independent gives
+    # a CI that is too narrow (audit ST-7). `unit` travels onto the run-card as bootstrap_unit.
+    groups = cand.get("test_families")
+    per_size, unit, n_units = [], "sequence", int(len(y))
     for size in sizes:
-        pb = paired_bootstrap_r2(y, cand["preds"][size], base["preds"][size], seed=spec.seed)
+        pb = paired_bootstrap_r2(y, cand["preds"][size], base["preds"][size], groups=groups,
+                                 seed=spec.seed)
+        unit, n_units = pb["unit"], pb["n_units"]
         status, reasons = compare_mod._decide(pb["mean_delta"], pb["excludes_zero"], pb["ci"], pol)
+        if pb.get("note"):                      # too few units to bootstrap: say why, don't hide it
+            reasons = reasons + [pb["note"]]
         per_size.append({"train_size": int(size), "status": status,
                          "candidate_mean": float(M.r2(y, cand["preds"][size])),
                          "baseline_mean": float(M.r2(y, base["preds"][size])),
@@ -280,7 +289,8 @@ def _run_pooled(spec: RunSpec, run_dir: Path, vres) -> dict:
     cmp = dict(next(p for p in per_size if p["train_size"] == size))
     cmp.update({"comparison_train_size": size, "candidate_model": spec.model_family,
                 "baseline_model": pol.baseline_model, "baseline_source": "in_run_pooled",
-                "bootstrap_unit": "sequence", "dataset": spec.dataset, "n_test": int(len(y))})
+                "bootstrap_unit": unit, "n_bootstrap_units": int(n_units),
+                "dataset": spec.dataset, "n_test": int(len(y))})
     # Record HOW the data was split (strategy, family source, family counts). A grouped-holdout
     # result is not comparable with an older stratified-holdout one, so the split must never be
     # implicit on a run-card (audit SA-1/ML-03).

@@ -59,7 +59,7 @@ class TournamentResult:
     dataset: str
     subregion: str | None
     scope: str                # pooled | per_series_single | per_series
-    bootstrap_unit: str       # sequence | series
+    bootstrap_unit: str       # sequence | family | series  (C3 fence; family = designed library)
     train_size: int
     feature_set: str
     family: list[str]
@@ -185,9 +185,9 @@ def _rank_and_correct(dataset: str, scored: dict, basis: dict, *, min_delta: flo
     unit = basis["unit"]
     comps = []                                     # (model, mean_delta, ci, p) for non-winners
     for m, info in ranked[1:]:
-        if unit == "sequence":
+        if basis.get("y_test") is not None:        # row-level basis: sequence or family unit
             bs = paired_bootstrap_r2(basis["y_test"], scored[winner]["pred"], info["pred"],
-                                     n_boot=n_boot, seed=seed)
+                                     groups=basis.get("groups"), n_boot=n_boot, seed=seed)
         else:
             bs = paired_bootstrap_ci(info["per_series"], scored[winner]["per_series"],
                                      n_boot=n_boot, seed=seed)
@@ -263,7 +263,9 @@ def run_tournament(dataset: str, *, subregion: str | None = None, family: list[s
             train_full, test, scope = work, held, "per_series_single"
         elif subregion is not None:                      # C6: a pooled-dataset strata subregion
             from ..data import strata
-            sub = strata.filter(pooled_runner._frame(dataset), dataset, subregion)
+            # families FIRST, then filter: the label rides along on the rows, so a subregion is
+            # still split (and bootstrapped) by family rather than by sequence.
+            sub = strata.filter(pooled_runner.scope_frame(dataset), dataset, subregion)
             if len(sub) < 50:
                 raise ValueError(f"subregion '{subregion}' has too few rows ({len(sub)})")
             train_full, test = pooled_runner.holdout_frame(sub, seed=seed)
@@ -278,7 +280,12 @@ def run_tournament(dataset: str, *, subregion: str | None = None, family: list[s
         scored = {m: {"r2": float(M.r2(y_test, v["pred"])), "pred": v["pred"],
                       "r2_val": v.get("val_r2"),
                       "source": v["source"], "hparams": v["hparams"]} for m, v in fam.items()}
-        basis, unit, n_units = {"unit": "sequence", "y_test": y_test}, "sequence", int(len(y_test))
+        # `_seq_unit_family` predicts [val | test] in one go and slices the tail, so the test rows
+        # keep their frame order and the family labels line up with y_test.
+        groups = pooled_runner.families_of(test)
+        unit = "sequence" if groups is None else "family"
+        n_units = int(len(y_test)) if groups is None else int(len(set(groups)))
+        basis = {"unit": unit, "y_test": y_test, "groups": groups}
 
     board, sig, runner_up = _rank_and_correct(dataset, scored, basis, min_delta=md, alpha=alpha,
                                               n_boot=n_boot, seed=seed)

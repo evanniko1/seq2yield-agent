@@ -32,7 +32,17 @@ Copy an existing spec (`sample_2019.yaml` for pooled, `ecoli.yaml` for per-serie
 - `bootstrap_unit`: `sequence` (pooled) or `series` (per_series) — the C3 fence.
 - `target_col` (raw column the adapter reads), `target_transform`
   (`none`/`standardize` for absolute; `log1p` skewed; `logit` bounded 0–1 fractions).
-- `split_strategy`: `provided` (author train/test) or `stratified_holdout`.
+- `split_strategy`: `provided` (author train/test), `stratified_holdout`, or `grouped_holdout`.
+- **Design families — ask this for every library.** If the library was DESIGNED (SNV/variant sets,
+  motif perturbations, tiling, mutational series, paired alleles), its members are not independent:
+  set `split_strategy: grouped_holdout` plus either `family_col` (a column that already names the
+  family, e.g. `mut_series`) or `family_distance: 2` (group within Hamming ≤ d). This governs both
+  the split and the bootstrap unit — without it a one-base sibling of every held-out sequence sits
+  in train and a 4-member family is counted as 4 independent observations (audit SA-1/ST-7). A
+  genuinely RANDOM library needs neither: check it, don't assume it. When the dataset ships a
+  split, the intake audit's `no_train_test_leakage` detail carries `near_dup_frac` (~0 random,
+  high designed); when it doesn't, measure it on a trial holdout with
+  `families.near_duplicate_fraction(train[SEQ_COL], test[SEQ_COL], max_dist=2)`.
 - `applicable_feature_sets` — EXCLUDE `mechanistic`/`mixed` unless it is the E. coli coding task.
 - `applicable_embedders` — RNA/UTR models (utr-lm, rna-fm) only for UTR/translation; `codonbert`
   only for coding; NT/HyenaDNA general.
