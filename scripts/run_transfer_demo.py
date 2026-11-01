@@ -22,6 +22,7 @@ except Exception:
 
 from orchestration import execution_harness as H  # noqa: E402
 from seq2yield.experiments.run_spec import AcceptancePolicy, RunSpec  # noqa: E402
+from orchestration.baseline_guard import registry_run_id  # noqa: E402
 
 
 def main() -> int:
@@ -30,7 +31,7 @@ def main() -> int:
         run_id="transfer-demo-ecoli-cnn-vs-rf", dataset="ecoli",
         intervention_type="model_architecture", model_family="cnn",
         train_sizes=[1000, 2000], iterations=[1, 2], n_series=8, seed=1, maturity_tier="tier_1",
-        acceptance_policy=AcceptancePolicy(track="performance", baseline_run_id="2026-06-04-full56",
+        acceptance_policy=AcceptancePolicy(track="performance", baseline_run_id=registry_run_id(),
                                            baseline_model="rf", comparison_train_size=2000))
     print("[1/2] E. coli source: cnn vs rf (bounded) ...")
     sv = H.run(src, changed_files=[], run_tests=False)

@@ -25,6 +25,8 @@ RETRACTED_FIGURES = [
     "0.730",         # dream2022 cnn               (R-3)
     "0.466",         # dream2022 rf                (R-3)
     "q1 0.47",       # dream2022 expression tail   (R-4)
+    "0.7402",        # ecoli registry cnn @2000    (R-5)
+    "0.7174",        # ecoli registry rf @2000     (R-5)
 ]
 # Documents allowed to contain the figures without a pointer: the ledger itself, and the local
 # uncommitted audit backlog (which IS the account of why they are retracted).
@@ -41,7 +43,7 @@ def test_the_ledger_exists_and_declares_its_status_vocabulary():
     text = LEDGER.read_text(encoding="utf-8")
     for word in ("RETRACTED", "SUPERSEDED", "UNAFFECTED"):
         assert word in text
-    for item in ("R-1", "R-2", "R-3", "R-4"):
+    for item in ("R-1", "R-2", "R-3", "R-4", "R-5"):
         assert item in text, f"{item} missing from the ledger"
     # the two fixes that caused the retractions must be named with their commits
     assert "a13e2ba" in text and "de7a243" in text
@@ -81,6 +83,33 @@ def test_the_retracted_yeast_report_carries_a_banner():
         return
     head = report.read_text(encoding="utf-8")[:1200]
     assert "RETRACTED" in head and "RETRACTIONS.md" in head
+
+
+def test_the_superseded_registry_report_carries_a_banner_and_the_new_one_points_back():
+    """R-5: the June registry is the control half the project's claims were scored against, so the
+    report must say so at the top, and the replacement must name what it replaces."""
+    old = ROOT / "reports" / "static" / "2026-06-04-full56_report.md"
+    if old.exists():
+        head = old.read_text(encoding="utf-8")[:1400]
+        assert "SUPERSEDED" in head and "RETRACTIONS.md" in head
+    new = ROOT / "reports" / "static" / "2026-11-01-full56_report.md"
+    if new.exists():
+        head = new.read_text(encoding="utf-8")[:1400]
+        assert "2026-06-04-full56" in head and "RETRACTIONS.md" in head
+
+
+def test_the_canonical_registry_pointer_is_a_provenance_stamped_registry():
+    """The single pointer may only name a registry the guard would accept — otherwise every run
+    silently falls back to an in-run baseline and the registry is decoration (ML-02)."""
+    from orchestration import baseline_guard
+    run_id = baseline_guard.registry_run_id()
+    assert run_id and run_id != "2026-06-04-full56", "the pointer still names the stale registry"
+    status = baseline_guard.registry_status(run_id)
+    if not (ROOT / "experiments" / "runs" / run_id / "metrics.csv").exists():
+        return                                  # registry not present in this checkout
+    assert status["ready"], status["reason"]
+    verdict = baseline_guard.check(run_id, ["rf", "mlp", "cnn"])
+    assert verdict["ok"], f"the canonical registry is refused by its own guard: {verdict['reason']}"
 
 
 def test_new_claims_record_the_protocol_they_were_measured_under(tmp_path):

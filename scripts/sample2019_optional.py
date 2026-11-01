@@ -21,6 +21,7 @@ import numpy as np  # noqa: E402
 
 from orchestration import execution_harness as H  # noqa: E402
 from seq2yield.experiments.run_spec import AcceptancePolicy, RunSpec  # noqa: E402
+from orchestration.baseline_guard import registry_run_id  # noqa: E402
 
 
 def _rm(*ids):
@@ -68,7 +69,7 @@ def transfer_powered():
     src = RunSpec(run_id="opt-xfer-src", dataset="ecoli", intervention_type="model_architecture",
                   model_family="cnn", train_sizes=[2000], iterations=[1, 2], n_series=30, seed=1,
                   maturity_tier="tier_1",
-                  acceptance_policy=AcceptancePolicy(track="performance", baseline_run_id="2026-06-04-full56",
+                  acceptance_policy=AcceptancePolicy(track="performance", baseline_run_id=registry_run_id(),
                                                      baseline_model="rf", comparison_train_size=2000))
     sc = H.run(src, changed_files=[], run_tests=False)["comparison"]
     print(f"    E. coli source: delta={sc['mean_delta']:.4f} excl0={sc['ci_excludes_zero']}", flush=True)

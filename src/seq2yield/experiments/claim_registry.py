@@ -15,6 +15,17 @@ CLAIMS_DIR = ROOT / "experiments" / "claims"
 REGISTRY = CLAIMS_DIR / "registry.jsonl"
 
 
+def _provenance() -> dict:
+    """The code identity behind the claim: git SHA plus the fingerprint of the value-deciding
+    files. Cheap (cached) and never allowed to break a recording."""
+    try:
+        from ..training import provenance
+        return {"git_sha": provenance.code_version().get("git_sha_short"),
+                "numerics": provenance.numerics_fingerprint()["fingerprint"]}
+    except Exception:
+        return {}
+
+
 def record(*, run_id: str, proposal_id: str, status: str, comparison: dict,
            claim_allowed: str | None, claims_dir: str | Path | None = None) -> dict:
     claims_dir = Path(claims_dir or CLAIMS_DIR)
@@ -35,6 +46,10 @@ def record(*, run_id: str, proposal_id: str, status: str, comparison: dict,
         # it (docs/RETRACTIONS.md). A record with split_strategy=None predates 2026-11-01.
         "split_strategy": (comparison.get("split") or {}).get("split_strategy"),
         "n_bootstrap_units": comparison.get("n_bootstrap_units"),
+        # WHAT it was compared against, and WHICH code produced it. Eight claims were recorded
+        # against a registry that had drifted out from under them with no way to tell (ML-02).
+        "baseline_source": comparison.get("baseline_source"),
+        "provenance": _provenance(),
         "dataset": comparison.get("dataset", "ecoli"),                  # K1: organism dimension
         "transfer": (comparison.get("transfer") or {}).get("verdict"),  # K1: replication verdict
         "n_series": comparison.get("n_series"),

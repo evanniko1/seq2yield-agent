@@ -1,0 +1,136 @@
+{
+  "passed": true,
+  "violations": [],
+  "by_path": {
+    "configs/baseline_registry.yaml": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/CONTRACTS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/DECISIONS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/RETRACTIONS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "reports/static/2026-06-04-full56_report.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "reports/static/2026-11-01-full56_report.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "reports/static/2026-11-01-full56_curve.png": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "scripts/build_yeast.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "scripts/run_agent_loop.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "scripts/run_dashboard.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "scripts/run_mixed_effects.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "scripts/run_transfer_demo.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "scripts/sample2019_optional.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/agents/council.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/orchestration/baseline_guard.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/orchestration/execution_harness.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/orchestration/store.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/experiments/claim_registry.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/insight/dissect.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/training/provenance.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/training/reproducibility.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_catalogue.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_council.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_insight.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_ml02_provenance.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_retractions.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    }
+  }
+}

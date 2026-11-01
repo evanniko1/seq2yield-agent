@@ -186,11 +186,21 @@ def test_pooled_neighborhoods_on_real_yeast(require_data):
 
 
 def test_perseries_covariate_question_fires_on_real_ecoli(require_data):
+    import pytest
     require_data("ecoli")
     cov = dissect._series_covariates("ecoli")
     assert cov is not None and cov.shape[0] > 10 and "gc" in cov.columns   # per-series covariates
-    qs = dissect.dissect_dataset("ecoli", dissect.default_metrics_path("ecoli"))
+    metrics = dissect.default_metrics_path("ecoli")
+    if metrics is None:        # no COMPLETE registry in this checkout (it is never faked from an
+        from orchestration.baseline_guard import registry_status   # older one — audit ML-02)
+        pytest.skip(f"no complete baseline registry: {registry_status()['reason']}")
+    qs = dissect.dissect_dataset("ecoli", metrics)
     assert any(q.kind == "difficulty_covariate" for q in qs)               # the 'why' now fires
+
+
+def test_dissection_of_a_dataset_with_no_registry_is_empty_not_an_error():
+    assert dissect.dissect_dataset("ecoli", None) == []
+    assert dissect.default_metrics_path("nonexistent_dataset") is None
 
 
 # ------------------------------------------------- two-phase exploration controller ---

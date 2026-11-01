@@ -28,6 +28,11 @@ The two fixes, both 2026-11-01:
   repeated, not four observations. Type-I error on an exactly-null clustered comparison:
   **46–56% → 5.5–12.5%** against a nominal 5%.
 
+A third marker, same date: every run-card now carries `environment.numerics.fingerprint` and the
+full resolved `model_defaults` (DECISIONS #64 / audit ML-02). A stored result **without** them
+cannot be shown to match any code and is refused as a control — which is the state of everything
+written before 2026-11-01, R-5 included.
+
 ---
 
 ## R-1 — yeast pooled benchmark: R² ≈ 0.90 for every model → ≈ 0 · **RETRACTED**
@@ -134,12 +139,78 @@ Re-measuring this needs a stratification that does not condition on y (SA-3's fi
 
 ---
 
+## R-5 — the E. coli baseline registry (cnn 0.7402 / rf 0.7174 @ N=2000) · **SUPERSEDED**, and the "CNN beats RF" **accept** · **RETRACTED**
+
+Claimed in `reports/static/2026-06-04-full56_report.md` and `experiments/runs/2026-06-04-full56/`,
+and used as the control by every registry-based comparison from June 2026 onward.
+
+The registry was locked **2026-06-05**. RF's `max_features` became `"sqrt"` on **2026-07-05**
+(`9e6c6bc`; sklearn's default is 1.0) and CNN early stopping landed **2026-06-07** (`aa8d1f5`).
+Nothing re-measured the registry, and nothing could have noticed: run-cards recorded library
+versions only (audit **ML-02 / ST-1**).
+
+Regenerated today with the identical protocol — same 56 series, same provided splits, same 5 MC-CV
+iterations, same seed, `dataset_hash e15d854d…` and `split_hash c20f1971…` unchanged:
+
+| model | N=250 | N=500 | N=1000 | N=2000 | cause |
+|---|---|---|---|---|---|
+| cnn | 0.4434 → **0.3979** | 0.5427 → **0.5088** | 0.6445 → **0.6118** | **0.7402 → 0.7092** | early stopping (`aa8d1f5`) |
+| rf | 0.4259 → **0.3697** | 0.5217 → **0.4740** | 0.6193 → **0.5850** | **0.7174 → 0.6966** | `max_features: 1.0 → 'sqrt'` (`9e6c6bc`) |
+| mlp | 0.2578 → 0.2578 | 0.3674 → 0.3674 | 0.4847 → 0.4847 | 0.6383 → 0.6383 | **no code change — identical to the digit** |
+
+MLP is the control: untouched code, same four numbers, which is what rules out the data, the splits
+and the iteration subset and leaves model-code drift as the only cause. The A/A is the direct
+measurement — one fresh RF run, scored against each stored registry, so the candidate rows are
+held constant and only the control changes:
+
+| control | N=500 | N=2000 |
+|---|---|---|
+| `2026-06-04-full56` (stale) | **−0.0477** [−0.0558, −0.0395] · `rejected` | **−0.0208** [−0.0245, −0.0170] · `rejected` |
+| `2026-11-01-full56` (today) | **+0.0000** [0, 0] | **+0.0000** [−0.0000, +0.0000] |
+
+Unchanged code was being scored as a significant regression against its own baseline; against the
+regenerated registry it reproduces **bit-for-bit** (max per-series \|Δ\| = 1.1e-16, 8 of 10 series
+exactly 0 — one float ULP, not a difference).
+
+**The accept is withdrawn.** The flagship comparison, re-measured on a registry that today's code
+actually produced:
+
+| scope | stale registry | regenerated registry |
+|---|---|---|
+| first 10 series | +0.0321 [+0.0219, +0.0434] p<0.0001 · **accepted** | +0.0158 [+0.0014, +0.0292] p=0.029 · **rejected** |
+| all 56 series | +0.0228 [+0.0171, +0.0282] p<0.0001 · **accepted** | +0.0126 [+0.0060, +0.0190] p=0.0002 · **rejected** |
+
+CNN is still ahead of RF and the CI still excludes zero — the **direction survives**. What does not
+survive is the verdict: the margin is **0.0126**, below the acceptance policy's own
+`min_delta_r2 = 0.02`, so the honest status is "significantly better but not by a practically
+meaningful amount". The published +0.0228 was inflated because CNN lost more to its own drift
+(−0.0310) than RF did (−0.0208), so the *gap* carried both errors.
+
+**Not retracted on these grounds:** the five June council claims that used this registry. The drift
+commits both post-date them (06-05/06-06 runs), so candidate and baseline came from the same code,
+and the only post-drift registry claim (`2026-07-16-council-cnn-vs-mlp`) is scored against **MLP**,
+the family that never drifted — and in the conservative direction, since its CNN candidate was the
+weaker post-early-stopping one. Their CIs remain subject to audit ST-2, which is a separate item.
+
+The four June `council-cnn-vs-rf` loop reports are **left as written**, under the same rule as the
+yeast ones: a loop report is the record of what a run did on the day, and their verdicts were
+correct for the code of that day. This entry is the one place that says the standing claim has
+since changed. What is stamped instead are the live documents — the June registry report and
+DECISIONS #12's result line.
+
+Current numbers: `reports/static/2026-11-01-full56_report.md`. The stale registry is now **refused
+as a control** by `orchestration/baseline_guard` (`no_provenance`), not merely annotated
+(DECISIONS #64).
+
+---
+
 ## UNAFFECTED — checked, not retracted
 
-- **E. coli (the primary benchmark).** Uses the deposit's *provided* per-series splits (hash-pinned,
-  strict-protected) and a **series-unit** bootstrap, which was already a cluster unit. Neither fix
-  changes it. Its own open questions (ML-02 registry drift, SA-2 first-10-series subset, ST-2/ST-3)
-  are separate and live in `BACKLOG.md`.
+- **E. coli (the primary benchmark) — the split and the bootstrap unit.** It uses the deposit's
+  *provided* per-series splits (hash-pinned, strict-protected) and a **series-unit** bootstrap,
+  which was already a cluster unit, so neither 2026-11-01 fix changes it. Its *stored numbers* are
+  a different matter and are superseded under R-5; its remaining open questions (SA-2
+  first-10-series subset, ST-2/ST-3) live in `BACKLOG.md`.
 - **cuperus_2017 and sample_2019.** True random libraries: near-duplicate fraction 0.000 at d≤2 and
   489,348 singleton families on cuperus, so grouping is a no-op and the family unit reduces exactly
   to the sequence unit. cuperus is the control that proves the mechanism was design-specific.
@@ -158,6 +229,10 @@ Re-measuring this needs a stratification that does not condition on y (SA-3's fi
 - dream2022's absolute figures at other train sizes, and every per-stratum / subregion number on
   yeast and dream2022.
 - The expression-quantile heterogeneity analysis, pending SA-3's non-target-derived stratification.
+- The June council runs themselves, against the regenerated registry. R-5 argues from the commit
+  dates that their verdicts were internally consistent; it does not re-run them. Any of those
+  comparisons repeated **today** gets the new control automatically, and the two it would most
+  likely move are the three `cnn > rf` accepts.
 - `experiments/runs/yeast-baseline/` and the June/July loop reports are left as written: they are
   the historical record of what was run, and the legacy protocol is now stamped in their own
   artifacts rather than silently corrected.

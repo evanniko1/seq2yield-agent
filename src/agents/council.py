@@ -37,7 +37,15 @@ _ALLOWED = {
 # that knob reset to default (baseline_model = the candidate's own model_family).
 _SAME_MODEL_BASELINE = {"feature_representation", "sampling_design", "training_procedure",
                         "feature_scaling"}
-BASELINE_RUN_ID = "2026-06-04-full56"
+def _baseline_run_id() -> str:
+    """The canonical per-series registry, from configs/baseline_registry.yaml — one pointer, so
+    repointing it is a single deliberate edit (audit ML-02). The harness still checks the
+    registry's provenance before using it (`orchestration/baseline_guard`)."""
+    from orchestration.baseline_guard import registry_run_id
+    return registry_run_id() or "2026-06-04-full56"
+
+
+BASELINE_RUN_ID = _baseline_run_id()
 YEAST_BASELINE_RUN_ID = "yeast-baseline"     # marker; the yeast harness path uses an in-run baseline
 
 

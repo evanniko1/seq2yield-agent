@@ -1,0 +1,209 @@
+{
+  "run_id": "2026-11-01-full56-cnn",
+  "kind": "reproduction",
+  "dataset_hash": "e15d854d7a6482734e260297545f50d7543c5c6755910ec95dac5b86532f90ba",
+  "split_hash": "c20f19717f3b0f38aef378ada087231d3ed0517b3936ee22eb2586738020d557",
+  "model_family": "cnn",
+  "feature_set": "one_hot",
+  "train_sizes": [
+    250,
+    500,
+    1000,
+    2000
+  ],
+  "seeds": [
+    1
+  ],
+  "iterations": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "n_series": 56,
+  "primary_metric": "r2",
+  "results": {
+    "250": {
+      "r2_mean": 0.3979,
+      "r2_std": 0.0066
+    },
+    "500": {
+      "r2_mean": 0.5088,
+      "r2_std": 0.0049
+    },
+    "1000": {
+      "r2_mean": 0.6118,
+      "r2_std": 0.0062
+    },
+    "2000": {
+      "r2_mean": 0.7092,
+      "r2_std": 0.0033
+    }
+  },
+  "status": "reproduction",
+  "limitations": [
+    "single training seed (sampling); 5 MC-CV repeats provide variance"
+  ],
+  "environment": {
+    "python": "3.12.8",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "packages": {
+      "numpy": "1.26.4",
+      "scikit-learn": "1.6.1",
+      "torch": "2.5.1+cu121"
+    },
+    "cuda": true,
+    "code": {
+      "git_sha": "9d70a4a687fe7d8d4795e6b9d5e88a58a33f3279",
+      "git_sha_short": "9d70a4a687fe",
+      "branch": "main",
+      "dirty": true
+    },
+    "numerics": {
+      "fingerprint": "898eff9a05e75306",
+      "n_files": 27
+    },
+    "model_defaults": {
+      "rf": {
+        "hash": "499229be79c6",
+        "params": {
+          "bootstrap": true,
+          "ccp_alpha": 0.0,
+          "criterion": "squared_error",
+          "max_depth": null,
+          "max_features": "sqrt",
+          "max_leaf_nodes": null,
+          "max_samples": null,
+          "min_impurity_decrease": 0.0,
+          "min_samples_leaf": 1,
+          "min_samples_split": 2,
+          "min_weight_fraction_leaf": 0.0,
+          "monotonic_cst": null,
+          "n_estimators": 100,
+          "oob_score": false,
+          "warm_start": false
+        }
+      },
+      "mlp": {
+        "hash": "fefe6da02bab",
+        "params": {
+          "activation": "relu",
+          "alpha": 0.0001,
+          "batch_size": 64,
+          "beta_1": 0.9,
+          "beta_2": 0.999,
+          "early_stopping": true,
+          "epsilon": 1e-08,
+          "hidden_layer_sizes": [
+            256,
+            128,
+            64
+          ],
+          "learning_rate": "constant",
+          "learning_rate_init": 0.001,
+          "max_fun": 15000,
+          "max_iter": 300,
+          "momentum": 0.9,
+          "n_iter_no_change": 15,
+          "nesterovs_momentum": true,
+          "power_t": 0.5,
+          "shuffle": true,
+          "solver": "adam",
+          "tol": 0.0001,
+          "validation_fraction": 0.1,
+          "warm_start": false
+        }
+      },
+      "cnn": {
+        "hash": "a4d752bebc6e",
+        "params": {
+          "activation": "relu",
+          "batch_size": 64,
+          "batchnorm": false,
+          "dense_sizes": [
+            256,
+            128,
+            64
+          ],
+          "device": "cuda",
+          "dilations": null,
+          "dropout": 0.3,
+          "early_stop_patience": 8,
+          "epochs": 60,
+          "global_pool": 4,
+          "grad_clip": 0.0,
+          "kernel_sizes": [
+            7,
+            5,
+            3
+          ],
+          "length": 96,
+          "lr": 0.001,
+          "lr_schedule": "none",
+          "n_filters": [
+            64,
+            128,
+            128
+          ],
+          "optimizer": "adam",
+          "pool_sizes": null,
+          "pool_type": "max",
+          "warmup": 0,
+          "weight_decay": 0.0
+        }
+      },
+      "ridge": {
+        "hash": "ee022052a551",
+        "params": {
+          "alpha": 1.0,
+          "copy_X": true,
+          "fit_intercept": true,
+          "max_iter": null,
+          "positive": false,
+          "solver": "auto",
+          "tol": 0.0001
+        }
+      },
+      "svr": {
+        "hash": "ae33e38c4425",
+        "params": {
+          "C": 1.0,
+          "cache_size": 200,
+          "coef0": 0.0,
+          "degree": 3,
+          "epsilon": 0.1,
+          "gamma": "scale",
+          "kernel": "rbf",
+          "max_iter": -1,
+          "shrinking": true,
+          "tol": 0.001
+        }
+      },
+      "transformer": {
+        "hash": "30262fa5c56a",
+        "params": {
+          "attn_dropout": 0.1,
+          "batch_size": 64,
+          "d_model": 64,
+          "device": "cuda",
+          "dropout": 0.1,
+          "early_stop_patience": 8,
+          "epochs": 60,
+          "ff": 128,
+          "grad_clip": 0.0,
+          "layers": 2,
+          "length": 96,
+          "lr": 0.001,
+          "lr_schedule": "none",
+          "nhead": 4,
+          "optimizer": "adam",
+          "pool": "mean",
+          "pos_encoding": "learned",
+          "warmup": 0,
+          "weight_decay": 0.0
+        }
+      }
+    }
+  }
+}

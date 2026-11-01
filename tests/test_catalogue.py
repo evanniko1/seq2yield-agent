@@ -317,8 +317,10 @@ def test_council_pages_escape_llm_text(tmp_path, monkeypatch):
     con.execute("INSERT OR REPLACE INTO proposal VALUES ('t1','H1','cnn','rf','model_architecture',"
                 "'ecoli','all','t',?)", (hyp,))
     con.execute("INSERT OR REPLACE INTO review VALUES ('t1','H1','critic',3,3,3,3,?)", (rej,))
-    con.execute("INSERT OR REPLACE INTO claim VALUES ('R1','ts','cnn','rf',0.03,1,0.01,'series',"
-                "'ecoli',2000,'accepted',?)", (claim,))
+    con.execute("INSERT OR REPLACE INTO claim (run_id,ts,candidate_model,baseline_model,"
+                "mean_delta_r2,ci_excludes_zero,p_value,bootstrap_unit,dataset,train_size,status,"
+                "claim,baseline_source) VALUES ('R1','ts','cnn','rf',0.03,1,0.01,'series',"
+                "'ecoli',2000,'accepted',?,'registry:x')", (claim,))
     con.commit()
     con.close()
     monkeypatch.setattr(dash, "_con", lambda: store.connect(db))   # each route closes its own

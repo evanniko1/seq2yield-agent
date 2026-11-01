@@ -163,12 +163,20 @@ def scoreboard():
                  f"<td>{sig}</td><td class=mut>{_e(t.get('selection',''))}</td>"
                  f"<td class=mut>{_e(t.get('ts',''))}</td></tr>")
     b.append("</table><h2>Accepted claims</h2><table>"
-             "<tr><th>run</th><th>dataset</th><th>candidate vs baseline</th><th>ΔR²</th><th>unit</th><th>claim</th></tr>")
+             "<tr><th>run</th><th>dataset</th><th>candidate vs baseline</th><th>ΔR²</th>"
+             "<th>unit</th><th>measured under</th><th>claim</th></tr>")
     for c in claims:
+        # provenance column (ML-02): what the claim was compared against, how it was split, and
+        # which code produced it. A claim with none of these predates 2026-11-01 — say so, rather
+        # than letting it sit next to a stamped one looking equally solid.
+        prot = " · ".join(x for x in (_e(c["baseline_source"]), _e(c["split_strategy"]),
+                                      _e(c["code_sha"])) if x) or \
+            "<span class='chip no'>unstamped (pre-2026-11-01)</span>"
         b.append(f"<tr><td class=mut>{_e(c['run_id'])}</td><td>{_e(c['dataset'])}</td>"
                  f"<td>{_e(c['candidate_model'])} vs {_e(c['baseline_model'])}</td>"
                  f"<td>{_e(c['mean_delta_r2'])}</td>"
-                 f"<td class=mut>{_e(c['bootstrap_unit'])}</td><td>{_e(c['claim'])}</td></tr>")
+                 f"<td class=mut>{_e(c['bootstrap_unit'])}</td><td class=mut>{prot}</td>"
+                 f"<td>{_e(c['claim'])}</td></tr>")
     b.append("</table>")
     con.close()
     return _page("".join(b))

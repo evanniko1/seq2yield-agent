@@ -18,13 +18,14 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from seq2yield.statistics import mixed_effects as ME  # noqa: E402
+from orchestration.baseline_guard import registry_path  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> None:
     p = argparse.ArgumentParser(description="mixed-effects ICC of per-series heterogeneity")
-    p.add_argument("--metrics", default=str(ROOT / "experiments/runs/2026-06-04-full56/metrics.csv"))
+    p.add_argument("--metrics", default=str(registry_path("metrics.csv")))
     p.add_argument("--train-size", type=int, default=None, help="default: the largest available")
     p.add_argument("--metric", default="r2")
     args = p.parse_args()

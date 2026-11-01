@@ -67,7 +67,8 @@ def grouped_holdout(df: pd.DataFrame, frac: float = 0.1, seed: int = SEED):
 
 
 def ecoli_ranking() -> list[str] | None:
-    csv = ROOT / "experiments/runs/2026-06-04-full56/data_size_curve.csv"
+    from orchestration.baseline_guard import registry_path
+    csv = registry_path("data_size_curve.csv")
     if not csv.exists():
         return None
     d = pd.read_csv(csv)

@@ -94,6 +94,10 @@ min), never detached. (2) Commit the registry artifacts (`run_card.json` per mod
 ignore, so the repo is a self-contained baseline reference. **Result.** Full registry @
 train_size=2000: CNN 0.740 > RF 0.717 > MLP 0.638 (std ≤0.010 over 5 repeats); monotonic
 data-efficiency curves — a faithful reproduction of Nikolados et al.
+> **SUPERSEDED 2026-11-01** — those three figures describe June's model code. Today's:
+> CNN **0.7092** > RF **0.6966** > MLP 0.6383 (MLP unchanged to the digit), and the margin no
+> longer clears the acceptance threshold. `docs/RETRACTIONS.md` R-5 / #64. The *decisions* above
+> (checkpointing, chunked background runs, committing the artifacts) stand unchanged.
 
 ## #13 — Provider layer: HTTP for OpenAI/OpenRouter; structured outputs per provider
 **Context.** Milestone 4. Installed `openai` SDK is the legacy 0.28 line (no json_schema
@@ -470,6 +474,54 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   grandfather ecoli/yeast. Tests: `tests/test_onboarding.py` (registry, gating, adapter cleaning,
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
+
+## #64 — A stored baseline must prove it matches the code, or it is not a control
+- **Authorization.** Human approval in session ("do ML-02 next"). The diff touches no strict or
+  conditional path; it ran the project's own gate anyway —
+  `approvals.decide('2026-11-01-ml02-registry-provenance', paths, approver=…)` granted,
+  `git_guard.check_paths(..., human_review=True)` passed, record in
+  `experiments/runs/2026-11-01-ml02-registry-provenance/`.
+- **Why (audit ML-02 / ST-1).** The per-series registry is a CSV of stored R², and comparing
+  against it is valid only while the code that produced it still produces it. That quietly stopped
+  being true: registry locked 2026-06-05, CNN early stopping 2026-06-07 (`aa8d1f5`), RF
+  `max_features → "sqrt"` 2026-07-05 (`9e6c6bc`, whose message claims the defaults reproduce prior
+  behaviour — sklearn's default is 1.0). Measured A/A, unchanged RF against its own stored
+  baseline: **−0.0477 at N=500, −0.0208 at N=2000, both `rejected`**. The harness read the stale CSV
+  with no check at all, and `reproducibility.environment()` recorded library versions only — not
+  even a git SHA. It also broke a published result (RETRACTIONS R-1/R-2) and inflated the flagship
+  margin (R-5).
+- **What is recorded** (`training/provenance.py`, on every run-card via `environment()`): the git
+  SHA + dirty flag (informational); a **numerics fingerprint** — one hash over only the 27 files
+  that can change a predicted value (models, features, cleaning/loaders/sampling/splits/families,
+  the training loop, metrics, the bootstrap, both runners, the registry builder); and the **full
+  resolved `model_defaults`** per family. The three answer different questions: *did the code
+  change*, *could it have moved a number*, *what exactly drifted* — only the third turns a hash
+  mismatch into `rf.max_features: 1.0 -> 'sqrt'`. Deliberately NOT the whole repo: a guard that
+  fires on a docs commit gets switched off.
+- **What is enforced** (`orchestration/baseline_guard.py` + `configs/baseline_registry.yaml`). A
+  stored registry may be a control only if its run-cards carry provenance AND its numerics
+  fingerprint, dataset hash and split hash match this checkout (git SHA is `require: false` — it
+  changes on every commit and would cry wolf). On refusal the harness does **not** fall back to
+  comparing anyway: `_baseline_choice` trains an **in-run baseline**, records
+  `baseline_source = "in_run (registry refused: …)"`, and the loop report prints the refusal and the
+  named drift. A registry whose run-cards are missing is read as **half-built**, not as a thin
+  baseline (audit SA-2): the builder checkpoints `metrics.csv` per series and writes run-cards last.
+- **One pointer.** The registry id lived hardcoded in six places; it now lives in
+  `configs/baseline_registry.yaml`, which also records the superseded id and its measured drift.
+  Repointing the project's baseline is one deliberate edit.
+- **Consequence.** `2026-06-04-full56` is refused (`no_provenance`) and
+  **`2026-11-01-full56`** — same protocol, same `dataset_hash`/`split_hash`, 3360 rows, regenerated
+  in 6057 s — is the canonical registry, matching this checkout at `898eff9a`. A fresh RF run
+  reproduces it **bit-for-bit** (max per-series \|Δ\| = 1.1e-16, 8 of 10 series exactly 0). MLP's
+  four stored numbers are **identical to the digit** across both registries, which is the control
+  that pins the cause to model-code drift and not to data, splits or the iteration subset. The
+  flagship `cnn > rf` accept does not survive the correction: +0.0228 → **+0.0126**, still
+  significant, now below the policy's own 0.02 margin (RETRACTIONS R-5).
+- **Known gap, logged not papered over.** The A/A at N=500 came back `rejected` on a difference of
+  1e-16: the ULP residuals were consistently signed, so the percentile CI "excluded zero". A truly
+  identical pair is handled correctly (`p=1.0`), but there is no p-value floor and no numerical
+  tolerance — audit ST-2, still open, now with a reproducible instance.
+- Tests: `tests/test_ml02_provenance.py` (20). 483 passing, 2 skipped.
 
 ## #63 — Family-aware (cluster) bootstrap: the resampling unit is the design family
 - **Authorization.** `src/seq2yield/statistics/**` is CONDITIONALLY protected, so this change ran

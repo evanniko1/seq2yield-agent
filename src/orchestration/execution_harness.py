@@ -30,7 +30,7 @@ from seq2yield.experiments.run_spec import RunSpec, validate_runspec  # noqa: E4
 from seq2yield.experiments.runner import per_series_r2, run_runspec  # noqa: E402
 from seq2yield.training.reproducibility import environment  # noqa: E402
 
-from . import audit_log, git_guard  # noqa: E402
+from . import audit_log, baseline_guard, git_guard  # noqa: E402
 
 
 def _unlocked_tier() -> str:
@@ -102,6 +102,25 @@ def _baseline_spec(spec: RunSpec, baseline_model: str) -> RunSpec:
     return b
 
 
+def _baseline_choice(spec: RunSpec, pol) -> tuple[bool, dict | None]:
+    """May this comparison use the STORED baseline registry as its control?
+
+    Two independent conditions, both of which have bitten this project:
+    1. the comparison must be *plain* (one_hot / random / unscaled / no hyperparameters / global
+       scope) — the registry was built that way, so any other axis is confounded against it;
+    2. the registry's provenance must still match this checkout (ML-02) — a stored result measured
+       with different model code is not a control, it is a different experiment.
+    Returns (use_registry, provenance_decision | None); None means the registry was never eligible,
+    so there is no provenance decision to record."""
+    plain = (spec.scope == "global" and spec.feature_set == "one_hot"
+             and spec.sampling_policy == "random" and spec.feature_scaling == "none"
+             and not spec.hyperparameters)
+    if not (plain and spec.intervention_type in ("model_architecture", "data_efficiency")):
+        return False, None
+    prov = baseline_guard.check(pol.baseline_run_id, [spec.model_family, pol.baseline_model])
+    return bool(prov["ok"]), prov
+
+
 def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
         run_tests: bool = True) -> dict:
     run_dir = ROOT / "experiments/runs" / spec.run_id
@@ -169,10 +188,9 @@ def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
     # unscaled) is a valid control ONLY for a plain different-model comparison; any other axis
     # must be compared to an in-run baseline that is identical to the candidate EXCEPT for the
     # one varied knob — otherwise the comparison is confounded (CRITIQUE / audit).
-    plain = (spec.scope == "global" and spec.feature_set == "one_hot"
-             and spec.sampling_policy == "random" and spec.feature_scaling == "none"
-             and not spec.hyperparameters)
-    use_registry = plain and spec.intervention_type in ("model_architecture", "data_efficiency")
+    use_registry, prov = _baseline_choice(spec, pol)
+    if prov is not None:
+        audit_log.append(run_dir, "baseline_guard", prov)
     if use_registry:
         base_csv = ROOT / "experiments/runs" / pol.baseline_run_id / "metrics.csv"
         if not base_csv.exists():
@@ -184,6 +202,8 @@ def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
     else:
         base_df = run_runspec(_baseline_spec(spec, pol.baseline_model))["metrics"]
         baseline_source = "in_run"
+        if prov is not None:
+            baseline_source = f"in_run (registry refused: {','.join(prov['violations'])})"
 
     size = pol.comparison_train_size or max(
         set(spec.train_sizes) & set(base_df["train_size"].unique()))
@@ -195,6 +215,9 @@ def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
     cmp["baseline_model"] = pol.baseline_model
     cmp["candidate_model"] = spec.model_family
     cmp["baseline_source"] = baseline_source
+    if prov is not None:                      # the provenance decision travels on the run-card
+        cmp["baseline_provenance"] = {k: prov[k] for k in
+                                      ("ok", "reason", "violations", "drift", "registry_run_id")}
     # C3: label the bootstrap UNIT. E. coli comparisons resample per-series R² (the unit is a
     # mutational series); the yeast benchmark resamples test sequences. CIs across different
     # units are NOT directly comparable — recording the unit prevents silent cross-claims.

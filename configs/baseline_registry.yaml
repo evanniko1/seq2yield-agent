@@ -1,0 +1,30 @@
+# The canonical per-series baseline registry: the stored per-(series, size, model) R² values that
+# a plain model-architecture / data-efficiency comparison is scored against.
+#
+# ONE place to point at it, because repointing it must be a single deliberate edit — the previous
+# registry id was hardcoded in six files, which is part of why a stale registry went unnoticed for
+# four months (audit ML-02, docs/RETRACTIONS.md R-2).
+#
+# The harness does NOT trust this pointer on its own: `orchestration/baseline_guard.py` compares
+# the registry's recorded provenance (numerics fingerprint, dataset/split hash) against the current
+# checkout, and falls back to training an in-run baseline whenever they disagree. A registry is a
+# cache of results, and a cache needs an invalidation rule.
+run_id: 2026-11-01-full56
+
+# Refuse the stored registry (and pay for an in-run baseline instead) when:
+require:
+  numerics_fingerprint: true      # the value-deciding source files must be unchanged
+  dataset_hash: true              # same cleaned dataset
+  split_hash: true                # same splits
+  # The git SHA is recorded but NOT required: an unrelated docs or agent commit does not change a
+  # predicted number, and a guard that fires on every commit would be disabled within a week.
+  git_sha: false
+
+superseded:
+  - run_id: 2026-06-04-full56
+    locked: 2026-06-05
+    reason: >
+      Built before provenance was stamped, with RF max_features=1.0 and no CNN early stopping.
+      Against current code an unchanged RF measures ΔR² −0.0158 (N=2000) / −0.0417 (N=500) against
+      its own stored baseline, and CNN −0.0313; MLP reproduces bit-for-bit. Kept as history — it is
+      what every claim recorded before 2026-11-01 was compared against.

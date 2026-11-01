@@ -108,9 +108,22 @@ Scores are 1–5. Lower `score_confoundedness` = more confounded = worse.
   "seed": 0,
   "primary_metric": "r2",
   "secondary_metrics": ["rmse","pearson","spearman"],
-  "environment": { "python": "string", "packages": {} }
+  "environment": {
+    "python": "string", "packages": {},
+    "code": { "git_sha": "string|null", "branch": "string|null", "dirty": "bool|null" },
+    "numerics": { "fingerprint": "sha256:16", "n_files": 0 },
+    "model_defaults": { "<family>": { "hash": "sha256:12", "params": {} } }
+  }
 }
 ```
+
+`code` / `numerics` / `model_defaults` are REQUIRED on every run written on or after 2026-11-01
+(`training/provenance.py`). `numerics` hashes only the files that can change a predicted value, so
+it is the field that decides whether a STORED baseline is still a valid control: a result whose
+numerics fingerprint differs from the current checkout is a different experiment, not a baseline,
+and `orchestration/baseline_guard.py` refuses it and trains an in-run control instead. Without
+these fields a stored registry cannot be shown to match the code and is likewise refused —
+which is the state of every run recorded before that date (audit ML-02, docs/RETRACTIONS.md).
 
 ## 5. Run-card (durable record)
 

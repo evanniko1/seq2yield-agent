@@ -26,7 +26,12 @@ def set_seed(seed: int) -> None:
 
 
 def environment() -> dict:
-    """Capture the runtime environment for run-card provenance."""
+    """Capture the runtime environment for run-card provenance.
+
+    Library versions alone were not enough: they cannot see a change in this repo's own model
+    defaults, which is exactly what invalidated the baseline registry (audit ML-02). The `code`,
+    `numerics` and `model_defaults` blocks come from `training/provenance.py` and are what the
+    baseline guard compares before a stored registry may be used as a control."""
     import platform
     import sklearn
     env = {
@@ -40,4 +45,9 @@ def environment() -> dict:
         env["cuda"] = torch.cuda.is_available()
     except ImportError:
         pass
+    try:
+        from . import provenance
+        env.update(provenance.stamp())
+    except Exception as e:                   # provenance must never sink a real run
+        env["provenance_error"] = f"{type(e).__name__}: {e}"[:160]
     return env

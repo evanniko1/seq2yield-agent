@@ -27,7 +27,22 @@ from pydantic import BaseModel, Field
 ROOT = Path(__file__).resolve().parents[3]
 # baseline registry metrics per dataset (per-series R²). ecoli's full 56-series registry is the
 # canonical one; other datasets resolve as they are onboarded (missing -> no hints, gracefully).
-_DEFAULT_METRICS = {"ecoli": ROOT / "experiments/runs/2026-06-04-full56/metrics.csv"}
+def _registry_metrics(dataset: str):
+    """The dataset's baseline per-series metrics. ecoli resolves to the CANONICAL registry from
+    configs/baseline_registry.yaml rather than a hardcoded dated folder, so repointing the registry
+    repoints the insight layer with it (ML-02); other datasets resolve as they are onboarded."""
+    if dataset != "ecoli":
+        return None
+    try:
+        from orchestration.baseline_guard import registry_path, registry_ready
+        # readiness, not existence: the builder checkpoints metrics.csv as it goes, so a registry
+        # mid-build would otherwise be dissected as if it were the whole corpus.
+        return registry_path("metrics.csv") if registry_ready() else None
+    except Exception:
+        return None
+
+
+_DEFAULT_DATASETS = ("ecoli",)
 
 # thresholds (tunable; kept explicit rather than hidden constants)
 _POOR_R2 = 0.30            # even the best model is weak here -> likely an irreducible ceiling
@@ -268,7 +283,11 @@ def _series_covariates(dataset: str):
 def dissect_dataset(dataset: str, metrics_csv, train_size: int | None = None) -> list[GeneratedQuestion]:
     """Load a registry metrics.csv for `dataset`, run the pure dissections, and (when the raw data is
     present) add the covariate-correlation question. `metrics_csv` is a path to the baseline run's
-    metrics.csv (e.g. experiments/runs/<baseline_run_id>/metrics.csv)."""
+    metrics.csv (e.g. experiments/runs/<baseline_run_id>/metrics.csv). A missing path means the
+    dataset has no COMPLETE baseline registry yet, which yields no questions rather than an error —
+    and never a silent fall back to an older registry's numbers (ML-02)."""
+    if metrics_csv is None or not Path(metrics_csv).exists():
+        return []
     df = pd.read_csv(metrics_csv)
     qs = dissect_metrics(df, dataset, train_size)
     cov = _series_covariates(dataset)
@@ -293,7 +312,7 @@ def to_focus_hints(questions: list[GeneratedQuestion]) -> list[str]:
 # --------------------------------------------------------------------- PI wiring ---
 def default_metrics_path(dataset: str):
     """Path to a dataset's baseline metrics.csv, or None if it hasn't been reproduced yet."""
-    p = _DEFAULT_METRICS.get(dataset)
+    p = _registry_metrics(dataset)
     return p if p and p.exists() else None
 
 
@@ -373,7 +392,7 @@ def aggregate_focus_hints(datasets=None) -> tuple[list[str], dict]:
             from ..data import datasets as ds_mod
             datasets = ds_mod.ready_ids()
         except Exception:
-            datasets = list(_DEFAULT_METRICS)
+            datasets = list(_DEFAULT_DATASETS)
     hints: list[str] = []
     per: dict = {}
     for d in datasets:

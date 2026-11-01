@@ -44,7 +44,10 @@ def test_compile_runspec_is_valid():
     assert vr.ok, vr.errors
     assert spec.model_family == "cnn"
     assert spec.acceptance_policy.baseline_model == "rf"
-    assert spec.acceptance_policy.baseline_run_id == "2026-06-04-full56"
+    # the registry id comes from configs/baseline_registry.yaml, not a literal (ML-02: six
+    # hardcoded copies are how a stale registry survives a code change)
+    from orchestration.baseline_guard import registry_run_id
+    assert spec.acceptance_policy.baseline_run_id == registry_run_id()
     # allowed/protected must be disjoint
     assert not (set(spec.allowed_files) & set(spec.protected_files))
 

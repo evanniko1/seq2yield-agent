@@ -28,10 +28,14 @@ SCHEMA = [
         trajectory_id TEXT, proposal_id TEXT, role TEXT, feasibility REAL, scientific_value REAL,
         confoundedness REAL, reproducibility REAL, reject_reason TEXT,
         PRIMARY KEY(trajectory_id, proposal_id, role))""",
+    # `baseline_source` / `split_strategy` / `code_sha` are the claim's PROVENANCE: what it was
+    # compared against and which code produced it. Eight claims were recorded against a registry
+    # that had drifted out from under them, and no reader could tell (audit ML-02).
     """CREATE TABLE IF NOT EXISTS claim(
         run_id TEXT PRIMARY KEY, ts TEXT, candidate_model TEXT, baseline_model TEXT,
         mean_delta_r2 REAL, ci_excludes_zero INTEGER, p_value REAL, bootstrap_unit TEXT,
-        dataset TEXT, train_size INTEGER, status TEXT, claim TEXT)""",
+        dataset TEXT, train_size INTEGER, status TEXT, claim TEXT,
+        baseline_source TEXT, split_strategy TEXT, code_sha TEXT)""",
     """CREATE TABLE IF NOT EXISTS tournament(
         run_id TEXT PRIMARY KEY, ts TEXT, dataset TEXT, subregion TEXT, scope TEXT, winner TEXT,
         winner_significant INTEGER, selection TEXT, bootstrap_unit TEXT, leaderboard TEXT)""",
@@ -66,6 +70,29 @@ def _table_name(stmt: str) -> str:
     return stmt.split("EXISTS", 1)[1].split("(", 1)[0].strip()
 
 
+def _schema_columns(stmt: str) -> list[str]:
+    """Column names declared by a CREATE TABLE statement (table-level constraints skipped)."""
+    body = stmt.split("(", 1)[1].rsplit(")", 1)[0]
+    depth, parts, cur = 0, [], ""
+    for ch in body:                                    # split on top-level commas only
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+        if ch == "," and depth == 0:
+            parts.append(cur)
+            cur = ""
+        else:
+            cur += ch
+    parts.append(cur)
+    out = []
+    for p in parts:
+        tok = p.strip().split()
+        if tok and tok[0].upper() not in ("PRIMARY", "UNIQUE", "FOREIGN", "CHECK", "CONSTRAINT"):
+            out.append(tok[0])
+    return out
+
+
 def _migrate(con) -> list[str]:
     """Rebuild any table whose stored schema predates its primary key. The DB is a read-model over
     append-only artifacts, so dropping a stale table loses nothing — `ingest_all` repopulates it.
@@ -82,6 +109,9 @@ def _migrate(con) -> list[str]:
         if wanted_pk and not has_pk:
             con.execute(f"DROP TABLE {table}")
             dropped.append(table)
+        elif set(_schema_columns(stmt)) != {c["name"] for c in cols}:
+            con.execute(f"DROP TABLE {table}")         # column set changed: rebuild from source
+            dropped.append(table)
     if dropped:
         con.commit()
         con.execute("VACUUM")          # DROP alone leaves the freed pages in the file (it was 33 MB)
@@ -93,10 +123,14 @@ def connect(path: str | Path | None = None) -> sqlite3.Connection:
     p.parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(str(p))
     con.row_factory = sqlite3.Row
-    _migrate(con)
+    dropped = _migrate(con)
     for stmt in SCHEMA:
         con.execute(stmt)
     con.commit()
+    if dropped:
+        # A rebuilt table is empty, and the change-detector would otherwise skip the re-ingest
+        # because no SOURCE file moved — leaving the page silently blank. Forget the fingerprint.
+        _FINGERPRINTS.pop(_db_key(con), None)
     return con
 
 
@@ -163,7 +197,10 @@ def ingest_claims(con, path: Path) -> int:
             "ci_excludes_zero": (None if c.get("ci_excludes_zero") is None else int(bool(c.get("ci_excludes_zero")))),
             "p_value": c.get("p_value"), "bootstrap_unit": c.get("bootstrap_unit"),
             "dataset": c.get("dataset"), "train_size": c.get("train_size"),
-            "status": c.get("status"), "claim": c.get("claim")})
+            "status": c.get("status"), "claim": c.get("claim"),
+            "baseline_source": c.get("baseline_source"),
+            "split_strategy": c.get("split_strategy"),
+            "code_sha": (c.get("provenance") or {}).get("git_sha")})
         n += 1
     return n
 
@@ -269,6 +306,11 @@ _SOURCES = ("reports/model_calls.jsonl", "reports/decision_events.jsonl",
 _FINGERPRINTS: dict[str, tuple] = {}
 
 
+def _db_key(con) -> str:
+    """Identity of the database a connection points at (':memory:' when it has no file)."""
+    return str(con.execute("PRAGMA database_list").fetchone()["file"] or ":memory:")
+
+
 def _fingerprint(root: Path) -> tuple:
     """(path, mtime_ns, size) of every source stream — a directory folds in its children."""
     out = []
@@ -290,7 +332,7 @@ def ingest_all_if_changed(con, root: Path | None = None) -> dict | None:
     The ingest is idempotent, but a 5-second page refresh re-reading every artifact stream is pure
     waste — and it was the delivery mechanism for the duplicate-row bug before the tables had keys."""
     root = root or ROOT
-    key = str(Path(con.execute("PRAGMA database_list").fetchone()["file"] or ":memory:"))
+    key = _db_key(con)
     fp = _fingerprint(root)
     if _FINGERPRINTS.get(key) == fp:
         return None

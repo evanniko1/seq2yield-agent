@@ -405,13 +405,19 @@ def _report(run_dir, spec, proposal, verdict, pm, eng_who, rev_who, curve=None):
             lines += [f"**Crossover:** superior_at={cross['superior_at']}, "
                       f"parity_at={cross['parity_at']}, trend={cross['trend']}", ""]
     lines += [
-        "## Comparison (candidate vs baseline registry, paired bootstrap over series)",
+        "## Comparison (candidate vs baseline, paired bootstrap over series)",
         f"- baseline ({cmp.get('baseline_model')}) mean R²: {cmp.get('baseline_mean')}",
         f"- candidate ({cmp.get('candidate_model')}) mean R²: {cmp.get('candidate_mean')}",
         f"- ΔR² = {cmp.get('mean_delta')}  ·  95% CI {cmp.get('paired_bootstrap_ci')}  ·  "
         f"excludes 0: {cmp.get('ci_excludes_zero')}  ·  n_series={cmp.get('n_series')}",
-        f"- acceptance reasons: {cmp.get('reasons')}", "",
+        # WHAT it was compared against is part of the result, not a footnote (audit ML-02)
+        f"- control: `{cmp.get('baseline_source')}`", "",
     ]
+    bp = cmp.get("baseline_provenance") or {}
+    if bp and not bp.get("ok"):
+        lines += [f"- ⚠️ the stored registry was refused as a control: {bp.get('reason')}"]
+        lines += [f"  - drift: {d}" for d in (bp.get("drift") or [])[:6]] + [""]
+    lines += [f"- acceptance reasons: {cmp.get('reasons')}", ""]
     het = cmp.get("heterogeneity") or {}
     if het:
         lines += ["## Per-series heterogeneity (where the winner differs)",
