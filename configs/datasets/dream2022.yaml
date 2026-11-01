@@ -11,7 +11,13 @@ structure: pooled
 bootstrap_unit: sequence
 throughput_floor: 10000
 adapter: dream2022
-split_strategy: stratified_holdout
+# Audit SA-1/ML-03: the MAUDE test library is DESIGNED (SNV pairs, motif perturbations, tiling), so
+# a random holdout left 74.9% of test sequences within 2 substitutions of a training sequence
+# (-> 0.000 under grouping). No subset id ships with this file, so families are derived as
+# Hamming<=2 connected components: 19,607 families over 71,103 sequences (largest 343, 16,612
+# singletons), cached under reports/cache/families/.
+split_strategy: grouped_holdout
+family_distance: 2
 applicable_models: [rf, mlp, cnn, ridge, svr, transformer]
 applicable_feature_sets: [one_hot, kmer]
 applicable_embedders: [hyenadna-tiny, nt-50m, nt-250m]

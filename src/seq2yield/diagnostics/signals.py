@@ -63,13 +63,27 @@ def split_representativeness(y_train, y_test) -> dict:
             "ks": round(_ks_statistic(yt, ye), 4)}
 
 
-def sequence_leakage(train_seqs, test_seqs) -> dict:
-    """Exact-duplicate leakage: fraction of test sequences that also appear in the training set."""
+def sequence_leakage(train_seqs, test_seqs, *, near_dist: int = 2) -> dict:
+    """Leakage between train and test — exact duplicates AND near-duplicates.
+
+    The exact check alone gives false assurance on designed libraries: adapters `drop_duplicates`
+    before it ever runs, so `leak_frac` is 0 by construction while 69% (dream2022) / 95% (yeast) of
+    test sequences sit one substitution from a training sequence (audit SA-1/ML-03, ST-7). A
+    near-duplicate fraction far above a random library's (~0 at d<=5) means the split cut through
+    design families and the reported R² is largely interpolation between siblings."""
     tr = set(map(str, train_seqs))
     test = list(map(str, test_seqs))
     leaked = sum(1 for s in test if s in tr)
-    return {"n_test": len(test), "n_leaked": int(leaked),
-            "leak_frac": round(leaked / max(1, len(test)), 4)}
+    out = {"n_test": len(test), "n_leaked": int(leaked),
+           "leak_frac": round(leaked / max(1, len(test)), 4)}
+    try:
+        from ..data.families import near_duplicate_fraction
+        nd = near_duplicate_fraction(list(map(str, train_seqs)), test, max_dist=near_dist)
+        out.update({"near_dup_frac": nd.get("near_dup_frac"), "near_dup_dist": near_dist,
+                    "n_near_dup": nd.get("n_near_dup")})
+    except (ValueError, MemoryError) as e:             # never let a diagnostic kill a run
+        out["near_dup_error"] = str(e)[:120]
+    return out
 
 
 def target_coverage(y_train, y_test) -> dict:

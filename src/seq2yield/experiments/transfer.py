@@ -57,6 +57,17 @@ def concordance(source_cmp: dict, target_cmp: dict) -> dict:
         "same_sign": ss == ts and ss != 0,
     }
 
+    # Split provenance: a result measured under a grouped holdout is not the same quantity as one
+    # measured under a random/stratified holdout (audit SA-1/ML-03), so a replication across two
+    # different split protocols is not a replication. Runs predating the grouped split carry no
+    # `split` block, which is itself informative — say so rather than assuming they match.
+    s_split = (source_cmp.get("split") or {}).get("split_strategy")
+    t_split = (target_cmp.get("split") or {}).get("split_strategy")
+    if s_split != t_split:
+        out["split_mismatch"] = {"source": s_split, "target": t_split,
+                                 "note": "the two sides were split under different protocols; "
+                                         "treat the comparison as provisional"}
+
     # data-efficiency: do the crossover directions agree (trend, not just endpoint)?
     s_cross = (source_cmp.get("crossover") or {}).get("trend")
     t_cross = (target_cmp.get("crossover") or {}).get("trend")

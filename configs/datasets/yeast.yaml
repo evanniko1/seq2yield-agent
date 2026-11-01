@@ -11,7 +11,12 @@ structure: pooled
 bootstrap_unit: sequence
 throughput_floor: 10000
 adapter: yeast                    # delegates to the existing clean_yeast (no cleaning.py edit)
-split_strategy: stratified_holdout
+# Audit SA-1/ML-03: the library is 199 mutational series, and a per-series stratified holdout put a
+# sibling of EVERY held-out sequence in train (near-duplicate fraction at d<=2 was 1.000 -> 0.000
+# under grouping). `mut_series` is the data's own grouping and matches the Hamming<=2 components
+# 1:1 (200 components, 1 series spanning two), so it is used directly.
+split_strategy: grouped_holdout
+family_col: mut_series
 applicable_models: [rf, mlp, cnn]
 applicable_feature_sets: [one_hot, kmer]
 applicable_embedders: [hyenadna-tiny, nt-50m, nt-250m, evo]

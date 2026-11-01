@@ -281,6 +281,12 @@ def _run_pooled(spec: RunSpec, run_dir: Path, vres) -> dict:
     cmp.update({"comparison_train_size": size, "candidate_model": spec.model_family,
                 "baseline_model": pol.baseline_model, "baseline_source": "in_run_pooled",
                 "bootstrap_unit": "sequence", "dataset": spec.dataset, "n_test": int(len(y))})
+    # Record HOW the data was split (strategy, family source, family counts). A grouped-holdout
+    # result is not comparable with an older stratified-holdout one, so the split must never be
+    # implicit on a run-card (audit SA-1/ML-03).
+    cmp["split"] = pooled_runner.split_report(spec)
+    if cand.get("test_families") is not None:
+        cmp["n_test_families"] = int(len(set(cand["test_families"])))
     if len(per_size) > 1:
         cmp["per_size"] = per_size
         cmp["crossover"] = compare_mod.crossover_analysis(per_size)

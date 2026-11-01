@@ -17,6 +17,25 @@ pitfalls:
     suggested: deduplicate sequences across splits, then re-run the same comparison
     intervention_hint: model_architecture
 
+  - id: near_duplicate_leakage
+    signal: leakage.near_dup_frac
+    op: ">"
+    threshold: 0.2
+    severity: high
+    # Advisory, NOT blocking: a designed library can legitimately contain families, and the honest
+    # response is a grouped split, not a withheld result. Blocking here would also stop every run
+    # on a variant library before anyone could act on it. (Audit SA-1/ML-03, ST-7.)
+    description: >
+      A large share of held-out sequences sit within a couple of substitutions of a TRAINING
+      sequence, so the model is being scored on near-copies of what it memorised. The exact
+      duplicate check cannot see this (adapters de-duplicate first). A random library scores ~0
+      here; designed families (SNV pairs, motif perturbations, tiling, mutational series) score
+      high and need a family-aware split.
+    suggested: >
+      declare the dataset's design families (family_col or family_distance) and re-run with
+      split_strategy grouped_holdout, then compare the two numbers
+    intervention_hint: sampling_design
+
   - id: unrepresentative_split
     signal: representativeness.ks
     op: ">"

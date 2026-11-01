@@ -30,7 +30,13 @@ class DatasetSpec(BaseModel):
     bootstrap_unit: str = "series"           # series | sequence  (C3 fence)
     throughput_floor: int = 10000
     adapter: str | None = None               # module in data/adapters/ (None = built-in path)
-    split_strategy: str = "provided"         # provided | stratified_holdout
+    split_strategy: str = "provided"         # provided | stratified_holdout | grouped_holdout
+    # Design families (audit SA-1/ML-03): with `grouped_holdout` a whole family goes to one side of
+    # the split, so a model is never scored on a one-base sibling of something it trained on.
+    # `family_col` names a grouping the data already carries; `family_distance` derives families as
+    # connected components of sequences within that many substitutions.
+    family_col: str | None = None
+    family_distance: int | None = None
     applicable_models: list[str] = Field(default_factory=lambda: ["rf", "mlp", "cnn"])
     applicable_feature_sets: list[str] = Field(default_factory=lambda: ["one_hot", "kmer"])
     applicable_embedders: list[str] = Field(default_factory=list)
