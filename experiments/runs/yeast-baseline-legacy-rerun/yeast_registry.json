@@ -1,0 +1,80 @@
+{
+  "dataset": "yeast",
+  "seq_len": 80,
+  "n_promoters": 3929,
+  "n_genes": 199,
+  "n_test": 392,
+  "protocol": {
+    "name": "legacy",
+    "split": "stratified_holdout (SUPERSEDED)",
+    "bootstrap_unit": "sequence",
+    "n_bootstrap_units": 392,
+    "superseded": true,
+    "see": "docs/RETRACTIONS.md"
+  },
+  "models": {
+    "rf": {
+      "r2": 0.9091,
+      "r2_ci": [
+        0.8853,
+        0.9305
+      ]
+    },
+    "mlp": {
+      "r2": 0.8963,
+      "r2_ci": [
+        0.8684,
+        0.9205
+      ]
+    },
+    "cnn": {
+      "r2": 0.9015,
+      "r2_ci": [
+        0.8715,
+        0.9255
+      ]
+    }
+  },
+  "ranking": [
+    "rf",
+    "cnn",
+    "mlp"
+  ],
+  "best_vs_runnerup": {
+    "best": "rf",
+    "runner_up": "cnn",
+    "mean_delta": 0.007636440420570323,
+    "n": 392,
+    "unit": "sequence",
+    "n_units": 392,
+    "ci": [
+      -0.005729297057165938,
+      0.023974888332990545
+    ],
+    "excludes_zero": false,
+    "p_value": 0.294
+  },
+  "ranking_transfer": {
+    "ecoli_ranking": [
+      "cnn",
+      "rf",
+      "mlp"
+    ],
+    "yeast_ranking": [
+      "rf",
+      "cnn",
+      "mlp"
+    ],
+    "top_model_agrees": false
+  },
+  "environment": {
+    "python": "3.12.8",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "packages": {
+      "numpy": "1.26.4",
+      "scikit-learn": "1.6.1",
+      "torch": "2.5.1+cu121"
+    },
+    "cuda": true
+  }
+}

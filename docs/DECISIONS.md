@@ -329,6 +329,12 @@ accrues cost via the price table. Tests: token normalization (both shapes), cost
 grouping, over/under budget (88 passing).
 
 ## #27 — Secondary yeast benchmark + cross-organism ranking transfer
+> ⚠️ **RETRACTED 2026-11-01 — both results below.** The per-gene stratified holdout put a one-base
+> sibling of every held-out sequence into training, and the sequence-level bootstrap counted each
+> gene's ~20 members as 20 observations. Under whole-gene holdout + family-unit CIs the three R²
+> go from ≈0.90 to **≈0** (none beats the training mean) and the ranking cannot be resolved at all,
+> so there is no ranking to transfer. See [RETRACTIONS.md](RETRACTIONS.md) R-1/R-2 and #63.
+
 **Context.** Add the deposit's yeast dataset (Vaishnav et al., 80 nt promoters → YFP, 199
 genes) for a second organism + transfer questions. **Decision.** `clean_yeast` canonicalizes
 to Sequence/Protein/series (native_gene as the group). Yeast has ~20 seqs/gene — too few for
@@ -630,6 +636,12 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   larger LIVE benchmark battery + provider/structure ablations remain planned (NEXT_STEPS).
 
 ## #55 — dream2022 benchmark + planned council-evaluation / persona-ablation
+> ⚠️ **First bullet SUPERSEDED, second RETRACTED (2026-11-01).** Re-measured under grouped splits +
+> family-unit CIs: CNN **0.730 → 0.5810** [0.524, 0.630], RF **0.466 → 0.1803** [0.139, 0.226],
+> distance to SOTA −0.21 → **−0.36**. The cnn-over-rf direction survives (ΔR²=+0.401, p<0.0001 over
+> 2,064 families). The tail claim is retracted for a different reason (strata cut on the observed
+> target; ~76% artifact, and the label was wrong). See [RETRACTIONS.md](RETRACTIONS.md) R-3/R-4.
+
 - **dream2022 (vs SOTA r²=0.938).** First real model run on the local 71k MAUDE test set: CNN≈**0.730**
   (biology prior [8,6,4], train 8000) beats RF (0.466) significantly; ~−0.21 to the Vaishnav
   transformer SOTA (expected — bounded train + small generic CNN vs their 6.7M-sequence models).

@@ -46,7 +46,11 @@ comparators, and predeclared acceptance criteria.
   RunSpec → ML Engineer patch → reviewer → guard → tests → train candidate vs baseline
   registry (paired bootstrap) → accept/reject/inconclusive → postmortem → memory. Ran live
   end-to-end: **ACCEPTED** cnn-vs-rf (ΔR²=0.032, 95% CI [0.008, 0.055], n=10 series); patch
-  kept, claim recorded, run trail + postmortem persisted.
+  kept, claim recorded, run trail + postmortem persisted. *(That ΔR² is a first-10-series figure
+  measured against a registry baseline built with older model code; over all 56 series the same
+  comparison is 0.021–0.023, which the 0.02 accept margin cannot resolve. It is the loop that this
+  milestone demonstrates, not the effect size. See [docs/RETRACTIONS.md](docs/RETRACTIONS.md) for
+  what has been withdrawn and what is merely open.)*
 
 - ✅ **Milestone 8** — read-only dashboard (`scripts/build_dashboard.py` → `reports/dashboard/
   index.html`): static audit view of experiments, accepted claims, and the question-space

@@ -1,0 +1,71 @@
+{
+  "passed": true,
+  "violations": [],
+  "by_path": {
+    "README.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/CRITIQUE.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/DECISIONS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/REPRODUCTION.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/RESEARCH_AGENDA.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/RETRACTIONS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/DATASET_SCHEMA.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "reports/static/yeast_baseline_report.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "reports/static/yeast_baseline_grouped_report.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "reports/static/yeast_baseline_legacy_rerun_report.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "scripts/build_yeast.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/experiments/claim_registry.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_retractions.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    }
+  }
+}

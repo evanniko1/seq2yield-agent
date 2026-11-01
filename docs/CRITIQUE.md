@@ -28,7 +28,8 @@ paper. Comparison unit and control differ by axis:
 | sampling_design | per-series, model+sampling | registry, **same model**, random | per-series R² | paired bootstrap over series | ✅ only sampling differs |
 | training_procedure (HPO) | per-series, model+hyperparams | registry, **same model**, defaults | per-series R² | paired bootstrap over series | ✅ only hyperparams differ |
 | scope=pooled | ONE model pooled across series | **in-run pooled** comparator (same data budget) | per-series R² | paired bootstrap over series | ✅ (after fix #1) |
-| yeast (pooled) | ONE model pooled, 80 nt | other models, same split | overall R² | **sequence-level** paired bootstrap | ✅ (different unit — see C3) |
+| yeast / any designed pooled library | ONE model pooled | other models, same split | overall R² | **family-level** paired bootstrap (whole design families held out) | ✅ (different unit — see C3) |
+| pooled *random* library (cuperus, sample_2019) | ONE model pooled | other models, same split | overall R² | **sequence-level** paired bootstrap | ✅ (no families: the family unit reduces to this exactly) |
 
 ### Fixed in this audit pass
 1. **`pooled` scope was confounded.** `_run_pooled` trains on `n_series × train_size` rows
@@ -87,10 +88,14 @@ paper. Comparison unit and control differ by axis:
   but a choice, not domain-derived.
 
 ### Machine / deep learning
-- **C3 — Two bootstrap units coexist.** E. coli bootstraps over **series-level R²** (series as
-  the unit, ~56 units); yeast bootstraps over **test sequences** (per-gene counts too small).
-  Both are valid, but CIs are not directly comparable across datasets — documented, must not be
-  cross-claimed.
+- **C3 — Three bootstrap units coexist.** E. coli bootstraps over **series-level R²** (series as
+  the unit, ~56 units); a *designed* pooled library bootstraps over **design families** (yeast: 20
+  genes; dream2022: 2,064 families); a *random* pooled library bootstraps over **test sequences**.
+  All three are valid, but CIs are not comparable across units — every run-card records
+  `bootstrap_unit` + `n_bootstrap_units`, and they must not be cross-claimed.
+  *(Until 2026-11-01 yeast used the sequence unit, which counted each gene's ~20 near-identical
+  members as 20 independent observations — see [RETRACTIONS.md](RETRACTIONS.md) R-1 and DECISIONS
+  #63. The ~56-unit E. coli case has its own small-n problem: audit ST-2.)*
 - **C4 — Unscaled flat features.** k-mer/mechanistic/mixed feed RF (scale-invariant, fine) and
   MLP/ridge/SVR (scale-sensitive) **without standardization**, so a feature axis on MLP may be
   under-credited. *Recommend: standardize flat features for non-tree models.*

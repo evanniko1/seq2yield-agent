@@ -1,5 +1,14 @@
 # Yeast secondary benchmark — pooled YFP prediction (80 nt promoters)
 
+> ⚠️ **RETRACTED — frozen June-2026 record, kept only as evidence of what the retracted claim was
+> based on. Do not quote these numbers.** The per-gene stratified holdout put a one-base sibling of
+> every held-out sequence into training, and the sequence-level bootstrap counted each gene's ~20
+> members as 20 independent observations. Under whole-gene holdout + family-unit CIs every R² here
+> goes to **≈0** and the ranking is unresolvable. Separately, today's model code does not reproduce
+> this table even under the same protocol (audit ML-02). Current numbers:
+> `yeast_baseline_grouped_report.md`; full account: [docs/RETRACTIONS.md](../../docs/RETRACTIONS.md)
+> R-1/R-2. Regenerate with `python scripts/build_yeast.py` (grouped is now the default).
+
 3929 promoters · 199 native genes · pooled training · 392 held-out test sequences (per-gene stratified). Sequence-level bootstrap (pooled analog of the E. coli per-series test).
 
 ## Per-model R² (held-out)

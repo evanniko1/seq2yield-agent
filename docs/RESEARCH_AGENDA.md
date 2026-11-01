@@ -19,12 +19,12 @@ figure/table/section it becomes).
 
 | # | Question | Capability | Status | Artifact |
 |---|---|---|---|---|
-| I-1 | **Which model wins per dataset**, corrected for comparing the whole family? | C4 tournament (FDR) | ✅ CNN wins sample_2019 (Δ0.21 vs rf, q0.000); dream2022 (0.73 vs 0.47) | Leaderboard table per dataset |
+| I-1 | **Which model wins per dataset**, corrected for comparing the whole family? | C4 tournament (FDR) | ✅ CNN wins sample_2019 (Δ0.21 vs rf, q0.000); dream2022 (**0.58 vs 0.18**, Δ+0.40 over 2,064 families — was 0.73 vs 0.47 pre-[RETRACTIONS](RETRACTIONS.md) R-3). ⚠️ **yeast cannot be ranked at all** (R-1/R-2) | Leaderboard table per dataset |
 | I-2 | **Do different E. coli series / subregions prefer different hyperparameters**, or is there a universal optimum? (the Nat Comms question) | C5 HPO-distribution | 🟡 harness done; needs a full 56-series sweep | Distribution plots of best {kernel,lr,dropout} |
 | I-3 | **Does a config that won on scope A help scope B?** | C7 config_transfer | ✅ mechanism; RF cuperus→sample tied | Transfer matrix (source→target) |
 | I-4 | **Can one model trained on A predict B across assays/lengths?** | C8 joint (length-reconciliation) | ✅ RF yeast 5'UTR→human 5'UTR Spearman 0.62 | Cross-dataset generalization heatmap |
-| I-5 | **Is a dataset heterogeneous** (high-GC vs low-GC, uORF±, expression tail)? | C6 strata + heterogeneity | ✅ dream2022 expression tail: R² q1 .47/q2 .19/q3 .24/q4 .65 | Per-stratum R² bars |
-| I-6 | **How far below published SOTA are we, and why?** | benchmarks memory | ✅ ~0.15–0.25 R² gap, causes identified | Table: ours vs SOTA per dataset |
+| I-5 | **Is a dataset heterogeneous** (high-GC vs low-GC, uORF±, expression tail)? | C6 strata + heterogeneity | ⚠️ **RETRACTED** — ~~dream2022 expression tail R² q1 .47/q2 .19/q3 .24/q4 .65~~: strata cut on the observed target, ~76% artifact ([RETRACTIONS](RETRACTIONS.md) R-4). Needs a non-y-derived stratification; the E. coli per-series ICC result (#62) stands | Per-stratum R² bars |
+| I-6 | **How far below published SOTA are we, and why?** | benchmarks memory | ✅ ~0.15–0.25 R² gap on the random libraries, causes identified. ⚠️ **wider on the designed ones** once split honestly: dream2022 −0.36 (was −0.21); yeast has no usable gap because no model beats the mean ([RETRACTIONS](RETRACTIONS.md) R-1/R-3). A like-for-like gap also needs each paper's own split protocol | Table: ours vs SOTA per dataset |
 | I-7 | **Do foundation-model embeddings beat one-hot, and when?** | K2a embeddings | ✅ helps at low N, collapses at high N (5'UTR) | Data-efficiency crossover curve |
 | I-8 | **uORF generalization**: does a model trained on uORF-free 5'UTRs generalize to uORF-bearing ones? | C6 `has_uorf` + C7 | ⬜ (novel; papers never asked) | Transfer verdict |
 | I-9 | **Which architecture degrades least in the hard expression tail?** | C4 + C6 (expression_quantile) | ⬜ (DREAM surfaced the gap; nobody resolved it per-architecture) | Per-model tail-robustness |

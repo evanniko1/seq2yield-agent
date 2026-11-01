@@ -1,0 +1,53 @@
+{
+  "run_id": "2026-11-01-retraction-sweep",
+  "granted": true,
+  "approver": "Evangelos (vm.nikolados@gmail.com)",
+  "paths": [
+    "README.md",
+    "docs/CRITIQUE.md",
+    "docs/DECISIONS.md",
+    "docs/REPRODUCTION.md",
+    "docs/RESEARCH_AGENDA.md",
+    "docs/RETRACTIONS.md",
+    "docs/DATASET_SCHEMA.md",
+    "reports/static/yeast_baseline_report.md",
+    "reports/static/yeast_baseline_grouped_report.md",
+    "reports/static/yeast_baseline_legacy_rerun_report.md",
+    "scripts/build_yeast.py",
+    "src/seq2yield/experiments/claim_registry.py",
+    "tests/test_retractions.py"
+  ],
+  "path_classes": {
+    "README.md": "require_review",
+    "docs/CRITIQUE.md": "require_review",
+    "docs/DECISIONS.md": "require_review",
+    "docs/REPRODUCTION.md": "require_review",
+    "docs/RESEARCH_AGENDA.md": "require_review",
+    "docs/RETRACTIONS.md": "require_review",
+    "docs/DATASET_SCHEMA.md": "require_review",
+    "reports/static/yeast_baseline_report.md": "require_review",
+    "reports/static/yeast_baseline_grouped_report.md": "require_review",
+    "reports/static/yeast_baseline_legacy_rerun_report.md": "require_review",
+    "scripts/build_yeast.py": "require_review",
+    "src/seq2yield/experiments/claim_registry.py": "require_review",
+    "tests/test_retractions.py": "require_review"
+  },
+  "strict_paths": [],
+  "conditional_paths": [
+    "README.md",
+    "docs/CRITIQUE.md",
+    "docs/DECISIONS.md",
+    "docs/REPRODUCTION.md",
+    "docs/RESEARCH_AGENDA.md",
+    "docs/RETRACTIONS.md",
+    "docs/DATASET_SCHEMA.md",
+    "reports/static/yeast_baseline_report.md",
+    "reports/static/yeast_baseline_grouped_report.md",
+    "reports/static/yeast_baseline_legacy_rerun_report.md",
+    "scripts/build_yeast.py",
+    "src/seq2yield/experiments/claim_registry.py",
+    "tests/test_retractions.py"
+  ],
+  "reason": "APPROVED by 'Evangelos (vm.nikolados@gmail.com)' for conditional-protected paths: ['README.md', 'docs/CRITIQUE.md', 'docs/DECISIONS.md', 'docs/REPRODUCTION.md', 'docs/RESEARCH_AGENDA.md', 'docs/RETRACTIONS.md', 'docs/DATASET_SCHEMA.md', 'reports/static/yeast_baseline_report.md', 'reports/static/yeast_baseline_grouped_report.md', 'reports/static/yeast_baseline_legacy_rerun_report.md', 'scripts/build_yeast.py', 'src/seq2yield/experiments/claim_registry.py', 'tests/test_retractions.py'] | note: retraction sweep: annotate/withdraw every published yeast + dream2022 result measured under the superseded split/bootstrap protocol, with re-measured replacements. Approved in session: 'do the retraction sweep'. No strict path is touched: the frozen June artifacts and data/splits are read-only here.",
+  "ts": "2026-11-01T21:22:38.084557+00:00"
+}

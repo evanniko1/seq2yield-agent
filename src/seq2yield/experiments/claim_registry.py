@@ -31,6 +31,10 @@ def record(*, run_id: str, proposal_id: str, status: str, comparison: dict,
         "ci_excludes_zero": comparison.get("ci_excludes_zero"),
         "p_value": comparison.get("p_value"),
         "bootstrap_unit": comparison.get("bootstrap_unit", "series"),   # C3: comparability fence
+        # The PROTOCOL the number was measured under, so a claim can never again be quoted without
+        # it (docs/RETRACTIONS.md). A record with split_strategy=None predates 2026-11-01.
+        "split_strategy": (comparison.get("split") or {}).get("split_strategy"),
+        "n_bootstrap_units": comparison.get("n_bootstrap_units"),
         "dataset": comparison.get("dataset", "ecoli"),                  # K1: organism dimension
         "transfer": (comparison.get("transfer") or {}).get("verdict"),  # K1: replication verdict
         "n_series": comparison.get("n_series"),
