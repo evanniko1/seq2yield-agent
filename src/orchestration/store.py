@@ -43,6 +43,18 @@ SCHEMA = [
     """CREATE TABLE IF NOT EXISTS dataset(
         id TEXT PRIMARY KEY, display_name TEXT, organism TEXT, modality TEXT, seq_len INTEGER,
         structure TEXT, bootstrap_unit TEXT, split_strategy TEXT, strata TEXT, ready INTEGER)""",
+    # --- the dataset catalogue (truth: data/catalogue/datasets.jsonl) projected as a read-model ---
+    """CREATE TABLE IF NOT EXISTS catalogue(
+        id TEXT PRIMARY KEY, title TEXT, status TEXT, fit_verdict TEXT, organism TEXT,
+        modality TEXT, assay TEXT, readout TEXT, n_sequences INTEGER, seq_len_nt INTEGER,
+        library_type TEXT, verification TEXT, score INTEGER, caveats TEXT, reject_reason TEXT,
+        notes TEXT, dataset_spec TEXT, discovered_by TEXT, citation TEXT, doi TEXT, year INTEGER)""",
+    """CREATE TABLE IF NOT EXISTS catalogue_publication(
+        dataset_id TEXT, doi TEXT, pmid TEXT, title TEXT, year INTEGER, role TEXT, citation TEXT,
+        PRIMARY KEY(dataset_id, citation, role))""",
+    """CREATE TABLE IF NOT EXISTS catalogue_accession(
+        dataset_id TEXT, repository TEXT, accession TEXT, relation TEXT, verified INTEGER,
+        url TEXT, n_files INTEGER, PRIMARY KEY(dataset_id, repository, accession))""",
 ]
 
 
@@ -181,6 +193,41 @@ def ingest_datasets(con) -> int:
     return n
 
 
+def ingest_catalogue(con, path: Path) -> int:
+    """Project the curated dataset catalogue into the read-model. Idempotent: the parent row is keyed
+    by dataset id, and a dataset's publications/accessions are replaced wholesale so that records
+    dropped from the JSONL do not survive in the DB."""
+    n = 0
+    for e in _read_jsonl(path):
+        pubs, accs = e.get("publications") or [], e.get("accessions") or []
+        head = next((p for p in pubs if p.get("role") == "primary"), pubs[0] if pubs else {})
+        _put(con, "catalogue", {
+            "id": e["id"], "title": e.get("title"), "status": e.get("status"),
+            "fit_verdict": e.get("fit_verdict"), "organism": e.get("organism"),
+            "modality": e.get("modality"), "assay": e.get("assay"), "readout": e.get("readout"),
+            "n_sequences": e.get("n_sequences"), "seq_len_nt": e.get("seq_len_nt"),
+            "library_type": e.get("library_type"), "verification": e.get("verification"),
+            "score": (e.get("project_value") or {}).get("score"),
+            "caveats": json.dumps(e.get("caveats") or []), "reject_reason": e.get("reject_reason"),
+            "notes": e.get("notes"), "dataset_spec": e.get("dataset_spec"),
+            "discovered_by": e.get("discovered_by"), "citation": head.get("citation"),
+            "doi": head.get("doi"), "year": head.get("year")})
+        con.execute("DELETE FROM catalogue_publication WHERE dataset_id=?", (e["id"],))
+        con.execute("DELETE FROM catalogue_accession WHERE dataset_id=?", (e["id"],))
+        for p in pubs:
+            _put(con, "catalogue_publication", {
+                "dataset_id": e["id"], "doi": p.get("doi"), "pmid": p.get("pmid"),
+                "title": p.get("title"), "year": p.get("year"), "role": p.get("role"),
+                "citation": p.get("citation")})
+        for a in accs:
+            _put(con, "catalogue_accession", {
+                "dataset_id": e["id"], "repository": a.get("repository"), "accession": a.get("id"),
+                "relation": a.get("relation"), "verified": int(bool(a.get("verified"))),
+                "url": a.get("url"), "n_files": len(a.get("files") or [])})
+        n += 1
+    return n
+
+
 def ingest_all(con, root: Path | None = None) -> dict:
     root = root or ROOT
     counts = {
@@ -190,6 +237,7 @@ def ingest_all(con, root: Path | None = None) -> dict:
         "tournaments": ingest_tournaments(con, root / "experiments/claims/tournaments.jsonl"),
         "council_reviews": ingest_council_reviews(con, root / "experiments/council_reviews"),
         "datasets": ingest_datasets(con),
+        "catalogue": ingest_catalogue(con, root / "data/catalogue/datasets.jsonl"),
     }
     con.commit()
     return counts
@@ -236,3 +284,30 @@ def cost_summary(con) -> dict:
 
 def datasets_table(con) -> list[dict]:
     return [dict(r) for r in con.execute("SELECT * FROM dataset ORDER BY seq_len").fetchall()]
+
+
+def catalogue_table(con, status: str | None = None) -> list[dict]:
+    """Catalogue rows (optionally one lifecycle status), best-scoring first. Every text column here
+    came from a publication record or a repository listing — escape it before rendering."""
+    sql = ("SELECT c.*, (SELECT COUNT(*) FROM catalogue_accession a WHERE a.dataset_id=c.id "
+           "AND a.relation='deposit') n_deposits FROM catalogue c")
+    args: tuple = ()
+    if status:
+        sql, args = sql + " WHERE c.status=?", (status,)
+    order = (" ORDER BY CASE c.status WHEN 'registered' THEN 0 WHEN 'scheduled' THEN 1 "
+             "WHEN 'candidate' THEN 2 WHEN 'watch' THEN 3 ELSE 4 END, c.score DESC, c.id")
+    return [dict(r) for r in con.execute(sql + order, args).fetchall()]
+
+
+def catalogue_coverage(con) -> dict:
+    """Corpus coverage + gaps: what the catalogue holds per organism and per modality, split into
+    what is in the corpus already (registered/scheduled) and what is merely a candidate."""
+    rows = con.execute(
+        "SELECT COALESCE(organism,'?') organism, COALESCE(modality,'?') modality, status, "
+        "COUNT(*) n FROM catalogue WHERE status != 'rejected' GROUP BY organism, modality, status"
+    ).fetchall()
+    by_status = con.execute("SELECT status, COUNT(*) n FROM catalogue GROUP BY status").fetchall()
+    by_verif = con.execute("SELECT verification, COUNT(*) n FROM catalogue "
+                           "WHERE status != 'rejected' GROUP BY verification").fetchall()
+    return {"cells": [dict(r) for r in rows], "by_status": {r["status"]: r["n"] for r in by_status},
+            "by_verification": {r["verification"]: r["n"] for r in by_verif}}

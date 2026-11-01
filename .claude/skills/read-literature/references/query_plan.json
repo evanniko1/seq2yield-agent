@@ -1,0 +1,28 @@
+{
+  "_doc": "Blind discovery plan for `python scripts/catalogue.py discover --plan <this file>`. Each query is a list of groups: groups are AND-ed, terms within a group OR-ed, searched over TITLE+ABSTRACT with full pagination. Multi-word terms are exact phrases (Europe PMC does NOT stem phrases -> list plural/word-form variants explicitly); single words may end in '*' (prefix wildcard). v3 (2026-11-01): recall-validated against the catalogue — v1 abstract-only/top-100 found 6/13 known datasets; v2 title+abstract/top-300 found 11/13 (misses: Tewhey ranked 390th; Vaishnav wrote 'randomly'/'millions'/'deep neural network'). Add a query when a recall check misses something; never add known titles or authors.",
+  "queries": {
+    "reporter_assays_any": [["massively parallel reporter", "multiplexed reporter", "parallel reporter assay", "parallel reporter assays"]],
+    "variants_reporter": [["expression-modulating", "regulatory variant", "regulatory variants", "allelic", "variant effect", "variant effects"], ["reporter assay", "reporter assays", "massively parallel", "multiplexed reporter"]],
+    "random_or_synthetic": [["random sequences", "random DNA", "random promoter", "random promoters", "randomly sampled", "synthetic sequences", "synthetic constructs", "random library", "random libraries"], ["expression", "splicing", "translation", "polyadenylation", "activity"]],
+    "seq_function_mapping": [["sequence-function", "sequence–function", "sequence-to-expression", "sequence-to-function", "sequence-activity"]],
+    "dl_regulatory": [["deep learning", "neural network", "neural networks", "deep neural"], ["promoter*", "untranslated region", "untranslated regions", "polyadenylation", "splicing", "ribosome binding", "protein expression", "regulatory DNA", "enhancer*"], ["librar*", "reporter*", "synthetic", "random*", "massively parallel", "million*"]],
+    "rbs": [["ribosome binding site", "ribosome binding sites"], ["translation", "expression"], ["librar*", "thousand*", "high-throughput", "deep learning", "neural network", "neural networks"]],
+    "apa": [["polyadenylation"], ["reporter*", "massively parallel"]],
+    "splicing": [["splicing"], ["random*", "massively parallel", "minigene*"]],
+    "utr5": [["5' UTR", "5'UTR", "5′ UTR", "5′UTR", "5' untranslated", "5′ untranslated"], ["librar*", "massively parallel", "deep learning", "ribosome load", "polysome", "neural network", "neural networks"]],
+    "utr3": [["3' UTR", "3′ UTR", "3' untranslated", "3′ untranslated"], ["massively parallel", "reporter library", "reporter assay", "reporter assays"]],
+    "ecoli_expression": [["Escherichia coli", "E. coli"], ["protein expression"], ["synthetic", "deep learning", "librar*", "sequences", "neural network", "neural networks"]],
+    "yeast_regulatory": [["yeast", "Saccharomyces cerevisiae"], ["regulatory DNA", "promoter*"], ["random*", "deep learning", "million*", "librar*", "neural network", "neural networks"]],
+    "sortseq_family": [["Sort-seq", "FACS-seq", "Flow-seq", "FlowSeq"]],
+    "lentimpra": [["lentiMPRA", "lentiviral MPRA"]],
+    "starr_ml": [["STARR-seq"], ["deep learning", "neural network", "neural networks", "machine learning", "model*"]],
+    "ires": [["IRES", "cap-independent translation"], ["systematic", "high-throughput", "thousand*"]],
+    "tis": [["translation initiation"], ["librar*"], ["FACS", "sequencing"]],
+    "terminator": [["terminator*"], ["librar*"], ["high-throughput"]],
+    "codon": [["codon*"], ["librar*"], ["expression"], ["high-throughput"]],
+    "plant": [["plant*", "maize", "Arabidopsis", "tobacco"], ["STARR-seq", "promoter library", "massively parallel"]],
+    "drosophila": [["Drosophila"], ["STARR-seq"]],
+    "regulatory_dms": [["deep mutational scanning", "saturation mutagenesis"], ["promoter*", "enhancer*", "untranslated"]],
+    "phenotypic_recording": [["phenotypic recording", "DNA-based recording", "DNA recording"]]
+  }
+}

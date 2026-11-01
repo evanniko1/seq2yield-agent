@@ -14,12 +14,28 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from flask import Flask, render_template_string  # noqa: E402
+from flask import Flask, render_template_string, request  # noqa: E402
+from markupsafe import escape  # noqa: E402
 
 from agents.router import runtime_mode  # noqa: E402
 from orchestration import store  # noqa: E402
 
 app = Flask(__name__)
+
+# Catalogue rows carry text harvested from publications and repository listings — untrusted data.
+# Everything from those columns goes through _e() before it reaches the page, and a DOI only becomes
+# a link when it looks like a DOI (never an arbitrary string that could be a javascript: URL).
+_DOI_OK = __import__("re").compile(r"^10\.\d{4,9}/[^\s\"'<>]+$")
+
+
+def _e(v) -> str:
+    return str(escape("" if v is None else v))
+
+
+def _doi_link(doi: str | None) -> str:
+    if doi and _DOI_OK.match(doi.strip()):
+        return f"<a href='https://doi.org/{_e(doi.strip())}' rel=noreferrer>{_e(doi.strip())}</a>"
+    return f"<span class=mut>{_e(doi) or '—'}</span>"
 
 _SHELL = """<!doctype html><meta charset=utf-8><title>seq2yield</title>
 <meta name=viewport content="width=device-width,initial-scale=1">
@@ -84,7 +100,7 @@ code{font-family:var(--mono);font-size:.9em;color:var(--accent-ink);background:v
 <script>if(window.self!==window.top){document.documentElement.classList.add('embedded')}</script>
 <header>
  <span class=brand><span class=brand-mark>s2</span><b>seq2yield</b></span>
- <a href="/">Scoreboard</a><a href="/queries">Council queries</a><a href="/datasets">Datasets</a><a href="/cost">Cost</a>
+ <a href="/">Scoreboard</a><a href="/queries">Council queries</a><a href="/datasets">Datasets</a><a href="/catalogue">Catalogue</a><a href="/cost">Cost</a>
  <span class=spacer></span>
  <span class=mode>provider: <b>{{mode}}</b></span>
  <span class=live title="auto-refreshing every 5s"><span class=dot></span><span id=liveTime>live</span></span>
@@ -240,6 +256,68 @@ def dataset_card(did):
     prov = c.get("source") or {}
     b.append(f"<h2>Provenance</h2><p class=mut>source: {prov} · citation: {c.get('citation') or '—'} "
              f"· license: {c.get('license') or '—'}</p>")
+    return _page("".join(b))
+
+
+@app.route("/catalogue")
+def catalogue():
+    """The dataset catalogue: what the corpus has, what is queued, what discovery found, and the
+    organism x modality gaps. Truth lives in data/catalogue/datasets.jsonl; this is the read-model."""
+    status = request.args.get("status") or None
+    if status not in (None, "registered", "scheduled", "candidate", "watch", "rejected"):
+        status = None
+    con = _con()
+    rows, cov = store.catalogue_table(con, status), store.catalogue_coverage(con)
+    con.close()
+    st = cov["by_status"]
+    tabs = " · ".join(
+        f"<a href='/catalogue{'' if s is None else '?status=' + s}'>"
+        f"{'all' if s is None else s}</a> <span class=mut>"
+        f"{sum(st.values()) if s is None else st.get(s, 0)}</span>"
+        for s in (None, "registered", "scheduled", "candidate", "watch", "rejected"))
+    b = [f"<h1>Dataset catalogue</h1><p>{tabs}</p>",
+         "<p class=mut>obtainability of the datasets that are not rejected: "
+         + " · ".join(f"<b>{_e(k)}</b> {v}" for k, v in sorted(cov["by_verification"].items()))
+         + " — <span class=mut>VERIFIED means a per-sequence table was seen in the deposit's own "
+           "file listing; DEPOSIT_ONLY means the listing was opened and held no such table.</span></p>"]
+
+    # organism x modality coverage: in-corpus (registered/scheduled) vs discovered candidates
+    corpus, cands = {}, {}
+    for c in cov["cells"]:
+        tgt = corpus if c["status"] in ("registered", "scheduled") else cands
+        tgt[(c["organism"], c["modality"])] = tgt.get((c["organism"], c["modality"]), 0) + c["n"]
+    mods = sorted({m for _, m in list(corpus) + list(cands)})
+    orgs = sorted({o for o, _ in list(corpus) + list(cands)})
+    b.append("<h2>Coverage and gaps (organism &times; modality)</h2>"
+             "<p class=mut>bold = already in the corpus · plain = discovered candidate only</p><table><tr><th></th>"
+             + "".join(f"<th>{_e(m)}</th>" for m in mods) + "</tr>")
+    for o in orgs:
+        cells = []
+        for m in mods:
+            n_c, n_d = corpus.get((o, m), 0), cands.get((o, m), 0)
+            cells.append(f"<td>{'<b>' + str(n_c) + '</b>' if n_c else ''}"
+                         f"{(' +' + str(n_d)) if n_d else ('' if n_c else '<span class=mut>·</span>')}</td>")
+        b.append(f"<tr><th>{_e(o)}</th>{''.join(cells)}</tr>")
+    b.append("</table>")
+
+    b.append("<h2>Entries</h2><table><tr><th>id</th><th>status</th><th>fit</th><th>score</th>"
+             "<th>organism</th><th>modality</th><th>assay</th><th>n</th><th>len</th>"
+             "<th>deposits</th><th>obtainable</th><th>primary publication</th></tr>")
+    for r in rows:
+        chip = ("<span class='chip ok'>%s</span>" % _e(r["status"])) if r["status"] in ("registered", "scheduled") \
+            else ("<span class='chip no'>%s</span>" % _e(r["status"])) if r["status"] == "rejected" \
+            else f"<span class=chip>{_e(r['status'])}</span>"
+        why = _e(r["reject_reason"] or "; ".join(json.loads(r["caveats"] or "[]")))
+        dash = "<span class=mut>—</span>"
+        n = f"{r['n_sequences']:,}" if r["n_sequences"] is not None else dash
+        b.append(f"<tr><td><b>{_e(r['id'])}</b><br><span class=mut>{_e(r['title'])}</span>"
+                 f"{('<br><span class=mut>' + why + '</span>') if why else ''}</td>"
+                 f"<td>{chip}</td><td>{_e(r['fit_verdict'])}</td><td>{_e(r['score'])}</td>"
+                 f"<td>{_e(r['organism'])}</td><td>{_e(r['modality'])}</td><td>{_e(r['assay'])}</td>"
+                 f"<td>{n}</td><td>{_e(r['seq_len_nt']) or dash}</td>"
+                 f"<td>{r['n_deposits'] or '0'}</td><td>{_e(r['verification'])}</td>"
+                 f"<td>{_e(r['citation']) or dash}<br>{_doi_link(r['doi'])}</td></tr>")
+    b.append("</table>")
     return _page("".join(b))
 
 

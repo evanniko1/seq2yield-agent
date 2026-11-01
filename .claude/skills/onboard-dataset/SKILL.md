@@ -11,6 +11,11 @@ generalizes what K1 did once for yeast. See `docs/ONBOARDING.md` for the full de
 `docs/BACKLOG.md` "Candidate datasets" for vetted options.
 
 ## Step 0 — fit check (do this BEFORE writing anything)
+First look it up: `python scripts/catalogue.py check --doi <doi>` (also `--pmid/--title/--accession`).
+If it is already recorded, `list` shows the verdict, caveats and verification state the
+`read-literature` skill established — start from those instead of re-deriving them, and read the
+caveats as design constraints (family-aware splits, round/condition covariates, readout type).
+
 The dataset MUST satisfy the project's identity, or reject it and say why:
 1. **Short** single oligo, **≤ 500 nt** (ideally 50–200); one fixed length.
 2. **High-throughput**, **≥ ~10⁴** sequence→function measurements.
@@ -66,6 +71,15 @@ Expect `bootstrap_unit` = the spec's unit and a real verdict.
 ## Step 6 — tests + commit
 Add a spec/adapter test (synthetic frame → canonical columns; registry contains the id). Run the
 full suite. Commit; the data stays gitignored.
+
+## Step 7 — close the loop in the catalogue
+`python scripts/catalogue.py sync` turns the new `configs/datasets/<id>.yaml` into a **registered**
+catalogue entry; then record what onboarding established that discovery could not:
+`enrich --id <id>` (publications + own deposits), `verify --id <id>` (file listing), and
+and a `set-status … --reason "onboarded <date>, N=<rows>"` note if anything changed. `sync` promotes
+an existing candidate in place when the spec id matches it or the spec's citation matches one of its
+publications, so the catalogue keeps **one row per dataset** — check `list` afterwards and merge by
+hand (`attach_publication`/`attach_accession`, then drop the stray row) if two rows survive.
 
 ## Cross-dataset caveats (enforce these)
 - **Never pool R² across readout types** (absolute expression vs ratio vs PSI) — transfer of
