@@ -1,0 +1,20 @@
+{
+  "run_id": "2026-11-02-audit-72",
+  "granted": true,
+  "approver": "Evangelos (vm.nikolados@gmail.com)",
+  "paths": [
+    "docs/DECISIONS.md",
+    "tests/test_insight_residuals.py"
+  ],
+  "path_classes": {
+    "docs/DECISIONS.md": "require_review",
+    "tests/test_insight_residuals.py": "require_review"
+  },
+  "strict_paths": [],
+  "conditional_paths": [
+    "docs/DECISIONS.md",
+    "tests/test_insight_residuals.py"
+  ],
+  "reason": "APPROVED by 'Evangelos (vm.nikolados@gmail.com)' for conditional-protected paths: ['docs/DECISIONS.md', 'tests/test_insight_residuals.py'] | note: post-close audit of DECISIONS #72: the calibration tests' bounds were too loose to catch a break. Same session approval.",
+  "ts": "2026-11-02T11:46:24.097541+00:00"
+}

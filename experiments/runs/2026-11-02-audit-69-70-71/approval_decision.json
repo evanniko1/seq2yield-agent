@@ -1,0 +1,35 @@
+{
+  "run_id": "2026-11-02-audit-69-70-71",
+  "granted": true,
+  "approver": "Evangelos (vm.nikolados@gmail.com)",
+  "paths": [
+    "docs/CONTRACTS.md",
+    "docs/DECISIONS.md",
+    "src/seq2yield/experiments/claim_registry.py",
+    "src/seq2yield/experiments/tournament.py",
+    "src/seq2yield/insight/dissect.py",
+    "tests/test_audit_patches.py",
+    "tests/test_sa2_series_sample.py"
+  ],
+  "path_classes": {
+    "docs/CONTRACTS.md": "require_review",
+    "docs/DECISIONS.md": "require_review",
+    "src/seq2yield/experiments/claim_registry.py": "require_review",
+    "src/seq2yield/experiments/tournament.py": "require_review",
+    "src/seq2yield/insight/dissect.py": "require_review",
+    "tests/test_audit_patches.py": "require_review",
+    "tests/test_sa2_series_sample.py": "require_review"
+  },
+  "strict_paths": [],
+  "conditional_paths": [
+    "docs/CONTRACTS.md",
+    "docs/DECISIONS.md",
+    "src/seq2yield/experiments/claim_registry.py",
+    "src/seq2yield/experiments/tournament.py",
+    "src/seq2yield/insight/dissect.py",
+    "tests/test_audit_patches.py",
+    "tests/test_sa2_series_sample.py"
+  ],
+  "reason": "APPROVED by 'Evangelos (vm.nikolados@gmail.com)' for conditional-protected paths: ['docs/CONTRACTS.md', 'docs/DECISIONS.md', 'src/seq2yield/experiments/claim_registry.py', 'src/seq2yield/experiments/tournament.py', 'src/seq2yield/insight/dissect.py', 'tests/test_audit_patches.py', 'tests/test_sa2_series_sample.py'] | note: post-close audit of DECISIONS #69/#70/#71 (five gaps, one of them in my own wording). Same session approval.",
+  "ts": "2026-11-02T11:46:24.015467+00:00"
+}

@@ -18,6 +18,8 @@ from pydantic import BaseModel
 
 from . import audit_log, git_guard
 
+ROOT = Path(__file__).resolve().parents[2]
+
 
 class ApprovalDecision(BaseModel):
     run_id: str
@@ -40,14 +42,48 @@ def classify(paths) -> dict:
             "needs_review": bool(strict or review)}
 
 
+def unresolved_paths(paths, *, root: Path | None = None) -> list[str]:
+    """Paths that cannot name a real file in this worktree (audit AG-06).
+
+    A record is EVIDENCE, and unverifiable evidence is worse than none. The 2026-11-02 record for
+    the ST-3 change had its first character eaten off 14 of 15 paths (`rc/seq2yield/...` for
+    `src/...`) because the list went through a shell — and `git_guard.classify` happily returned
+    `require_review` for each, so the record certified review of files that do not exist and
+    recorded NO approval for the two conditional-protected files that change actually touched. It
+    sat on disk as evidence for a day (AG-05).
+
+    The test is the PARENT directory, not the file: a patch may legitimately name a file it is
+    about to create, but a mangled path's parent does not exist either, which is what separates the
+    two cases."""
+    root = root or ROOT
+    out = []
+    for p in paths:
+        q = root / str(p)
+        if not q.exists() and not q.parent.is_dir():
+            out.append(str(p))
+    return out
+
+
 def decide(run_id: str, paths, *, approver: str | None = None, reason: str = "") -> ApprovalDecision:
     """Resolve the human-review gate for a set of changed paths.
 
-    granted=True only when there are no strict paths AND (no conditional paths OR a named
-    approver authorized the conditional paths). strict paths force DENY regardless of approver.
+    granted=True only when every path resolves to somewhere real in the worktree AND there are no
+    strict paths AND (no conditional paths OR a named approver authorized the conditional paths).
+    strict paths force DENY regardless of approver.
     """
     paths = list(paths)
     c = classify(paths)
+    bad = unresolved_paths(paths)
+    if bad:
+        granted = False
+        why = (f"DENIED: {len(bad)} path(s) do not name anything in this worktree, so the record "
+               f"could not be checked against what was changed (audit AG-05/AG-06): {bad}")
+        if reason:
+            why = f"{why} | note: {reason}"
+        return ApprovalDecision(
+            run_id=run_id, granted=granted, approver=approver, paths=paths,
+            path_classes=c["classes"], strict_paths=c["strict"], conditional_paths=c["review"],
+            reason=why, ts=datetime.now(timezone.utc).isoformat())
     if c["strict"]:
         granted = False
         why = f"DENIED: strict-protected paths are never approvable: {c['strict']}"

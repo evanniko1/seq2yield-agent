@@ -69,3 +69,59 @@ def test_decision_is_logged_as_artifact_and_audit_event(tmp_path):
     audit = (tmp_path / "audit_log.jsonl").read_text(encoding="utf-8").strip().splitlines()
     rec = json.loads(audit[-1])
     assert rec["event"] == "human_review_gate" and rec["run_id"] == "r6"
+
+
+# ------------------------------------------------- AG-05 / AG-06 (2026-11-02): a record is evidence
+def test_a_mangled_path_cannot_be_approved():
+    """The ST-3 record written on 2026-11-02 had the first character eaten off 14 of its 15 paths
+    (`rc/seq2yield/...` for `src/...`) because the list went through a shell. `git_guard.classify`
+    returned `require_review` for every mangled string, so the record certified review of files
+    that do not exist and recorded NO approval for the two conditional-protected files the change
+    actually touched — and it sat on disk as evidence for a day."""
+    from orchestration import approvals
+    d = approvals.decide("t", ["rc/seq2yield/experiments/compare.py", "ocs/DECISIONS.md"],
+                         approver="Someone")
+    assert d.granted is False
+    assert "do not name anything in this worktree" in d.reason
+    assert "AG-05/AG-06" in d.reason
+
+
+def test_the_real_paths_those_were_meant_to_be_are_approvable():
+    """The same change, spelled correctly: granted, and `compare.py` / `bootstrap.py` classify as
+    CONDITIONAL rather than the generic `require_review` a mangled path fell back to."""
+    from orchestration import approvals
+    paths = ["src/seq2yield/experiments/compare.py", "src/seq2yield/statistics/bootstrap.py",
+             "docs/DECISIONS.md"]
+    d = approvals.decide("t", paths, approver="Someone")
+    assert d.granted is True
+    conditional = [p for p, k in d.path_classes.items() if k == "conditional"]
+    assert set(conditional) == {"src/seq2yield/experiments/compare.py",
+                                "src/seq2yield/statistics/bootstrap.py"}
+
+
+def test_a_file_the_patch_is_about_to_create_is_still_approvable():
+    """The check is on the PARENT directory, not the file: a patch may legitimately name a file it
+    is about to create, and only a mangled path has a parent that does not exist either."""
+    from orchestration import approvals
+    assert approvals.unresolved_paths(["tests/test_not_written_yet.py"]) == []
+    assert approvals.unresolved_paths(["ests/test_not_written_yet.py"]) == [
+        "ests/test_not_written_yet.py"]
+
+
+def test_every_approval_record_on_disk_round_trips():
+    """No record may name a path that cannot be checked against the worktree. This is the test that
+    would have caught AG-05 on the day it was written."""
+    import json
+
+    from orchestration import approvals
+    recs = sorted(ROOT.glob("experiments/runs/*/approval_decision.json"))
+    if not recs:
+        import pytest
+        pytest.skip("no approval records in this checkout")
+    broken = {}
+    for f in recs:
+        paths = json.loads(f.read_text(encoding="utf-8")).get("paths", [])
+        bad = approvals.unresolved_paths(paths)
+        if bad:
+            broken[f.parent.name] = bad
+    assert not broken, f"approval records naming unresolvable paths: {broken}"

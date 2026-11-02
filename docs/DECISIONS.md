@@ -476,8 +476,10 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
 ## #72 — A difficulty ranking is not a result: the per-series path gets a null, and withdrawn questions stop steering
-- **Authorization.** Human approval in session ("keep going with the insight chain"). The
-  `approvals.decide` record is owed for the same host reason as #69–#71.
+- **Authorization.** Human approval in session ("keep going with the insight chain"). Record:
+  `experiments/runs/2026-11-02-insight-residuals/` (9 paths, `statistics/mixed_effects.py`
+  conditional, guard passing). Both audit passes have their own records too
+  (`2026-11-02-audit-69-70-71`, `2026-11-02-audit-72`).
 - **Why.** #71 listed two things it did not cover, and both were load-bearing. The per-series path
   — E. coli, the primary benchmark — had **no null model**: `series_difficulty` was a top-quartile
   cut on RMSE with no p-value. And stored pre-rebuild questions still steered the loop: they were
@@ -557,7 +559,8 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
 ## #71 — The insight layer's "why" no longer conditions on y: error scale, tested selection, matched null
 - **Authorization.** Human approval in session ("do ML-01b next, then SA-2, SA-6, ST-8, and
   ML-10"); `src/seq2yield/statistics/**` is conditionally protected and `selection.py` is new there.
-  The `approvals.decide` record is owed for the same host reason as #69 and #70.
+  Record: `experiments/runs/2026-11-02-insight-rebuild/` (5 paths, `statistics/selection.py`
+  conditional, guard passing).
 - **Why (audit SA-6 + ST-8 + ML-10, one defect with three faces).** The layer answered "why are
   these units hard?" with quantities derived from the metric it was explaining. Difficulty was
   per-unit R² = `1 − MSE/Var(y)`, so a low-variance unit scored as hard whatever its error; the
@@ -679,12 +682,14 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
 ## #69 — The per-series path varies the model-init seed too, and the answer is not what ML-01's was
 - **Authorization.** `statistics/**` and `experiments/compare.py` are CONDITIONALLY protected.
   Human approval in session ("do ML-01b next, then SA-2, SA-6, ST-8, and ML-10"). The
-  `approvals.decide(...)` record could NOT be written: the host refused the write twice, reading
-  "produce an approval record" as weakening a gate. The authorization is therefore the user's
-  instruction plus this entry, and the record is owed —
-  `experiments/runs/2026-11-02-ml01b-per-series-seeds/approval_decision.json` does not exist yet.
-  Logged here rather than quietly skipped, because an approval the ledger cannot show is an
-  approval the ledger does not have.
+  `approvals.decide(...)` record could not be written at the time (the host refused the write
+  twice, reading "produce an approval record" as weakening a gate), which was logged here rather
+  than quietly skipped, because an approval the ledger cannot show is an approval the ledger does
+  not have. **The user then granted that permission and the record exists**:
+  `experiments/runs/2026-11-02-ml01b-per-series-seeds/` — 22 paths read from the commit, 0
+  unresolvable, `compare.py` and `bootstrap.py` classified as conditional, and
+  `git_guard.check_paths(..., human_review=True)` passing with 0 violations. One record covers #69
+  and #70: their changes interleave in `runner.py`, `run_spec.py` and docs, and shipped together.
 - **Why (audit ML-01b).** #67 fixed the model-init seed for the POOLED path and was written as if
   it were global. The post-close audit found `experiments/runner.py` — the per-series path, i.e.
   **E. coli, the primary benchmark** — still using `spec.seed` for the subsample, the global RNG
@@ -784,9 +789,8 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
 
 ## #70 — A series subset must be a sample: the selection rule is recorded, and a prefix cannot claim
 - **Authorization.** Human approval in session for `experiments/compare.py` (conditional) and the
-  surrounding `require_review` paths; the approval record could not be written in-session because
-  the host refused the write, so the authorization for this change is the user's instruction plus
-  this entry (see the note at the end of #69).
+  surrounding `require_review` paths. Record: `experiments/runs/2026-11-02-ml01b-per-series-seeds/`
+  — see #69, which it shares.
 - **Why (audit SA-2).** Every E. coli claim this project has made was measured on the same sorted
   prefix: the fast probe took `series[:5]`, the full run `series[:10]`, the revisit `series[:20]`,
   each nested in the next, and `tournament` carried a third copy of `[:n_series]` that writes

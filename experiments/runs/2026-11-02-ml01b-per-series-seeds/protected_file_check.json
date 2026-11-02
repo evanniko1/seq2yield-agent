@@ -1,0 +1,116 @@
+{
+  "passed": true,
+  "violations": [],
+  "by_path": {
+    "configs/baseline_registry.yaml": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/CONTRACTS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/DECISIONS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/RETRACTIONS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "scripts/reproduce_baselines.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/orchestration/audit_log.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/orchestration/execution_harness.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/data/series_sample.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/experiments/claim_registry.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/experiments/compare.py": {
+      "class": "conditional",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/experiments/run_spec.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/experiments/runner.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/experiments/tournament.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/reporting/dashboard_export.py": {
+      "class": "freely_modifiable",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/statistics/bootstrap.py": {
+      "class": "conditional",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/training/provenance.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_audit_patches.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_ml01b_series_seeds.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_ml02_provenance.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_retractions.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_sa2_series_sample.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_tournament.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    }
+  }
+}

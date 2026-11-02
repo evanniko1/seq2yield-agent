@@ -1,0 +1,41 @@
+{
+  "run_id": "2026-11-02-insight-residuals",
+  "granted": true,
+  "approver": "Evangelos (vm.nikolados@gmail.com)",
+  "paths": [
+    "docs/DECISIONS.md",
+    "scripts/run_insight.py",
+    "src/seq2yield/insight/dissect.py",
+    "src/seq2yield/insight/phase.py",
+    "src/seq2yield/statistics/mixed_effects.py",
+    "tests/test_claim_firewall.py",
+    "tests/test_insight.py",
+    "tests/test_insight_rebuild.py",
+    "tests/test_insight_residuals.py"
+  ],
+  "path_classes": {
+    "docs/DECISIONS.md": "require_review",
+    "scripts/run_insight.py": "require_review",
+    "src/seq2yield/insight/dissect.py": "require_review",
+    "src/seq2yield/insight/phase.py": "require_review",
+    "src/seq2yield/statistics/mixed_effects.py": "conditional",
+    "tests/test_claim_firewall.py": "require_review",
+    "tests/test_insight.py": "require_review",
+    "tests/test_insight_rebuild.py": "require_review",
+    "tests/test_insight_residuals.py": "require_review"
+  },
+  "strict_paths": [],
+  "conditional_paths": [
+    "docs/DECISIONS.md",
+    "scripts/run_insight.py",
+    "src/seq2yield/insight/dissect.py",
+    "src/seq2yield/insight/phase.py",
+    "src/seq2yield/statistics/mixed_effects.py",
+    "tests/test_claim_firewall.py",
+    "tests/test_insight.py",
+    "tests/test_insight_rebuild.py",
+    "tests/test_insight_residuals.py"
+  ],
+  "reason": "APPROVED by 'Evangelos (vm.nikolados@gmail.com)' for conditional-protected paths: ['docs/DECISIONS.md', 'scripts/run_insight.py', 'src/seq2yield/insight/dissect.py', 'src/seq2yield/insight/phase.py', 'src/seq2yield/statistics/mixed_effects.py', 'tests/test_claim_firewall.py', 'tests/test_insight.py', 'tests/test_insight_rebuild.py', 'tests/test_insight_residuals.py'] | note: DECISIONS #72: a per-series permutation null for the difficulty ranking, and withdrawn questions stop steering the loop. Human approval in session: 'keep going with the insight chain'.",
+  "ts": "2026-11-02T11:46:24.060699+00:00"
+}

@@ -2,77 +2,67 @@
   "passed": true,
   "violations": [],
   "by_path": {
-    "cripts/run_dashboard.py": {
+    "docs/CONTRACTS.md": {
       "class": "require_review",
       "ok": true,
       "reason": null
     },
-    "ocs/CONTRACTS.md": {
+    "docs/DECISIONS.md": {
       "class": "require_review",
       "ok": true,
       "reason": null
     },
-    "ocs/DECISIONS.md": {
+    "docs/RETRACTIONS.md": {
       "class": "require_review",
       "ok": true,
       "reason": null
     },
-    "ocs/RETRACTIONS.md": {
+    "scripts/run_dashboard.py": {
       "class": "require_review",
       "ok": true,
       "reason": null
     },
-    "rc/orchestration/execution_harness.py": {
+    "src/orchestration/execution_harness.py": {
       "class": "require_review",
       "ok": true,
       "reason": null
     },
-    "rc/orchestration/store.py": {
+    "src/orchestration/store.py": {
       "class": "require_review",
       "ok": true,
       "reason": null
     },
-    "rc/seq2yield/experiments/claim_registry.py": {
+    "src/seq2yield/experiments/claim_registry.py": {
       "class": "require_review",
       "ok": true,
       "reason": null
     },
-    "rc/seq2yield/experiments/compare.py": {
+    "src/seq2yield/experiments/compare.py": {
+      "class": "conditional",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/experiments/config_transfer.py": {
       "class": "require_review",
       "ok": true,
       "reason": null
     },
-    "rc/seq2yield/experiments/config_transfer.py": {
+    "src/seq2yield/experiments/run_spec.py": {
       "class": "require_review",
       "ok": true,
       "reason": null
     },
-    "rc/seq2yield/experiments/run_spec.py": {
+    "src/seq2yield/experiments/tournament.py": {
       "class": "require_review",
       "ok": true,
       "reason": null
     },
-    "rc/seq2yield/experiments/tournament.py": {
-      "class": "require_review",
-      "ok": true,
-      "reason": null
-    },
-    "rc/seq2yield/statistics/bootstrap.py": {
-      "class": "require_review",
+    "src/seq2yield/statistics/bootstrap.py": {
+      "class": "conditional",
       "ok": true,
       "reason": null
     },
     "tests/test_st3_margin.py": {
-      "class": "require_review",
-      "ok": true,
-      "reason": null
-    },
-    "xperiments/claims/registry.jsonl": {
-      "class": "require_review",
-      "ok": true,
-      "reason": null
-    },
-    "xperiments/memory.jsonl": {
       "class": "require_review",
       "ok": true,
       "reason": null

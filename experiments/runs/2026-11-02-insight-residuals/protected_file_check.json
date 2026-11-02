@@ -1,0 +1,51 @@
+{
+  "passed": true,
+  "violations": [],
+  "by_path": {
+    "docs/DECISIONS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "scripts/run_insight.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/insight/dissect.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/insight/phase.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/statistics/mixed_effects.py": {
+      "class": "conditional",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_claim_firewall.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_insight.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_insight_rebuild.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_insight_residuals.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    }
+  }
+}

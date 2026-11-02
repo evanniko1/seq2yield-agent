@@ -1,0 +1,29 @@
+{
+  "run_id": "2026-11-02-insight-rebuild",
+  "granted": true,
+  "approver": "Evangelos (vm.nikolados@gmail.com)",
+  "paths": [
+    "scripts/run_insight.py",
+    "src/seq2yield/insight/__init__.py",
+    "src/seq2yield/insight/dissect.py",
+    "src/seq2yield/statistics/selection.py",
+    "tests/test_insight_rebuild.py"
+  ],
+  "path_classes": {
+    "scripts/run_insight.py": "require_review",
+    "src/seq2yield/insight/__init__.py": "require_review",
+    "src/seq2yield/insight/dissect.py": "require_review",
+    "src/seq2yield/statistics/selection.py": "conditional",
+    "tests/test_insight_rebuild.py": "require_review"
+  },
+  "strict_paths": [],
+  "conditional_paths": [
+    "scripts/run_insight.py",
+    "src/seq2yield/insight/__init__.py",
+    "src/seq2yield/insight/dissect.py",
+    "src/seq2yield/statistics/selection.py",
+    "tests/test_insight_rebuild.py"
+  ],
+  "reason": "APPROVED by 'Evangelos (vm.nikolados@gmail.com)' for conditional-protected paths: ['scripts/run_insight.py', 'src/seq2yield/insight/__init__.py', 'src/seq2yield/insight/dissect.py', 'src/seq2yield/statistics/selection.py', 'tests/test_insight_rebuild.py'] | note: audit SA-6 + ST-8 + ML-10 (DECISIONS #71): the insight layer's 'why' rebuilt so y enters an explanation only through an out-of-fold prediction - error scale, max-T permutation test on every covariate claim, train-fitted clusters, y-matched partition null. Same session approval.",
+  "ts": "2026-11-02T11:46:23.975942+00:00"
+}
