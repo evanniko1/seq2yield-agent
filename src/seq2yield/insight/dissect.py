@@ -598,7 +598,32 @@ def dissect_dataset(dataset: str, metrics_csv, train_size: int | None = None) ->
         ps = _per_unit(df, size)
         qs += correlate_difficulty(ps["difficulty"], cov, dataset, scale=_scale_of(ps),
                                    higher_is_harder=True)
+    _stamp_baseline_provenance(qs, metrics_csv)
     return sorted(qs, key=lambda q: q.priority, reverse=True)
+
+
+def _stamp_baseline_provenance(questions: list[GeneratedQuestion], metrics_csv) -> None:
+    """Record whether the registry these questions came from can prove it matches the code.
+
+    `_registry_metrics` gates on READINESS (is the registry complete?), not on provenance, and that
+    is deliberate — exploration needs data, and a provenance-mismatched registry still contains
+    real measurements. But the questions steer which experiment runs next, so a question derived
+    from a registry the guard REFUSES as a control has to say so on the record, or the ML-02
+    mechanism reappears one level down: a "hardest series" that is really a signature of model-code
+    drift. Found by the post-close audit of 2026-11-02; the layer is still exploratory and this
+    changes no verdict."""
+    try:
+        from orchestration.baseline_guard import check, registry_run_id
+        rid = registry_run_id()
+        if not rid or Path(metrics_csv).parent.name != rid:
+            return
+        v = check(rid, ["rf", "mlp", "cnn"])
+    except Exception:
+        return
+    stamp = {"registry_run_id": rid, "provenance_ok": bool(v.get("ok")),
+             "violations": list(v.get("violations") or [])}
+    for q in questions:
+        q.evidence["baseline_provenance"] = stamp
 
 
 def to_focus_hints(questions: list[GeneratedQuestion]) -> list[str]:

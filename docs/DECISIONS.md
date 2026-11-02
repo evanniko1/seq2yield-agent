@@ -578,7 +578,19 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   and not for the model-init seed variance #67/#69 measured. And stored pre-rebuild questions still
   load and still steer `phase.dataset_phase`: they deserialize as `difficulty_scale="r2_raw_legacy"`
   and carry `evidence["pre_rebuild"]`, but nothing refuses to act on them.
-- Tests: `tests/test_insight_rebuild.py` (19), with the 24 pre-existing insight/firewall tests
+- **Two things the post-close audit of this entry added.** `_registry_metrics` gates on
+  *readiness* (is the registry complete?) and not on provenance, so the layer dissects a registry
+  the guard currently **refuses** as a control. That is the right call — exploration needs data,
+  and a provenance-mismatched registry still holds real measurements — but the questions steer
+  which experiment runs next, so `_stamp_baseline_provenance` now records
+  `evidence["baseline_provenance"]` (`registry_run_id`, `provenance_ok`, `violations`) on every
+  question derived from it. Without that, ML-02's mechanism reappears one level down: a "hardest
+  series" that is really a signature of model-code drift. And `phase.aggregate_phase_hints`
+  referenced `dissect._DEFAULT_METRICS`, **a name that did not exist**, inside an
+  `except Exception` fallback — so whenever `datasets.ready_ids()` failed, the handler itself
+  raised `AttributeError` and replaced the original error. Pre-existing; the name is now defined.
+- Tests: `tests/test_insight_rebuild.py` (19) plus three in `tests/test_audit_patches.py` for the
+  audit findings above, with the 24 pre-existing insight/firewall tests
   passing unchanged. One of those is worth naming: `test_perseries_covariate_question_fires_on_real_ecoli`
   asserts the E. coli dissection emits a `difficulty_covariate` question, and after the rebuild
   there is no significant covariate — so that assertion survives only because the negative result
@@ -665,6 +677,15 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   harness trains an in-run control at the same seeds instead, which is a correct comparison
   whatever the registry happens to contain (the same remedy as ML-02's). The rebuild is therefore a
   compute optimisation, not a correctness prerequisite.
+- **A behaviour change to the POOLED path, which this entry originally failed to mention** (caught
+  by the post-close audit of this entry). Extracting the shared core changed
+  `paired_r2_multiseed`'s below-tolerance branch from `ci = [mean, mean]` to the real interval. A
+  zero-width interval trips `_decide`'s degeneracy guard and returns `inconclusive / unresolved`,
+  whereas a 1e-12 difference with real between-unit variability is *established* equivalence —
+  so such a pooled result now comes back `rejected / negligible` (TOST). That is the better
+  verdict, and it is still a change to a path ML-01b was not about. Bit-identical arms give a
+  genuinely zero-width interval and stay `inconclusive`, which is correct: no variability is not
+  evidence of equivalence.
 - **Two things found on the way, both pre-existing.** `rf` is **not** bit-reproducible: the
   identical spec re-run four times moves by up to 1.1e-16 because `n_jobs=-1` makes sklearn's tree
   accumulation thread-order dependent, while `mlp` and `cnn` are exactly 0.0. That is the whole of
@@ -707,13 +728,17 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
     size 500 and **17.1%** at size 1000. Where the full set says
     `rejected / superior_but_below_margin` (the flagship, size 2000), a 10-series subset agrees
     **14.0%** of the time.
-  - Subsets claim MORE than the full 56 in **0–8.5%** of draws — the worst case being size 250,
-    k=10, where the full set is `inconclusive / superior_margin_unresolved` and a subset says
-    `accepted` 8.5% of the time. At k=5 `accepted` is **0.0%** everywhere, which is ST-2's
+  - Subsets reach a CONCLUSION the full 56 do not in **0–8.5%** of draws — the worst case being
+    size 250, k=10, where the full set is `inconclusive / superior_margin_unresolved` and a
+    subset says `accepted` 8.5% of the time. That is disagreement with a better estimate, not
+    a false-positive rate against a known truth: at that size the all-56 one-sided lower
+    limit is +0.0126, so the true δ may well be above the margin and the subset may be right.
+    What it is not is *evidence* at the level it asserts. At k=5 `accepted` is **0.0%** everywhere, which is ST-2's
     attainable p-floor doing exactly what it was built to do.
   - So **ST-2 and ST-3 had already absorbed most of SA-2's harm.** Under the old point-estimate
     rule a near-margin subset accepted ~42% of the time; under the one-sided margin rule the
-    over-claim tail is ≤8.5%. The remaining problem is interpretability, not inflation.
+    rate of concluding more than the full set does is ≤8.5%. The remaining problem is
+    interpretability, not inflation.
 - **Decision.** The selection rule becomes part of the protocol rather than an implicit `[:n]`.
   `runner.select_series` offers `random` (seeded, the new default), `stratified` (seeded,
   proportional across quartiles of each series' WORKING-SET SIZE) and `prefix` (the historical
@@ -726,8 +751,9 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   from an `accepted` run whose series were a strict prefix subset, and records `claim_withheld`
   with the reason — the run is still recorded, because a bounded prefix run is a perfectly good
   probe and discarding it would lose the trail. A seeded sample of the same 10 series keeps its
-  claim: not because it is immune (it over-claims up to 8.5% too) but because that rate is a known
-  property of a known sampling distribution, and the interval already carries it.
+  claim: not because it is immune (it reaches a conclusion the full set does not up to 8.5% of
+  the time) but because that behaviour is a known property of a known sampling distribution,
+  and the interval already carries it.
 - **Stratifying on baseline R² is NOT offered**, though the audit row suggested it. Baseline R² is
   an outcome measured on the same held-out sets the run then evaluates on, which is ST-10's defect
   exactly. Asking for it raises rather than silently selecting on y. Working-set size is a design
@@ -735,6 +761,11 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
 - **A side effect worth naming:** seeded samples at 5, 10 and 20 series are not nested, so the
   mechanism that let the loop "confirm" a probe on the probe's own series (ST-4) is weakened as a
   by-product. ST-4 is not closed by this — nothing here adjusts α or caps re-tests.
+- **Added by the post-close audit of this entry.** The harness path recorded `series_used` but the
+  tournament path recorded only the rule and the available count, so a tournament claim could not
+  be reproduced without re-deriving the sample — which depends on the selector never changing.
+  `TournamentResult.series_used` and `claim_registry`'s `series_used` close that: the rule, the
+  seed *and* the chosen ids are all on the record.
 - **What this does not do.** It does not re-examine the claims already recorded under the prefix
   rule; records written before 2026-11-02 have no `series_selection` and are left alone, because
   rewriting history in the ledger is not the mechanism — `docs/RETRACTIONS.md` is. It does not

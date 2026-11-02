@@ -92,3 +92,50 @@ def test_the_margin_rule_covers_every_claim_gate():
         __import__("seq2yield.experiments.run_spec", fromlist=["x"]).AcceptancePolicy(
             min_delta_r2=0.02), ci_one_sided=[0.42, 0.58])
     assert status in ("accepted", "rejected", "inconclusive") and verdict
+
+
+# ---------------------------------------------- the 2026-11-02 pass over #69/#70/#71 (second round)
+def test_insight_questions_say_whether_their_registry_is_provenance_valid():
+    """`_registry_metrics` gates on readiness, not provenance, so the insight layer dissects a
+    registry the guard refuses as a control. That is the right call — exploration needs data — but
+    the questions steer which experiment runs next, so the verdict has to be on the record or
+    ML-02's mechanism reappears one level down."""
+    from seq2yield.insight import dissect as D
+    path = D.default_metrics_path("ecoli")
+    if path is None:
+        import pytest
+        pytest.skip("needs the local baseline registry")
+    qs = D.dissect_dataset("ecoli", path, train_size=2000)
+    assert qs, "the registry is present, so there should be questions"
+    for q in qs:
+        stamp = q.evidence.get("baseline_provenance")
+        assert stamp and "provenance_ok" in stamp and "registry_run_id" in stamp
+
+
+def test_phase_hint_fallback_cannot_raise_on_a_missing_name():
+    """`phase.aggregate_phase_hints` referenced `dissect._DEFAULT_METRICS`, which did not exist,
+    inside an `except Exception` fallback — so whenever `datasets.ready_ids()` failed the handler
+    itself raised AttributeError and replaced the original error. Pre-existing; the name is now
+    defined."""
+    from seq2yield.insight import dissect, phase
+    assert isinstance(list(dissect._DEFAULT_METRICS), list)
+    hints, phases = phase.aggregate_phase_hints([], datasets=[])
+    assert hints == [] and phases == {}
+
+
+def test_a_below_tolerance_pooled_result_reports_a_real_interval():
+    """Changed by #69's shared-core extraction and worth pinning: the pooled estimator used to
+    return ci=[mean, mean] below tolerance. A zero-width interval trips `_decide`'s degeneracy
+    guard and comes back inconclusive, where a tiny difference with real variability is established
+    equivalence. Bit-identical arms still give a genuinely zero-width interval."""
+    import numpy as np
+
+    from seq2yield.statistics.bootstrap import paired_r2_multiseed
+    rng = np.random.default_rng(0)
+    y = rng.normal(0, 1, 400)
+    p = y + rng.normal(0, 0.5, 400)
+    same = paired_r2_multiseed(y, {s: p for s in (1, 2, 3)}, {s: p for s in (1, 2, 3)})
+    assert same["ci"] == [0.0, 0.0] and same["p_method"] == "below_tolerance"
+    tiny = {s: p + 1e-12 * (1 + rng.normal(0, 0.1, 400)) for s in (1, 2, 3)}
+    out = paired_r2_multiseed(y, tiny, {s: p for s in (1, 2, 3)})
+    assert out["p_method"] == "below_tolerance" and out["ci"][1] > out["ci"][0]

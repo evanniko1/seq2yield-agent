@@ -94,6 +94,9 @@ def record(*, run_id: str, proposal_id: str, status: str, comparison: dict,
         # carry a claim, so the claim is withheld below rather than the run being discarded.
         "series_selection": comparison.get("series_selection"),
         "n_series_available": comparison.get("n_series_available"),
+        # ...and WHICH series. "a seeded sample of 10" is only reproducible if the sample is on the
+        # record; the rule and the seed alone depend on the selector never changing.
+        "series_used": comparison.get("series_used"),
         "claim_withheld": withheld,
         # claim only survives if the harness accepted the run AND the protocol can support it
         "claim": claim_allowed if status == "accepted" and not withheld else None,

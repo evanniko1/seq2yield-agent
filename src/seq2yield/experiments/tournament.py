@@ -78,6 +78,9 @@ class TournamentResult:
     # cannot carry a claim; None means the scope has no series subset to choose (pooled).
     series_selection: str | None = None
     n_series_available: int | None = None
+    # WHICH series, not just how many: the harness path records `series_used` and a tournament
+    # claim could not be reproduced without it (post-close audit of #70).
+    series_used: list[int] | None = None
 
     def as_dict(self) -> dict:
         d = {k: v for k, v in asdict(self).items() if k != "leaderboard"}
@@ -277,8 +280,9 @@ def run_tournament(dataset: str, *, subregion: str | None = None, family: list[s
                       "source": v["source"], "hparams": v["hparams"]} for m, v in scored_raw.items()}
         basis, scope, unit, n_units = {"unit": "series"}, "per_series", "series", len(series_ids)
         series_sel, n_series_avail = series_selection, n_avail
+        series_ids_used = [int(x) for x in series_ids]
     else:
-        series_sel, n_series_avail = None, None
+        series_sel, n_series_avail, series_ids_used = None, None, None
         if ds.structure == "per_series":                 # single series -> sequence unit
             from ..data.loaders import load_split_csv, series_subset
             from ..data.splits import load_manifest
@@ -322,7 +326,7 @@ def run_tournament(dataset: str, *, subregion: str | None = None, family: list[s
         winner_significant=sig, runner_up=runner_up, min_delta=md, alpha=alpha,
         n_units=n_units, leaderboard=board, selection=selection, ci_method=ci_method,
         margin_verdict=margin_verdict, series_selection=series_sel,
-        n_series_available=n_series_avail)
+        n_series_available=n_series_avail, series_used=series_ids_used)
 
 
 def best_model(dataset: str, subregion: str | None = None, *, record: bool = True,
@@ -366,6 +370,7 @@ def record_tournament(res: TournamentResult, claims_dir: str | Path | None = Non
                     # SA-2: tournaments write accepted claims directly, so the selection rule has
                     # to reach the registry from here too
                     "series_selection": res.series_selection,
-                    "n_series_available": res.n_series_available},
+                    "n_series_available": res.n_series_available,
+                    "series_used": res.series_used},
         claim_allowed=claim, claims_dir=claims_dir)
     return entry

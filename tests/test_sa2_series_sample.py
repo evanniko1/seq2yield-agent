@@ -196,3 +196,29 @@ def test_a_sampled_tournament_still_claims(tmp_path):
                            leaderboard=board, series_selection="random", n_series_available=56)
     entry = record_tournament(res, claims_dir=tmp_path)
     assert entry["claim"] is not None and entry["claim_withheld"] is None
+
+
+def test_the_claim_ledger_records_which_series_not_just_how_many(tmp_path):
+    """Post-close audit of #70: the rule plus the seed is only reproducible while the selector
+    itself never changes. The chosen ids are the thing a later reader can actually check."""
+    cmp = {"n_series": 3, "n_series_available": 56, "series_selection": "random",
+           "series_sample_seed": 1, "series_used": [102, 133, 299]}
+    entry = claim_registry.record(run_id="r6", proposal_id="p", status="accepted",
+                                  comparison=cmp, claim_allowed="c", claims_dir=tmp_path)
+    assert entry["series_used"] == [102, 133, 299]
+    assert json.loads((tmp_path / "r6.json").read_text())["series_used"] == [102, 133, 299]
+
+
+def test_a_tournament_carries_its_series_ids_to_the_ledger(tmp_path):
+    from seq2yield.experiments.tournament import Contender, TournamentResult, record_tournament
+    board = [Contender(rank=1, model="cnn", r2=0.5, hyperparameters_source="default"),
+             Contender(rank=2, model="rf", r2=0.45, hyperparameters_source="default",
+                       delta_vs_winner=0.05, q_value=0.01, survives_fdr=True)]
+    res = TournamentResult(dataset="ecoli", subregion=None, scope="per_series",
+                           bootstrap_unit="series", train_size=1000, feature_set="one_hot",
+                           family=["cnn", "rf"], winner="cnn", winner_significant=True,
+                           runner_up="rf", min_delta=0.02, alpha=0.05, n_units=3,
+                           leaderboard=board, series_selection="random", n_series_available=56,
+                           series_used=[2, 8, 14])
+    entry = record_tournament(res, claims_dir=tmp_path)
+    assert entry["series_used"] == [2, 8, 14] and entry["claim"] is not None

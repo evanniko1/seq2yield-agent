@@ -175,7 +175,7 @@ A per-series comparison also REQUIRES `series_selection`, `series_sample_seed` a
 `n_series_available` (audit SA-2). A bounded subset chosen as a sorted prefix has no sampling
 distribution, so `claim_registry` withholds the claim and records `claim_withheld`; `random` and
 `stratified` are seeded sample rules whose subset estimates are unbiased (measured) and whose
-residual over-claim rate is ≤8.5%. `series_selection: null` identifies a record written before
+residual rate of reaching a conclusion the full series set does not is ≤8.5%. `series_selection: null` identifies a record written before
 2026-11-02, when the rule was always the prefix.
 
 A comparison also REQUIRES `margin`, `margin_verdict` and `ci_one_sided` (audit ST-3). `accepted`
