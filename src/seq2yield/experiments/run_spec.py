@@ -20,6 +20,9 @@ class AcceptancePolicy(BaseModel):
     min_delta_r2: float = 0.02
     requires_repeated_seed: bool = True
     requires_no_split_change: bool = True
+    # SUPERSEDED by the ST-3 margin rule and kept only so older RunSpecs still validate: an
+    # accept now requires the one-sided lower limit to clear `min_delta_r2`, which implies
+    # excluding zero, so this flag can no longer loosen the rule. See compare._decide.
     bootstrap_ci_must_exclude_zero: bool = True
 
 

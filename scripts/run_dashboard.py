@@ -164,7 +164,7 @@ def scoreboard():
                  f"<td class=mut>{_e(t.get('ts',''))}</td></tr>")
     b.append("</table><h2>Accepted claims</h2><table>"
              "<tr><th>run</th><th>dataset</th><th>candidate vs baseline</th><th>ΔR²</th>"
-             "<th>unit</th><th>measured under</th><th>claim</th></tr>")
+             "<th>unit</th><th>vs margin</th><th>measured under</th><th>claim</th></tr>")
     for c in claims:
         # provenance column (ML-02): what the claim was compared against, how it was split, and
         # which code produced it. A claim with none of these predates 2026-11-01 — say so, rather
@@ -176,10 +176,18 @@ def scoreboard():
             "<span class='chip no'>unstamped (pre-2026-11-01)</span>"
         if c["ci_method"] in (None, "percentile") and c["split_strategy"]:
             prot += " <span class='chip no'>percentile CI</span>"
+        # ST-3: what was established ABOUT THE MARGIN. A claim with no verdict was decided by the
+        # old rule, which compared the margin with a point estimate — say so rather than letting
+        # it sit next to a margin-tested one looking equally established.
+        mv = c["margin_verdict"]
+        margin_cell = (f"{_e(mv)}" + (f" <span class=mut>(±{_e(c['margin'])})</span>"
+                                      if c["margin"] is not None else "")) if mv else \
+            "<span class='chip no'>point-estimate rule (pre-2026-11-02)</span>"
         b.append(f"<tr><td class=mut>{_e(c['run_id'])}</td><td>{_e(c['dataset'])}</td>"
                  f"<td>{_e(c['candidate_model'])} vs {_e(c['baseline_model'])}</td>"
                  f"<td>{_e(c['mean_delta_r2'])}</td>"
-                 f"<td class=mut>{_e(c['bootstrap_unit'])}</td><td class=mut>{prot}</td>"
+                 f"<td class=mut>{_e(c['bootstrap_unit'])}</td><td class=mut>{margin_cell}</td>"
+                 f"<td class=mut>{prot}</td>"
                  f"<td>{_e(c['claim'])}</td></tr>")
     b.append("</table>")
     con.close()

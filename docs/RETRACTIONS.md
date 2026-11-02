@@ -212,7 +212,15 @@ liberal interval.
 CNN is still ahead of RF over all 56 series and the CI still excludes zero — the **direction
 survives**. What does not survive is the verdict: the margin is **0.0126**, below the acceptance
 policy's own `min_delta_r2 = 0.02`, so the honest status is "significantly better but not by a
-practically meaningful amount". The published +0.0228 was inflated because CNN lost more to its own drift
+practically meaningful amount".
+
+**That last sentence was an assertion when it was written, and is now a tested result.** Under the
+ST-3 margin rule (DECISIONS #66, 2026-11-02) the comparison's one-sided limits are
+**[+0.0069, +0.0183]**: the lower limit excludes 0 *and* the upper limit falls inside the ±0.02
+margin, so the verdict is `rejected / superior_but_below_margin` — CNN reliably beats RF by an
+amount **established** to be smaller than the project's own practical threshold. The old rule would
+have accepted this claim whenever the point estimate drifted over 0.02, which it did for a true
+effect of 0.019 about 42% of the time. The published +0.0228 was inflated because CNN lost more to its own drift
 (−0.0310) than RF did (−0.0208), so the *gap* carried both errors.
 
 **Not retracted on these grounds:** the five June council claims that used this registry. The drift

@@ -475,6 +475,55 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #66 — The accept rule now tests the margin it asserts (one-sided lower bound + TOST)
+- **Authorization.** `compare.py` and `statistics/**` are CONDITIONALLY protected. Human approval
+  in session; `approvals.decide('2026-11-02-st3-margin-rule', paths, approver=…)` granted,
+  `git_guard.check_paths(..., human_review=True)` passed, record in
+  `experiments/runs/2026-11-02-st3-margin-rule/`. The gate was re-run when the change grew to
+  include `statistics/bootstrap.py`, before that file was touched.
+- **Why (audit ST-3).** `accepted` iff `mean_delta >= min_delta_r2` **and** the CI excludes
+  **zero** — so the margin was only ever compared with a *point estimate*, and the interval tested
+  a hypothesis nobody was asserting. Measured on the shipped ST-2 estimator: a true ΔR² of
+  **0.019**, just under the 0.02 margin, was accepted **42.3% / 42.3% / 40.2%** of the time at
+  10/20/56 units. More data did not help, because it shrank the interval around a point estimate
+  that was still over the bar half the time.
+- **The rule.** A margin claim is directional, so it is tested against the **one-sided (1−α) lower
+  limit**: `accepted` iff `lower ≥ margin`. Measured accept rate at a true δ *exactly* equal to the
+  margin — the boundary where a correctly sized rule sits at α — is **4.0% / 5.8% / 4.6%** at
+  10/20/56 units, with **95.4%** power at δ=0.03 and 100% at δ=0.05 over 56 units. The two-sided
+  variant was measurably worse on both counts (1.8% at the boundary, 93.0% power), because it
+  spends α/2 on a side the claim never uses.
+- **Seven verdicts, three statuses.** `margin_verdict` carries the answer the
+  `accepted|rejected|inconclusive` vocabulary cannot express, so the contract and the state machine
+  are untouched. The two that matter most are new: **`superior_but_below_margin`** — beats the
+  baseline *and* the gap is established to be under the bar, a **conclusive** negative rather than
+  an unresolved one — and **`negligible`**, equivalence *shown* by TOST rather than inferred from a
+  failure to reject. TOST uses the two one-sided limits (the textbook construction, each test at
+  α), measured at **5.2%** false equivalence at the margin boundary against a nominal 5%, where the
+  two-sided version was conservative (2.6%) and far less powerful (equivalence at δ=0 established
+  72% vs 49% of the time at 10 units). With 56 units an exactly-null comparison now establishes
+  equivalence **95.6%** of the time instead of reporting a shrug.
+- **One rule, three call sites** (the row asked for this explicitly). `tournament` carried its own
+  copy — `ru[0] >= min_delta`, the same defect in a second file — and `config_transfer` a third
+  (`delta >= md`). Both now call `compare._decide`; the tournament's FDR correction stays on top of
+  it, because a tournament makes many comparisons.
+- **ST-2 is not undone by it.** At 5 units the one-sided limit can clear the margin while the exact
+  sign-flip test cannot reject at all, so the margin branch requires `ci_excludes_zero` (itself the
+  ST-2 conjunction) and otherwise returns `unresolved`. Found by a test, not by reasoning.
+- **A degeneracy guard on TOST.** A zero-width interval — every unit value identical, e.g. an A/A
+  against itself — fits inside *any* margin. Between-unit variance is then unestimable, so that is
+  absence of variability, not evidence of equivalence; the same reasoning as the bootstrap's 1-unit
+  refusal. Without the guard, two bit-identical model runs "established equivalence".
+- **Consequence on the flagship.** `cnn > rf` over all 56 E. coli series: ΔR² +0.0126, one-sided
+  limits **[+0.0069, +0.0183]**, p=0.0015 → **`rejected` / `superior_but_below_margin`**. The
+  status is the same as before, but it is now *established* rather than asserted: CNN reliably
+  beats RF by an amount proven to be smaller than the project's own practical threshold. The
+  first-10-series version is `inconclusive` / `unresolved` — its interval reaches past the margin
+  in both directions.
+- **`bootstrap_ci_must_exclude_zero` is superseded**, kept only so older RunSpecs validate: an
+  accept now implies excluding zero, so the flag can no longer loosen the rule.
+- Tests: `tests/test_st3_margin.py` (22). 529 passed, 1 skipped.
+
 ## #65 — The percentile bootstrap was liberal, so the estimator changed: t-interval + exact sign-flip
 - **Authorization.** `statistics/**` and `compare.py` are CONDITIONALLY protected. Human approval
   in session ("do ST-2 next"); `approvals.decide('2026-11-02-st2-inference', paths, approver=…)`

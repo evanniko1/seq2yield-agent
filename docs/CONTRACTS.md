@@ -160,6 +160,16 @@ docs/RETRACTIONS.md. `p_floor` is the smallest p the test could have returned: w
 alpha, nothing at that unit count is resolvable and `excludes_zero` is false whatever the interval
 says.
 
+A comparison also REQUIRES `margin`, `margin_verdict` and `ci_one_sided` (audit ST-3). `accepted`
+means the **one-sided lower limit** cleared `margin` — not that the point estimate did, which a
+true effect *under* the margin passed about 42% of the time. `margin_verdict` is one of
+`superior_by_margin` (→ accepted), `superior_but_below_margin` / `inferior_but_below_margin`
+(better or worse, with the gap **established** to lie inside ±margin — a conclusive negative),
+`negligible` (TOST: equivalence shown, not inferred from a failure to reject), `inferior_by_margin`
+/ `inferior_margin_unresolved` (→ rejected), `superior_margin_unresolved` and `unresolved` (→
+inconclusive). `margin_verdict: null` identifies a verdict reached by the pre-2026-11-02
+point-estimate rule. The three statuses are unchanged, so §3's state machine is unchanged.
+
 ## 6. ModelCallRecord (every LLM call)
 
 ```json

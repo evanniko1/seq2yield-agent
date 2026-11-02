@@ -35,7 +35,8 @@ SCHEMA = [
         run_id TEXT PRIMARY KEY, ts TEXT, candidate_model TEXT, baseline_model TEXT,
         mean_delta_r2 REAL, ci_excludes_zero INTEGER, p_value REAL, bootstrap_unit TEXT,
         dataset TEXT, train_size INTEGER, status TEXT, claim TEXT,
-        baseline_source TEXT, split_strategy TEXT, code_sha TEXT, ci_method TEXT)""",
+        baseline_source TEXT, split_strategy TEXT, code_sha TEXT, ci_method TEXT,
+        margin_verdict TEXT, margin REAL)""",
     """CREATE TABLE IF NOT EXISTS tournament(
         run_id TEXT PRIMARY KEY, ts TEXT, dataset TEXT, subregion TEXT, scope TEXT, winner TEXT,
         winner_significant INTEGER, selection TEXT, bootstrap_unit TEXT, leaderboard TEXT)""",
@@ -201,7 +202,8 @@ def ingest_claims(con, path: Path) -> int:
             "baseline_source": c.get("baseline_source"),
             "split_strategy": c.get("split_strategy"),
             "code_sha": (c.get("provenance") or {}).get("git_sha"),
-            "ci_method": c.get("ci_method")})
+            "ci_method": c.get("ci_method"), "margin_verdict": c.get("margin_verdict"),
+            "margin": c.get("margin")})
         n += 1
     return n
 

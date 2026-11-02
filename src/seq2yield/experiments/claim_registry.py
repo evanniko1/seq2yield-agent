@@ -52,6 +52,13 @@ def record(*, run_id: str, proposal_id: str, status: str, comparison: dict,
         "ci_method": comparison.get("ci_method"),
         "p_method": comparison.get("p_method"),
         "p_floor": comparison.get("p_floor"),
+        # ...and the verdict ABOUT THE MARGIN plus the margin itself (audit ST-3). `accepted` used
+        # to mean "point estimate over the bar", which a true delta under the bar passed ~42% of
+        # the time; it now means the one-sided lower limit cleared it. margin_verdict=None
+        # identifies a claim decided by the old rule.
+        "margin_verdict": comparison.get("margin_verdict"),
+        "margin": comparison.get("margin"),
+        "ci_one_sided": comparison.get("ci_one_sided"),
         # WHAT it was compared against, and WHICH code produced it. Eight claims were recorded
         # against a registry that had drifted out from under them with no way to tell (ML-02).
         "baseline_source": comparison.get("baseline_source"),

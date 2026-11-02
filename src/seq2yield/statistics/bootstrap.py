@@ -107,16 +107,21 @@ def _no_inference(n_units: int) -> dict:
                     "so no CI is reported and the comparison stays inconclusive"}
 
 
-def _t_interval(values: np.ndarray, alpha: float) -> tuple[float, float]:
+def _t_interval(values: np.ndarray, alpha: float, *, sided: int = 2) -> tuple[float, float]:
     """One-sample t-interval on the mean of the per-unit values.
 
     The unit values are the only thing assumed exchangeable, which is exactly the assumption the
-    grouped design already forces (ST-7). No resampling, so the interval is deterministic."""
+    grouped design already forces (ST-7). No resampling, so the interval is deterministic.
+
+    `sided=1` returns the two ONE-sided (1−alpha) limits, each valid on its own. A claim about a
+    MARGIN is directional — "better by at least 0.02" — so it is tested against the one-sided lower
+    limit, which is correctly sized at the boundary where the two-sided limit is conservative
+    (measured: 4.2% vs 1.8% at a true delta exactly equal to the margin, audit ST-3)."""
     from scipy import stats
     n = len(values)
     m = float(values.mean())
     se = float(values.std(ddof=1) / np.sqrt(n))
-    crit = float(stats.t.ppf(1 - alpha / 2, n - 1))
+    crit = float(stats.t.ppf(1 - (alpha / 2 if sided == 2 else alpha), n - 1))
     return m - crit * se, m + crit * se
 
 
@@ -162,7 +167,10 @@ def _decide_from_units(values: np.ndarray, *, alpha: float, atol: float, rng) ->
     one function serves the per-series deltas and the linearized pooled ΔR² alike."""
     mean = float(values.mean())
     lo, hi = _t_interval(values, alpha)
-    out = {"ci": [lo, hi], "ci_method": "t", "alpha": alpha}
+    # the one-sided limits travel too: a margin claim is directional and must be tested against
+    # them, not against the two-sided interval or the point estimate (audit ST-3)
+    lo1, hi1 = _t_interval(values, alpha, sided=1)
+    out = {"ci": [lo, hi], "ci_one_sided": [lo1, hi1], "ci_method": "t", "alpha": alpha}
     if abs(mean) <= atol:
         return out | {"excludes_zero": False, "p_value": 1.0, "p_method": "below_tolerance",
                       "p_floor": 1.0,
@@ -201,8 +209,10 @@ def paired_bootstrap_ci(baseline_per_series, candidate_per_series, *,
     boot_means = np.array([rng.choice(deltas, size=n, replace=True).mean()
                            for _ in range(n_boot)])
     lo, hi = np.quantile(boot_means, [alpha / 2, 1 - alpha / 2])
+    lo1, hi1 = np.quantile(boot_means, [alpha, 1 - alpha])
     return out | {
         "ci": [float(lo), float(hi)],
+        "ci_one_sided": [float(lo1), float(hi1)],
         "ci_method": "percentile",
         "p_method": "bootstrap_percentile",
         "excludes_zero": bool(lo > 0 or hi < 0),
@@ -319,7 +329,9 @@ def paired_bootstrap_r2(y_true, pred_candidate, pred_baseline, *, groups=None, n
         deltas.append(_r2(y_true[idx], pc[idx]) - _r2(y_true[idx], pb[idx]))
     deltas = np.array(deltas)
     lo, hi = np.nanquantile(deltas, [alpha / 2, 1 - alpha / 2])
+    lo1, hi1 = np.nanquantile(deltas, [alpha, 1 - alpha])
     return out | {"ci": [float(lo), float(hi)],
+                  "ci_one_sided": [float(lo1), float(hi1)],
                   "ci_method": "percentile",
                   "p_method": "bootstrap_percentile",
                   "excludes_zero": bool(lo > 0 or hi < 0),

@@ -298,7 +298,9 @@ def _run_pooled(spec: RunSpec, run_dir: Path, vres) -> dict:
         pb = paired_bootstrap_r2(y, cand["preds"][size], base["preds"][size], groups=groups,
                                  seed=spec.seed)
         unit, n_units = pb["unit"], pb["n_units"]
-        status, reasons = compare_mod._decide(pb["mean_delta"], pb["excludes_zero"], pb["ci"], pol)
+        status, reasons, margin_verdict = compare_mod._decide(
+            pb["mean_delta"], pb["excludes_zero"], pb["ci"], pol,
+            ci_one_sided=pb.get("ci_one_sided"))
         if pb.get("note"):                      # too few units to bootstrap: say why, don't hide it
             reasons = reasons + [pb["note"]]
         per_size.append({"train_size": int(size), "status": status,
@@ -307,7 +309,9 @@ def _run_pooled(spec: RunSpec, run_dir: Path, vres) -> dict:
                          "mean_delta": float(pb["mean_delta"]), "paired_bootstrap_ci": pb["ci"],
                          "ci_excludes_zero": pb["excludes_zero"], "p_value": pb["p_value"],
                          "ci_method": pb.get("ci_method"), "p_method": pb.get("p_method"),
-                         "p_floor": pb.get("p_floor"), "reasons": reasons})
+                         "p_floor": pb.get("p_floor"), "ci_one_sided": pb.get("ci_one_sided"),
+                         "margin": pol.min_delta_r2, "margin_verdict": margin_verdict,
+                         "reasons": reasons})
 
     size = pol.comparison_train_size if pol.comparison_train_size in sizes else max(sizes)
     cmp = dict(next(p for p in per_size if p["train_size"] == size))

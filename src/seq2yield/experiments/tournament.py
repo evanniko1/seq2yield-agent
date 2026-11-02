@@ -73,6 +73,7 @@ class TournamentResult:
     method: str = "benjamini_hochberg"
     selection: str = "test"          # nested_val (M-1: ranked on val, reported on test) | test (legacy)
     ci_method: str | None = None     # t | percentile (C3 fence; audit ST-2)
+    margin_verdict: str | None = None   # winner vs runner-up, against the margin (audit ST-3)
 
     def as_dict(self) -> dict:
         d = {k: v for k, v in asdict(self).items() if k != "leaderboard"}
@@ -192,13 +193,13 @@ def _rank_and_correct(dataset: str, scored: dict, basis: dict, *, min_delta: flo
         else:
             bs = paired_bootstrap_ci(info["per_series"], scored[winner]["per_series"],
                                      n_boot=n_boot, seed=seed)
-        comps.append((m, bs["mean_delta"], bs["ci"], bs["p_value"]))
+        comps.append((m, bs["mean_delta"], bs["ci"], bs["p_value"], bs.get("ci_one_sided")))
         ci_method = bs.get("ci_method")
     fdr = benjamini_hochberg([c[3] for c in comps], alpha) if comps else {"qvalues": [], "rejected": []}
 
     board, qmap = [], {}
-    for (m, md, ci, p), q, rej in zip(comps, fdr["qvalues"], fdr["rejected"]):
-        qmap[m] = (md, ci, p, q, bool(rej))
+    for (m, md, ci, p, ci1s), q, rej in zip(comps, fdr["qvalues"], fdr["rejected"]):
+        qmap[m] = (md, ci, p, q, bool(rej), ci1s)
     for rank, (m, info) in enumerate(ranked, start=1):
         np_ = reg.param_count(m, datasets.seq_len(dataset), info["hparams"]) \
             if m in ("cnn", "transformer") else None
@@ -209,7 +210,7 @@ def _rank_and_correct(dataset: str, scored: dict, basis: dict, *, min_delta: flo
                                    hyperparameters=info["hparams"], r2_val=rv, n_params=np_,
                                    delta_vs_winner=0.0))
         else:
-            md, ci, p, q, rej = qmap[m]
+            md, ci, p, q, rej, _ci1s = qmap[m]
             board.append(Contender(model=m, r2=round(info["r2"], 4), rank=rank,
                                    hyperparameters_source=info["source"],
                                    hyperparameters=info["hparams"], r2_val=rv, n_params=np_,
@@ -218,8 +219,19 @@ def _rank_and_correct(dataset: str, scored: dict, basis: dict, *, min_delta: flo
                                    q_value=round(q, 4), survives_fdr=rej))
     runner_up = ranked[1][0] if len(ranked) > 1 else None
     ru = qmap.get(runner_up) if runner_up else None
-    winner_significant = bool(ru and ru[0] >= min_delta and ru[4])   # beats runner-up: Δ≥min_delta + FDR
-    return board, winner_significant, runner_up, ci_method
+    # ONE rule, the same one `compare._decide` applies (audit ST-3): the margin is tested against
+    # the one-sided LOWER LIMIT, never against the point estimate. `ru[0] >= min_delta` was the
+    # tournament's copy of the defect — it accepted a winner whose true edge could be well under
+    # the margin. The FDR correction stays on top, because a tournament makes many comparisons.
+    margin_verdict = None
+    if ru:
+        from . import compare as compare_mod
+        from .run_spec import AcceptancePolicy
+        _, _, margin_verdict = compare_mod._decide(
+            ru[0], bool(ru[4]), ru[1], AcceptancePolicy(min_delta_r2=min_delta),
+            ci_one_sided=ru[5])
+    winner_significant = bool(ru and margin_verdict == "superior_by_margin" and ru[4])
+    return board, winner_significant, runner_up, ci_method, margin_verdict
 
 
 def _min_delta() -> float:
@@ -289,14 +301,15 @@ def run_tournament(dataset: str, *, subregion: str | None = None, family: list[s
         n_units = int(len(y_test)) if groups is None else int(len(set(groups)))
         basis = {"unit": unit, "y_test": y_test, "groups": groups}
 
-    board, sig, runner_up, ci_method = _rank_and_correct(
+    board, sig, runner_up, ci_method, margin_verdict = _rank_and_correct(
         dataset, scored, basis, min_delta=md, alpha=alpha, n_boot=n_boot, seed=seed)
     selection = "nested_val" if any(c.r2_val is not None for c in board) else "test"
     return TournamentResult(
         dataset=dataset, subregion=subregion, scope=scope, bootstrap_unit=unit,
         train_size=train_size, feature_set=feature_set, family=family, winner=board[0].model,
         winner_significant=sig, runner_up=runner_up, min_delta=md, alpha=alpha,
-        n_units=n_units, leaderboard=board, selection=selection, ci_method=ci_method)
+        n_units=n_units, leaderboard=board, selection=selection, ci_method=ci_method,
+        margin_verdict=margin_verdict)
 
 
 def best_model(dataset: str, subregion: str | None = None, *, record: bool = True,
@@ -333,7 +346,8 @@ def record_tournament(res: TournamentResult, claims_dir: str | Path | None = Non
                     "paired_bootstrap_ci": (ru.ci if ru else None),
                     "ci_excludes_zero": (ru.survives_fdr if ru else None),
                     "p_value": (ru.p_value if ru else None), "bootstrap_unit": res.bootstrap_unit,
-                    "ci_method": res.ci_method,
+                    "ci_method": res.ci_method, "margin_verdict": res.margin_verdict,
+                    "margin": res.min_delta,
                     "dataset": res.dataset, "comparison_train_size": res.train_size,
                     "n_series": (res.n_units if res.bootstrap_unit == "series" else None)},
         claim_allowed=claim, claims_dir=claims_dir)

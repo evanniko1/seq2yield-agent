@@ -54,6 +54,8 @@ class TransferResult:
     n_bootstrap_units: int | None = None
     ci_method: str | None = None       # t | percentile (C3 fence; audit ST-2)
     p_method: str | None = None
+    margin_verdict: str | None = None  # against the margin, one-sided (audit ST-3)
+    margin: float | None = None        # the threshold that verdict was measured against
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -147,12 +149,17 @@ def transfer(model: str, *, source_dataset: str, target_dataset: str,
     bs = paired_bootstrap_r2(y_test, pred_t, pred_d, groups=pooled_runner.families_of(test),
                              n_boot=n_boot, seed=seed)
     delta = bs["mean_delta"]
-    if bs["excludes_zero"] and delta >= md:
-        verdict = "beats_default"
-    elif bs["excludes_zero"] and delta <= -md:
-        verdict = "worse_than_default"
-    else:
-        verdict = "ties_default"
+    # ONE rule (audit ST-3): `delta >= md` was this file's copy of the defect — the margin compared
+    # against a point estimate. `compare._decide` tests it against the one-sided lower limit, and
+    # its margin_verdict maps onto this module's three-way transfer vocabulary. `ties_default` now
+    # means something specific when it comes from TOST: equivalence SHOWN, not merely not refuted.
+    from . import compare as compare_mod
+    from .run_spec import AcceptancePolicy
+    _, _, margin_verdict = compare_mod._decide(delta, bs["excludes_zero"], bs["ci"],
+                                               AcceptancePolicy(min_delta_r2=md),
+                                               ci_one_sided=bs.get("ci_one_sided"))
+    verdict = {"superior_by_margin": "beats_default",
+               "inferior_by_margin": "worse_than_default"}.get(margin_verdict, "ties_default")
 
     res = TransferResult(
         model=model, source_dataset=source_dataset, source_subregion=source_subregion,
@@ -164,7 +171,8 @@ def transfer(model: str, *, source_dataset: str, target_dataset: str,
         p_value=round(float(bs["p_value"]), 4), excludes_zero=bool(bs["excludes_zero"]),
         n_test=int(len(y_test)), min_delta=md, verdict=verdict,
         bootstrap_unit=bs["unit"], n_bootstrap_units=int(bs["n_units"]),
-        ci_method=bs.get("ci_method"), p_method=bs.get("p_method"))
+        ci_method=bs.get("ci_method"), p_method=bs.get("p_method"),
+        margin_verdict=margin_verdict, margin=float(md))
     if record:
         record_transfer(res)
     return res
@@ -185,5 +193,6 @@ def record_transfer(res: TransferResult, claims_dir: str | Path | None = None) -
                     "ci_excludes_zero": res.excludes_zero, "p_value": res.p_value,
                     "bootstrap_unit": res.bootstrap_unit, "dataset": res.target_dataset,
                     "ci_method": res.ci_method, "p_method": res.p_method,
+                    "margin_verdict": res.margin_verdict, "margin": res.margin,
                     "comparison_train_size": None, "intervention_type": "config_transfer"},
         claim_allowed=claim, claims_dir=claims_dir)
