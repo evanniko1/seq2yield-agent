@@ -149,6 +149,17 @@ which is the state of every run recorded before that date (audit ML-02, docs/RET
 }
 ```
 
+A comparison REQUIRES, alongside the interval, the three fields that say how it was produced —
+`bootstrap_unit` + `n_bootstrap_units` (audit ST-7) and `ci_method` + `p_method` + `p_floor` (audit
+ST-2). Intervals computed under different units or different estimators are not comparable, and the
+C3 fence is only enforceable if each result carries its own. `ci_method: "t"` with
+`p_method: "sign_flip_exact"` is the default from 2026-11-02; `"percentile"` /
+`"bootstrap_percentile"` identify a pre-2026-11-02 result (or a deliberate reproduction of one),
+whose interval was measured as liberal at the unit counts this project has — see
+docs/RETRACTIONS.md. `p_floor` is the smallest p the test could have returned: when it exceeds
+alpha, nothing at that unit count is resolvable and `excludes_zero` is false whatever the interval
+says.
+
 ## 6. ModelCallRecord (every LLM call)
 
 ```json

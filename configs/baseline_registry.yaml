@@ -9,7 +9,12 @@
 # the registry's recorded provenance (numerics fingerprint, dataset/split hash) against the current
 # checkout, and falls back to training an in-run baseline whenever they disagree. A registry is a
 # cache of results, and a cache needs an invalidation rule.
-run_id: 2026-11-01-full56
+# The doubled date is not corruption: `reproduce_baselines.py` prefixes `--tag` with the run date,
+# and this one was built with `--tag 2026-11-02-full56`. The artifacts are kept exactly as the run
+# wrote them — renaming a generated folder away from the run_id recorded inside its own run-cards
+# would be the one kind of tidying this project does not do. A future rebuild should pass
+# `--tag full56`.
+run_id: 2026-11-02-2026-11-02-full56
 
 # Refuse the stored registry (and pay for an in-run baseline instead) when:
 require:
@@ -19,8 +24,22 @@ require:
   # The git SHA is recorded but NOT required: an unrelated docs or agent commit does not change a
   # predicted number, and a guard that fires on every commit would be disabled within a week.
   git_sha: false
+  # Nor is the INFERENCE fingerprint (audit ST-2): a registry stores point values, never intervals,
+  # so the estimator that was in the tree when its run-cards were written is irrelevant to using
+  # those values as a control. It matters when two INTERVALS are compared, and that fence lives on
+  # the comparison record (`ci_method`), not here.
+  inference_fingerprint: false
 
 superseded:
+  - run_id: 2026-11-01-full56
+    locked: 2026-11-01
+    reason: >
+      Scientifically fine and NOT retracted: its 3360 values are reproduced by the current
+      registry to 3.3e-16, with 3066 of 3360 rows bit-identical. It is superseded only as a
+      CONTROL, because its stamp predates the per-file manifest (fingerprint v1) and so cannot be
+      re-checked when the value-deciding set's own definition changes — which it did the next day,
+      when the bootstrap left that set (audit ST-2, DECISIONS #65). Regenerating was the honest
+      way out: a same-tag re-run would have skipped every fit and rewritten only the stamps.
   - run_id: 2026-06-04-full56
     locked: 2026-06-05
     reason: >

@@ -49,6 +49,20 @@ pitfalls:
     # flag fires under 25. (The same table with the SEQUENCE unit on the same clustered data:
     # 46-56% — which is the error this whole fix removes.) The bootstrap itself already refuses to
     # report any CI below 2 units; between 2 and 25 the number is reported and flagged.
+    #
+    # RE-MEASURED 2026-11-02 against the ST-2 estimator (t-interval + exact sign-flip, 1000 trials,
+    # normal deltas at the repo's sd 0.0216). The calibration problem the threshold was drawn for
+    # is largely gone, so the threshold now stands for POWER and for the exact test's own floor:
+    #   units:            5      6      7     10     20     56
+    #   H0 rate:       0.0%   2.4%   3.2%   5.1%   4.1%   4.8%
+    #   power @0.02:   0.00   0.31   0.38   0.73   0.97   1.00
+    #   smallest p:   0.091  0.046  0.023  0.003  2e-4   2e-4
+    # At 5 units or fewer NOTHING is resolvable at alpha=0.05 (the result says so in `p_floor`); at
+    # 6-9 units a claim is floor-limited and has well under half the power to see the project's own
+    # 0.02 margin; and under skewed deltas the H0 rate is still 9.1% at 10 units and 7.6% at 20.
+    # So 25 remains the line above which a verdict is treated as settled. The interval width is
+    # also where the methods differ: t/percentile half-width ratio 1.23 (10 units), 1.10 (20),
+    # 1.04 (56), 1.01 (200), 1.00 (2064) — small comparisons were the ones being flattered.
     description: >
       The paired bootstrap has very few INDEPENDENT resampling units (series, or design families
       on a designed library), however many test rows there are. A CI from a handful of units is

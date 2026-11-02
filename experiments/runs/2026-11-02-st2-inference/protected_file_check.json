@@ -1,0 +1,156 @@
+{
+  "passed": true,
+  "violations": [],
+  "by_path": {
+    "configs/baseline_registry.yaml": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "configs/methodology_pitfalls.yaml": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/CONTRACTS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/DECISIONS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/RETRACTIONS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-11-02-2026-11-02-full56/cnn/run_card.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-11-02-2026-11-02-full56/data_size_curve.csv": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-11-02-2026-11-02-full56/metrics.csv": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-11-02-2026-11-02-full56/mlp/run_card.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-11-02-2026-11-02-full56/rf/run_card.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/yeast-baseline-grouped/yeast_registry.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/yeast-baseline-legacy-rerun/yeast_registry.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "reports/static/2026-11-01-full56_report.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "reports/static/2026-11-02-2026-11-02-full56_curve.png": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "reports/static/2026-11-02-2026-11-02-full56_report.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "reports/static/yeast_baseline_grouped_report.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "scripts/build_yeast.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "scripts/run_dashboard.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/orchestration/baseline_guard.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/orchestration/execution_harness.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/orchestration/store.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/experiments/claim_registry.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/experiments/compare.py": {
+      "class": "conditional",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/experiments/config_transfer.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/experiments/tournament.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/statistics/bootstrap.py": {
+      "class": "conditional",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/training/provenance.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_grouped_bootstrap.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_ml02_provenance.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_st2_inference.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    }
+  }
+}

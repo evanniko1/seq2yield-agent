@@ -475,6 +475,86 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #65 — The percentile bootstrap was liberal, so the estimator changed: t-interval + exact sign-flip
+- **Authorization.** `statistics/**` and `compare.py` are CONDITIONALLY protected. Human approval
+  in session ("do ST-2 next"); `approvals.decide('2026-11-02-st2-inference', paths, approver=…)`
+  granted, `git_guard.check_paths(..., human_review=True)` passed, record in
+  `experiments/runs/2026-11-02-st2-inference/`.
+- **Why (audit ST-2).** The module's docstring said "conservative". Measured at the repo's own
+  noise scale (per-series cnn−rf sd 0.0216, 1000 trials, nominal 5%), P(interval excludes 0) under
+  an exactly-null comparison was **15.7% at 5 units, 9.5% at 10, 6.6% at 20, 6.1% at 56**. The
+  p-value could be **exactly 0** (structurally: `2·min(frac≤0, frac≥0)`), and all 8 registry claims
+  carrying one report `p=0.0`. And there was no numerical tolerance, so the ML-02 A/A — per-series
+  deltas of 1.1e-16, most of them exactly 0 — was reported as a significant regression.
+- **Measured before choosing** (same draws, same trials):
+
+  | units | percentile | BCa | t | shipped (t + exact sign-flip) |
+  |---|---|---|---|---|
+  | 5 | 15.7% | 16.4% | 5.2% | 0.0% |
+  | 10 | 9.5% | 9.8% | 5.5% | 5.1% |
+  | 20 | 6.6% | 6.2% | 4.2% | 4.1% |
+  | 56 | 6.1% | 6.0% | 5.3% | 4.8% |
+
+  **BCa, the audit's first suggestion, does not help** — and under heavy tails (t₃) it is the worst
+  of the three (19.3% at 5 units, 9.0% at 56, against the t-interval's 3.3%/3.8%). It was rejected
+  on these numbers, not on taste.
+- **What ships.** The interval is a one-sample **t-interval on the per-unit values** (no
+  resampling, so a stored CI is reproducible without an RNG state); the p-value is an **exact
+  sign-flip permutation test**, enumerating all 2ⁿ patterns up to n=14 and sampling above it, which
+  tests the right null for a paired design and assumes no normality. `excludes_zero` now requires
+  **both**. The pooled ΔR² is rewritten exactly as a mean of per-unit values (the per-row loss
+  difference over a fixed SS_tot), which is what lets one estimator serve the per-series and the
+  family-clustered cases alike; the point estimate is unchanged by the rewrite, pinned by a test.
+- **Two honest limits, both reported rather than hidden.** Under enumeration the observed sign
+  pattern and its negation always tie with the observation, so no exact test can return less than
+  **3/(2ⁿ+1)** — 0.091 at 5 units. **A 5-unit comparison therefore cannot be resolved at α=0.05**,
+  and `p_floor` plus a note say so instead of the t-interval's confident 5%. Second: the sign-flip
+  test assumes the per-unit differences are symmetric, and under strongly skewed deltas
+  (standardized Exp(1)) the H0 rate is still 9.1% at 10 units and 6.5% at 56 — a residual, against
+  14.5%/6.4% for the percentile method on the same draws.
+- **Zero tolerance.** `ZERO_TOL = 1e-9`: R² is O(1), accumulated float error reaches ~1e-12, and no
+  meaningful ΔR² here is below 1e-6. A mean delta at or under it is reported as no effect.
+- **A bug found in this change's own first draft**, worth recording because it is the same class of
+  error as the one being fixed: the permutation count used an absolute tolerance (1e-18) tighter
+  than the ULP of the statistic (~7e-18), so the identity pattern — which reproduces the observed
+  value by a different summation order — was sometimes dropped and the test returned a p *below*
+  its own attainable floor. At 5 units that is the difference between "significant" and "not
+  resolvable". The tolerance is now relative, and a 200-trial test pins the floor.
+- **The guard's own scope was wrong, and that is fixed here too.** `bootstrap.py` sat in
+  `provenance.NUMERICS_GLOBS`, so the first honest statistics fix invalidated a registry whose
+  every stored R² was provably unaffected — exactly the cry-wolf failure the set was drawn narrowly
+  to avoid. The value-deciding set now **excludes** it (v2, 26 files), a separate
+  `INFERENCE_GLOBS` fingerprint covers the files that decide intervals and verdicts, and stamps
+  carry a **per-file manifest** so a future change in the set's own definition can be re-checked
+  file by file instead of condemning every stored result. `NUMERICS_GLOBS_V1` is frozen for the
+  stamps already written; those have no manifest, so the registry was **regenerated** rather than
+  retro-stamped (a same-tag re-run would have skipped every fit and rewritten only the stamps).
+  Pointer moved to **`2026-11-02-2026-11-02-full56`** (the doubled date is the builder prefixing
+  `--tag`; the artifacts are left as the run wrote them rather than renamed away from the `run_id`
+  inside their own run-cards). **The rebuild was numerically a no-op, as predicted**: 3,066 of
+  3,360 rows bit-identical to `2026-11-01-full56`, max |Δ| 3.3e-16 — which is the evidence that an
+  inference-only edit never needed to invalidate those values, and the reason the set was
+  re-scoped instead of the registry being retro-stamped.
+- **Consequence on real claims** (point estimates all unchanged; only precision is re-described):
+  - **ecoli `cnn > rf`, first 10 series: loses its significance.** [+0.0014, +0.0292] p=0.029 →
+    **[−0.0014, +0.0329] p=0.071**. SA-2's subset finding and ST-2's method finding compound: the
+    flagship figure was a subset measured with a liberal interval.
+  - **ecoli `cnn > rf`, all 56 series: survives.** [+0.0060, +0.0190] p=0.0002 → **[+0.0058,
+    +0.0195] p=0.0015**. Still below the 0.02 margin, so still `rejected` under #64/R-5.
+  - **yeast (20 families): conclusion unchanged, bounds restated.** rf −0.0292 CI
+    [−0.501, 0.442], cnn −0.0375 [−0.442, 0.367], mlp −0.2880 [−0.888, 0.312]; best vs runner-up
+    0.0083 [−0.403, 0.419]. Every interval still spans 0; still unrankable.
+  - **dream2022 (2,064 families): unaffected.** The t/percentile half-width ratio is 1.23 at 10
+    units, 1.10 at 20, 1.04 at 56, 1.01 at 200 and **1.00 at 2,064** — the correction bites only on
+    the project's small comparisons. ΔR² 0.363 with CI ±0.118 cannot move; not re-fitted.
+- **Not in scope, still open: ST-3.** The accept rule compares a point estimate with the margin and
+  the CI with zero — it never tests H0: δ < 0.02. That is the next item, and the all-56 flagship
+  sits exactly on it.
+- Tests: `tests/test_st2_inference.py` (21). The `too_few_bootstrap_units` threshold keeps its
+  value of 25 but its recorded justification is re-measured in
+  `configs/methodology_pitfalls.yaml`: calibration is no longer the reason, power and the exact
+  test's floor are.
+
 ## #64 — A stored baseline must prove it matches the code, or it is not a control
 - **Authorization.** Human approval in session ("do ML-02 next"). The diff touches no strict or
   conditional path; it ran the project's own gate anyway —

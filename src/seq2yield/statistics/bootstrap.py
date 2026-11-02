@@ -1,10 +1,50 @@
-"""Paired bootstrap over per-series R² deltas (docs/CONTRACTS.md §9, statistics autonomy).
+"""Paired inference over per-unit R² deltas (docs/CONTRACTS.md §9, statistics autonomy).
 
-Compares a candidate against a baseline using the paired per-series differences in R²
-(candidate - baseline), resampling series with replacement to get a CI on the mean delta.
-This is conservative and respects the paired structure (same series, same splits).
+Compares a candidate against a baseline using the paired per-unit differences in R²
+(candidate - baseline) and reports an interval on the mean delta plus a test against zero.
 
-THE RESAMPLING UNIT IS THE WHOLE ARGUMENT. A bootstrap CI is only as honest as its unit: the
+THIS WAS NOT CONSERVATIVE, WHICH IS WHAT THE DOCSTRING USED TO CLAIM (audit ST-2). The percentile
+bootstrap is liberal at the unit counts this project actually has. Measured at the repo's own noise
+scale (per-series cnn−rf sd 0.0216), 1000 trials, nominal 5%, P(the interval excludes 0) under an
+exactly-null comparison:
+
+    units                  5      10      20      56
+    percentile         15.7%    9.5%    6.6%    6.1%     <- shipped until 2026-11-02
+    BCa                16.4%    9.8%    6.2%    6.0%
+    t                   5.2%    5.5%    4.2%    5.3%
+    this module now     0.0%*   5.1%    4.1%    4.8%     <- t-interval AND exact sign-flip
+
+BCa — the fix the audit suggested first — measurably does not help, and under heavy tails (t₃) it is
+the worst of the three (19.3% at n=5, 9.0% at n=56 vs the t-interval's 3.3%/3.8%). So:
+
+- the INTERVAL is a one-sample t-interval on the per-unit values. It needs no resampling, so it is
+  also exactly reproducible rather than seed-dependent;
+- the P-VALUE is an exact sign-flip permutation test (every one of the 2ⁿ sign patterns enumerated
+  for n ≤ 14, Monte Carlo above that), which tests the right null for a paired design — that the
+  per-unit differences are symmetric about zero — and makes no normality assumption;
+- `excludes_zero` requires BOTH. (*) is why: under enumeration the observed sign pattern and its
+  negation always tie with the observation, so the smallest p an exact test can return is
+  3/(2ⁿ+1) — 0.091 at n=5, 0.046 at n=6. A 5-unit comparison therefore CANNOT be resolved at
+  α=0.05, while the t-interval reaches its nominal 5% there only by assuming a normality that 5
+  points cannot evidence. The honest verdict at 5 units is "not resolvable"; `p_floor` carries it.
+
+What this does NOT fix: the sign-flip test assumes the per-unit differences are symmetric about
+their centre, and under a strongly skewed delta distribution (standardized Exp(1)) the H0 rate is
+still 9.1% at n=10 and 6.5% at n=56. That is a residual, not a solved problem — it is simply much
+smaller than the 14.5%/6.4% the percentile method gave on the same draws. Under normal and heavy
+(t₃) deltas the rates are 4.1–5.1%.
+- `p_value` is floored at 1/(N+1) and never returns exactly 0 (it used to do so in 6.9–9.2% of
+  exactly-null comparisons at n=5, and all 8 registry claims carrying a p-value show p=0.0).
+- a mean delta at or below `atol` (default 1e-9, far above float noise and far below any real
+  effect) is reported as no effect. An A/A whose per-unit deltas were float ULPs — max 1.1e-16 —
+  was being called a significant regression, because the residuals were consistently signed.
+
+`method="percentile"` reproduces the old behaviour bit for bit, including its p-value and its
+`excludes_zero`, so every pre-2026-11-02 run-card can still be regenerated. The method used is
+returned as `ci_method` / `p_method` and recorded alongside the unit, because an interval computed
+one way is not comparable with one computed the other (the C3 fence).
+
+THE RESAMPLING UNIT IS THE OTHER HALF OF THE ARGUMENT. A bootstrap CI is only as honest as its unit: the
 unit must be something that was drawn independently. `paired_bootstrap_ci` resamples per-series
 R² values, so its unit is a mutational series — already a cluster. The pooled functions resample
 test rows, whose unit is one sequence, and that assumption fails on a DESIGNED library: SNV
@@ -20,6 +60,13 @@ sequence-unit one.
 from __future__ import annotations
 
 import numpy as np
+
+# Below this, a mean delta is numerical noise rather than an effect: R² is O(1), double precision
+# gives ~1e-16 relative error, accumulation over a few thousand rows reaches ~1e-12, and no
+# scientifically meaningful ΔR² in this project is smaller than 1e-6.
+ZERO_TOL = 1e-9
+MAX_EXACT_SIGNS = 14          # 2^14 = 16384 patterns enumerated; above this, Monte Carlo
+N_SIGN_MC = 4096
 
 
 def _units(groups, n: int) -> list[np.ndarray]:
@@ -60,8 +107,84 @@ def _no_inference(n_units: int) -> dict:
                     "so no CI is reported and the comparison stays inconclusive"}
 
 
+def _t_interval(values: np.ndarray, alpha: float) -> tuple[float, float]:
+    """One-sample t-interval on the mean of the per-unit values.
+
+    The unit values are the only thing assumed exchangeable, which is exactly the assumption the
+    grouped design already forces (ST-7). No resampling, so the interval is deterministic."""
+    from scipy import stats
+    n = len(values)
+    m = float(values.mean())
+    se = float(values.std(ddof=1) / np.sqrt(n))
+    crit = float(stats.t.ppf(1 - alpha / 2, n - 1))
+    return m - crit * se, m + crit * se
+
+
+def _sign_patterns(n: int, rng) -> tuple[np.ndarray, bool]:
+    """All 2ⁿ sign patterns (exact) or a Monte Carlo sample of them."""
+    if n <= MAX_EXACT_SIGNS:
+        bits = (np.arange(2 ** n)[:, None] >> np.arange(n)) & 1
+        return bits.astype(float) * 2.0 - 1.0, True
+    return rng.choice([-1.0, 1.0], size=(N_SIGN_MC, n)), False
+
+
+def _sign_flip_p(values: np.ndarray, rng) -> dict:
+    """Two-sided sign-flip permutation test of H0: the per-unit differences are symmetric about 0.
+
+    p is (#{|mean of a flipped sample| >= |observed|} + 1) / (N + 1) — the +1 on both sides is the
+    floor that stops a p-value from being reported as exactly 0 when no null sample happened to be
+    as extreme as the observation. `p_floor` is the smallest value this test can return, which for
+    an enumerated test at small n is a hard limit on what any claim can establish."""
+    n = len(values)
+    signs, exact = _sign_patterns(n, rng)
+    observed = abs(float(values.mean()))
+    null = np.abs(signs @ values) / n
+    # The identity pattern and its negation reproduce the observed statistic, but by a different
+    # summation order, so they can land an ULP below it. The tolerance must therefore be RELATIVE
+    # to the statistic: an absolute 1e-18 silently dropped both of them and returned a p BELOW
+    # what the test can attain, which at 5 units is the difference between "significant" and
+    # "cannot be resolved".
+    ge = int((null >= observed * (1.0 - 1e-9) - 1e-18).sum())
+    n_patterns = signs.shape[0]
+    # smallest ATTAINABLE p, not 1/(N+1): under enumeration those two patterns always tie, so no
+    # exact test can report less than 3/(2ⁿ+1)
+    floor = (3.0 if exact else 1.0) / (n_patterns + 1.0)
+    return {"p_value": max((ge + 1.0) / (n_patterns + 1.0), floor),
+            "p_method": "sign_flip_exact" if exact else "sign_flip_mc",
+            "p_floor": floor,
+            "n_patterns": int(n_patterns)}
+
+
+def _decide_from_units(values: np.ndarray, *, alpha: float, atol: float, rng) -> dict:
+    """The default inference path: t-interval + exact sign-flip p + zero tolerance.
+
+    `values` is one number per resampling unit whose mean IS the statistic of interest, so this
+    one function serves the per-series deltas and the linearized pooled ΔR² alike."""
+    mean = float(values.mean())
+    lo, hi = _t_interval(values, alpha)
+    out = {"ci": [lo, hi], "ci_method": "t", "alpha": alpha}
+    if abs(mean) <= atol:
+        return out | {"excludes_zero": False, "p_value": 1.0, "p_method": "below_tolerance",
+                      "p_floor": 1.0,
+                      "note": f"|mean delta| = {abs(mean):.3g} is at or below the numerical "
+                              f"tolerance {atol:g}: reported as no effect, not as a result"}
+    out |= _sign_flip_p(values, rng)
+    ci_excl = bool(lo > 0 or hi < 0)
+    out["ci_excludes_zero"] = ci_excl
+    out["excludes_zero"] = bool(ci_excl and out["p_value"] <= alpha)
+    if out["p_floor"] > alpha:
+        out["note"] = (f"{len(values)} units: the exact test's smallest attainable two-sided p is "
+                       f"{out['p_floor']:.3f} > alpha={alpha}, so no comparison at this unit count "
+                       "can be resolved — this is a limit of the evidence, not of the method")
+    elif ci_excl and not out["excludes_zero"]:
+        out["note"] = ("the t-interval excludes 0 but the exact test does not "
+                       f"(p={out['p_value']:.4f}): treated as unresolved")
+    return out
+
+
 def paired_bootstrap_ci(baseline_per_series, candidate_per_series, *,
-                        n_boot: int = 10000, alpha: float = 0.05, seed: int = 0) -> dict:
+                        n_boot: int = 10000, alpha: float = 0.05, seed: int = 0,
+                        method: str = "t", atol: float = ZERO_TOL) -> dict:
     base = np.asarray(baseline_per_series, dtype=float)
     cand = np.asarray(candidate_per_series, dtype=float)
     if base.shape != cand.shape:
@@ -73,18 +196,27 @@ def paired_bootstrap_ci(baseline_per_series, candidate_per_series, *,
     if n < 2:                       # the unit here is already a cluster; one of them proves nothing
         return out | _no_inference(n)
     rng = np.random.default_rng(seed)
+    if method != "percentile":
+        return out | _decide_from_units(deltas, alpha=alpha, atol=atol, rng=rng)
     boot_means = np.array([rng.choice(deltas, size=n, replace=True).mean()
                            for _ in range(n_boot)])
     lo, hi = np.quantile(boot_means, [alpha / 2, 1 - alpha / 2])
     return out | {
         "ci": [float(lo), float(hi)],
+        "ci_method": "percentile",
+        "p_method": "bootstrap_percentile",
         "excludes_zero": bool(lo > 0 or hi < 0),
         "p_value": _bootstrap_p(boot_means),
     }
 
 
 def _bootstrap_p(boot_deltas: np.ndarray) -> float:
-    """Two-sided bootstrap p-value: 2 × the fraction of resamples on the null side of 0."""
+    """Two-sided bootstrap p-value: 2 × the fraction of resamples on the null side of 0.
+
+    LEGACY, reachable only via `method="percentile"`, and kept only so pre-2026-11-02 numbers
+    reproduce. It returns exactly 0 whenever no resample lands on the null side — which happened in
+    6.9–9.2% of exactly-null comparisons at 5 units, and is why every registry claim carrying a
+    p-value shows p=0.0 (audit ST-2). The default path uses `_sign_flip_p`, which has a floor."""
     frac_le = float(np.mean(boot_deltas <= 0))
     frac_ge = float(np.mean(boot_deltas >= 0))
     return float(min(1.0, 2.0 * min(frac_le, frac_ge)))
@@ -98,11 +230,38 @@ def _r2(y_true, y_pred) -> float:
     return 1.0 - ss_res / ss_tot if ss_tot else float("nan")
 
 
+def _ss_tot(y_true: np.ndarray) -> float:
+    return float(np.sum((y_true - y_true.mean()) ** 2))
+
+
+def _unit_sums(per_row: np.ndarray, units: list[np.ndarray] | None) -> np.ndarray:
+    """Sum `per_row` within each resampling unit (identity when the unit is one row)."""
+    if units is None:
+        return per_row
+    return np.array([float(per_row[idx].sum()) for idx in units])
+
+
+def _linearize(per_row: np.ndarray, units, offset: float = 0.0) -> np.ndarray:
+    """Per-unit values whose MEAN is the statistic, holding SS_tot at its observed value.
+
+    R² and ΔR² are both affine in the per-row squared errors once the denominator is fixed, so a
+    statistic over the pooled test set becomes a mean over units — which is what lets the t-interval
+    and the sign-flip test (both defined on a mean of exchangeable values) apply to the pooled case
+    at all. Fixing SS_tot is the paired, conditional-on-this-test-set reading: SS_tot is a property
+    of the held-out set, not of either model. The observed point estimate is unchanged by this."""
+    sums = _unit_sums(per_row, units)
+    u = len(sums)
+    return offset + u * sums
+
+
 def bootstrap_r2_ci(y_true, y_pred, *, groups=None, n_boot: int = 2000, alpha: float = 0.05,
-                    seed: int = 0) -> dict:
+                    seed: int = 0, method: str = "t") -> dict:
     """CI on a single model's R² by resampling TEST SEQUENCES (for pooled datasets like yeast,
     where per-group counts are too small for per-group R²), or whole DESIGN FAMILIES when
-    `groups` gives each row's family."""
+    `groups` gives each row's family.
+
+    Descriptive: there is no paired null here, so no p-value is reported — the interval's position
+    relative to 0 answers "does this model beat the training mean" and the caller reads it."""
     y_true = np.asarray(y_true, float)
     y_pred = np.asarray(y_pred, float)
     n = len(y_true)
@@ -113,14 +272,22 @@ def bootstrap_r2_ci(y_true, y_pred, *, groups=None, n_boot: int = 2000, alpha: f
     if units is not None and len(units) < 2:
         return out | _no_inference(len(units))
     rng = np.random.default_rng(seed)
+    if method != "percentile":
+        ss = _ss_tot(y_true)
+        if not ss:
+            return out | _no_inference(out["n_units"])
+        values = _linearize(-((y_true - y_pred) ** 2) / ss, units, offset=1.0)
+        lo, hi = _t_interval(values, alpha)
+        return out | {"ci": [lo, hi], "ci_method": "t", "alpha": alpha}
     boot = np.array([_r2(y_true[idx], y_pred[idx])
                      for idx in (_draw(rng, n, units) for _ in range(n_boot))])
     lo, hi = np.nanquantile(boot, [alpha / 2, 1 - alpha / 2])
-    return out | {"ci": [float(lo), float(hi)]}
+    return out | {"ci": [float(lo), float(hi)], "ci_method": "percentile"}
 
 
 def paired_bootstrap_r2(y_true, pred_candidate, pred_baseline, *, groups=None, n_boot: int = 2000,
-                        alpha: float = 0.05, seed: int = 0) -> dict:
+                        alpha: float = 0.05, seed: int = 0, method: str = "t",
+                        atol: float = ZERO_TOL) -> dict:
     """Paired CI on ΔR² (candidate - baseline) by resampling the SAME test rows for both models.
 
     The unit is one test sequence, unless `groups` labels each row's design family — then whole
@@ -138,6 +305,14 @@ def paired_bootstrap_r2(y_true, pred_candidate, pred_baseline, *, groups=None, n
     if units is not None and len(units) < 2:
         return out | _no_inference(len(units))
     rng = np.random.default_rng(seed)
+    if method != "percentile":
+        ss = _ss_tot(y_true)
+        if not ss:
+            return out | _no_inference(out["n_units"])
+        # paired per-row loss difference: baseline's squared error minus the candidate's, so a
+        # positive unit value means the candidate did better on that unit
+        values = _linearize(((y_true - pb) ** 2 - (y_true - pc) ** 2) / ss, units)
+        return out | _decide_from_units(values, alpha=alpha, atol=atol, rng=rng)
     deltas = []
     for _ in range(n_boot):
         idx = _draw(rng, n, units)
@@ -145,5 +320,7 @@ def paired_bootstrap_r2(y_true, pred_candidate, pred_baseline, *, groups=None, n
     deltas = np.array(deltas)
     lo, hi = np.nanquantile(deltas, [alpha / 2, 1 - alpha / 2])
     return out | {"ci": [float(lo), float(hi)],
+                  "ci_method": "percentile",
+                  "p_method": "bootstrap_percentile",
                   "excludes_zero": bool(lo > 0 or hi < 0),
                   "p_value": _bootstrap_p(deltas[~np.isnan(deltas)])}

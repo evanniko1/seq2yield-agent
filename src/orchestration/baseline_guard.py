@@ -184,11 +184,16 @@ def check(run_id: str | None, models, *, root: Path | None = None) -> dict:
         return out
 
     if req.get("numerics_fingerprint", True):
-        stale = {m: f for m, f in reg_num.items() if f != cur_num}
+        # file-by-file where the stamp carries a manifest, so a change in the SET's own definition
+        # (ST-2 moved the bootstrap out of it) does not condemn a registry whose numbers are intact
+        checks = {m: provenance.verify_numerics(e.get("numerics")) for m, e in envs.items()}
+        stale = {m: v for m, v in checks.items() if not v["ok"]}
         if stale:
             out["violations"].append("numerics_fingerprint")
-            out["reason"] = (f"value-deciding code changed since registry '{run_id}' was built "
-                             f"({ {m: f[:8] for m, f in stale.items()} } vs {cur_num[:8]})")
+            first = next(iter(stale.values()))
+            out["reason"] = (f"value-deciding code changed since registry '{run_id}' was built: "
+                             f"{first['reason']}")
+            out["changed_files"] = sorted({f for v in stale.values() for f in v["changed"]})
             for m in stale:
                 out["drift"] += [f"[{m}] {d}" for d in provenance.diff_defaults(
                     envs[m].get("model_defaults"), cur_defaults)]

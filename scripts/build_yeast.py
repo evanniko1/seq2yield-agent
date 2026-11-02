@@ -97,6 +97,10 @@ def main() -> int:
     else:
         train, test = stratified_holdout(df)
         groups, unit, split_name = None, "sequence", "stratified_holdout (SUPERSEDED)"
+    # The legacy protocol must reproduce the June run, and that includes its ESTIMATOR: the
+    # percentile interval it used was replaced on 2026-11-02 (ST-2, DECISIONS #65), so pinning the
+    # old method here is what keeps `--protocol legacy` a reproduction instead of a hybrid.
+    ci_method = "percentile" if args.protocol == "legacy" else "t"
     n_units = len(set(groups)) if groups is not None else len(test)
     print(f"[yeast] protocol={args.protocol}: split={split_name}, bootstrap unit={unit} "
           f"({n_units} units)")
@@ -112,7 +116,7 @@ def main() -> int:
         model.fit(Xtr, train[TARGET_COL].to_numpy())
         p = model.predict(Xte)
         preds[m] = p
-        ci = bootstrap_r2_ci(y_test, p, groups=groups, seed=SEED)
+        ci = bootstrap_r2_ci(y_test, p, groups=groups, seed=SEED, method=ci_method)
         results[m] = {"r2": round(ci["r2"], 4), "r2_ci": [round(x, 4) for x in ci["ci"]]}
         print(f"  {m:>4}: R2={ci['r2']:.4f}  95% CI {[round(x,3) for x in ci['ci']]}")
 
@@ -120,7 +124,8 @@ def main() -> int:
     best = ranking[0]
     # is the best model significantly better than the runner-up?
     runner = ranking[1]
-    pb = paired_bootstrap_r2(y_test, preds[best], preds[runner], groups=groups, seed=SEED)
+    pb = paired_bootstrap_r2(y_test, preds[best], preds[runner], groups=groups,
+                             seed=SEED, method=ci_method)
     print(f"[yeast] best={best} vs {runner}: ΔR2={pb['mean_delta']:.4f} "
           f"CI {[round(x,3) for x in pb['ci']]} excludes0={pb['excludes_zero']}")
 
@@ -144,7 +149,7 @@ def main() -> int:
                     "n_genes": int(df[SERIES_COL].nunique()), "n_test": int(len(test)),
                     "protocol": {"name": args.protocol, "split": split_name,
                                  "bootstrap_unit": unit, "n_bootstrap_units": int(n_units),
-                                 "superseded": args.protocol == "legacy",
+                                 "ci_method": ci_method, "superseded": args.protocol == "legacy",
                                  "see": "docs/RETRACTIONS.md"},
                     "models": results, "ranking": ranking,
                     "best_vs_runnerup": {"best": best, "runner_up": runner, **pb},

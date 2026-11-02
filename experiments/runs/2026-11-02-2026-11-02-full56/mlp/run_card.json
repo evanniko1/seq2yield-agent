@@ -1,0 +1,251 @@
+{
+  "run_id": "2026-11-02-2026-11-02-full56-mlp",
+  "kind": "reproduction",
+  "dataset_hash": "e15d854d7a6482734e260297545f50d7543c5c6755910ec95dac5b86532f90ba",
+  "split_hash": "c20f19717f3b0f38aef378ada087231d3ed0517b3936ee22eb2586738020d557",
+  "model_family": "mlp",
+  "feature_set": "one_hot",
+  "train_sizes": [
+    250,
+    500,
+    1000,
+    2000
+  ],
+  "seeds": [
+    1
+  ],
+  "iterations": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "n_series": 56,
+  "primary_metric": "r2",
+  "results": {
+    "250": {
+      "r2_mean": 0.2578,
+      "r2_std": 0.0175
+    },
+    "500": {
+      "r2_mean": 0.3674,
+      "r2_std": 0.0073
+    },
+    "1000": {
+      "r2_mean": 0.4847,
+      "r2_std": 0.0058
+    },
+    "2000": {
+      "r2_mean": 0.6383,
+      "r2_std": 0.0104
+    }
+  },
+  "status": "reproduction",
+  "limitations": [
+    "single training seed (sampling); 5 MC-CV repeats provide variance"
+  ],
+  "environment": {
+    "python": "3.12.8",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "packages": {
+      "numpy": "1.26.4",
+      "scikit-learn": "1.6.1",
+      "torch": "2.5.1+cu121"
+    },
+    "cuda": true,
+    "code": {
+      "git_sha": "e77fc10f850f94152f703f2d8cc07920f2fc35d1",
+      "git_sha_short": "e77fc10f850f",
+      "branch": "main",
+      "dirty": true
+    },
+    "numerics": {
+      "fingerprint": "9d070a4c5c3f7f5d",
+      "n_files": 26,
+      "files": {
+        "scripts/reproduce_baselines.py": "d2d744f256395d9c66ab69cd361f48a9cb4626c3017c4c02f448f114c0272737",
+        "src/seq2yield/data/cleaning.py": "4c7f6225926dd528b079d1168e02aae01ce7139f43a2018b4a9531eb041e9d74",
+        "src/seq2yield/data/families.py": "2c7a5ed28d64dcb453d048079636b36919641438d829b6ca7a18a02c9c23d6b7",
+        "src/seq2yield/data/loaders.py": "5608b61d5e9bae50dd66b0505e6716b25e826080cc871879fbaf3cd45e055ae7",
+        "src/seq2yield/data/sampling.py": "a2706e93f4c1e80a9c244ba407552d6a6da915e7fc83f1c09154c0677876fc11",
+        "src/seq2yield/data/splits.py": "44496e129664d7b5fe7f2b4a673868ecff797d32c8d4bba8b8d467b380703962",
+        "src/seq2yield/experiments/pooled_runner.py": "f1ec2f1cb4c7cbd87d850998a094d585f2dc5da605eca7f02bd7cc54a94d676b",
+        "src/seq2yield/experiments/runner.py": "b465a11720b22e4052917d49888fcfff90c0ccfed27666b7788820f41010f465",
+        "src/seq2yield/features/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "src/seq2yield/features/embeddings.py": "670f3dc5b4500e6a90777e5db033ac91aed152bfa6adeecc23b40be9e3944647",
+        "src/seq2yield/features/kmer.py": "45198261205773cbe16cb060f8de343db338314c4db95dca23f6893d2312883f",
+        "src/seq2yield/features/mechanistic.py": "8b9f718dbaaf0c1295103c94eebc15798ab5b83d636fe76b237e1457573aeb91",
+        "src/seq2yield/features/mixed.py": "6a51b7026e04ca0fda981fdde6c56eced451e1450c2f7b877a1c140105b8a78c",
+        "src/seq2yield/features/one_hot.py": "b0dead729995b1938418bc8c548ac2617186e0fa48e60b21a0a982d43cb31c4e",
+        "src/seq2yield/features/registry.py": "3202b63e1b9ce623fb899956e99297c564bd8ce90a54079ca04293f0ab05c733",
+        "src/seq2yield/features/scaling.py": "fe6f2070b5b850c1c621c37e0ce96db53326253b3c12d4d80ec162f5024b0b59",
+        "src/seq2yield/models/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "src/seq2yield/models/_torch_train.py": "1c1b19c15ecc02aeaaa0bc320c1bcb0664ba30e8095a472673a08dcb62762f17",
+        "src/seq2yield/models/classical.py": "05e259fc0ce413dd8754d550e9a0ed37e5dcd233c3c555fdeef8aa3aeaa85daa",
+        "src/seq2yield/models/cnn.py": "e3360bba654bfd1d33fc70c5be14900918e7f80ad22cad6cb2045a3ec9140d91",
+        "src/seq2yield/models/mlp.py": "6531ed4fb28a9599b5ac8beb35664209d51f30b7dbd3181d82e69dc1c036d06a",
+        "src/seq2yield/models/registry.py": "3bd5f7515bc8436d02f4950ad6279488fe6b1a8c8cf1d5fd80f5ddee40801388",
+        "src/seq2yield/models/transformer.py": "afa2a8ad7cc7c9d1c1e277eb21a93ecf1c66f60a46e7fc3ba6a22715a23d297d",
+        "src/seq2yield/training/metrics.py": "d97cdb66a41d20384632716eeaac031dd30021397b1cff8028f8cea052fc6d99",
+        "src/seq2yield/training/reproducibility.py": "869aa39e5d2dd4da20c2841077bc1c5ef3fc7fb0525ed869a9b805ec2b4ab2f0",
+        "src/seq2yield/training/train.py": "2d3962d2e375f36572d98ccdef72fea34c813d962816a51ca9a021dedbcb551f"
+      },
+      "version": 2
+    },
+    "inference": {
+      "fingerprint": "66a9d3d4e15d855b",
+      "n_files": 6,
+      "files": {
+        "src/seq2yield/experiments/compare.py": "963f56293f5da7051035c9485ee1cca241ea4af178434b309757ecb8ec859375",
+        "src/seq2yield/statistics/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "src/seq2yield/statistics/bootstrap.py": "5bb550c5f2da9115fe0b5b6fc54f5a98e2f4043a37c35a6397f8b205f976865c",
+        "src/seq2yield/statistics/calibration.py": "e537ccdda82079d9a1c2de673d7f53584da3adb9561c8497256c750e29e1087d",
+        "src/seq2yield/statistics/mixed_effects.py": "7f6a2da8d1c94eabfc2c1539f36ee77085a3c063a721d1c069f145be2e27b825",
+        "src/seq2yield/statistics/multiple_comparisons.py": "9bf69a73db900d74f633e202e1101311bbe1da8d99a6a9775683e1978cc7b565"
+      },
+      "version": 2
+    },
+    "model_defaults": {
+      "rf": {
+        "hash": "499229be79c6",
+        "params": {
+          "bootstrap": true,
+          "ccp_alpha": 0.0,
+          "criterion": "squared_error",
+          "max_depth": null,
+          "max_features": "sqrt",
+          "max_leaf_nodes": null,
+          "max_samples": null,
+          "min_impurity_decrease": 0.0,
+          "min_samples_leaf": 1,
+          "min_samples_split": 2,
+          "min_weight_fraction_leaf": 0.0,
+          "monotonic_cst": null,
+          "n_estimators": 100,
+          "oob_score": false,
+          "warm_start": false
+        }
+      },
+      "mlp": {
+        "hash": "fefe6da02bab",
+        "params": {
+          "activation": "relu",
+          "alpha": 0.0001,
+          "batch_size": 64,
+          "beta_1": 0.9,
+          "beta_2": 0.999,
+          "early_stopping": true,
+          "epsilon": 1e-08,
+          "hidden_layer_sizes": [
+            256,
+            128,
+            64
+          ],
+          "learning_rate": "constant",
+          "learning_rate_init": 0.001,
+          "max_fun": 15000,
+          "max_iter": 300,
+          "momentum": 0.9,
+          "n_iter_no_change": 15,
+          "nesterovs_momentum": true,
+          "power_t": 0.5,
+          "shuffle": true,
+          "solver": "adam",
+          "tol": 0.0001,
+          "validation_fraction": 0.1,
+          "warm_start": false
+        }
+      },
+      "cnn": {
+        "hash": "a4d752bebc6e",
+        "params": {
+          "activation": "relu",
+          "batch_size": 64,
+          "batchnorm": false,
+          "dense_sizes": [
+            256,
+            128,
+            64
+          ],
+          "device": "cuda",
+          "dilations": null,
+          "dropout": 0.3,
+          "early_stop_patience": 8,
+          "epochs": 60,
+          "global_pool": 4,
+          "grad_clip": 0.0,
+          "kernel_sizes": [
+            7,
+            5,
+            3
+          ],
+          "length": 96,
+          "lr": 0.001,
+          "lr_schedule": "none",
+          "n_filters": [
+            64,
+            128,
+            128
+          ],
+          "optimizer": "adam",
+          "pool_sizes": null,
+          "pool_type": "max",
+          "warmup": 0,
+          "weight_decay": 0.0
+        }
+      },
+      "ridge": {
+        "hash": "ee022052a551",
+        "params": {
+          "alpha": 1.0,
+          "copy_X": true,
+          "fit_intercept": true,
+          "max_iter": null,
+          "positive": false,
+          "solver": "auto",
+          "tol": 0.0001
+        }
+      },
+      "svr": {
+        "hash": "ae33e38c4425",
+        "params": {
+          "C": 1.0,
+          "cache_size": 200,
+          "coef0": 0.0,
+          "degree": 3,
+          "epsilon": 0.1,
+          "gamma": "scale",
+          "kernel": "rbf",
+          "max_iter": -1,
+          "shrinking": true,
+          "tol": 0.001
+        }
+      },
+      "transformer": {
+        "hash": "30262fa5c56a",
+        "params": {
+          "attn_dropout": 0.1,
+          "batch_size": 64,
+          "d_model": 64,
+          "device": "cuda",
+          "dropout": 0.1,
+          "early_stop_patience": 8,
+          "epochs": 60,
+          "ff": 128,
+          "grad_clip": 0.0,
+          "layers": 2,
+          "length": 96,
+          "lr": 0.001,
+          "lr_schedule": "none",
+          "nhead": 4,
+          "optimizer": "adam",
+          "pool": "mean",
+          "pos_encoding": "learned",
+          "warmup": 0,
+          "weight_decay": 0.0
+        }
+      }
+    }
+  }
+}

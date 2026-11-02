@@ -46,7 +46,11 @@ def _clustered_null(rng, n_fam=24, k=20, strong=0.4, weak=0.9):
 # ----------------------------------------------------- the old path must not move at all
 def test_groups_none_is_the_old_sequence_bootstrap_bit_for_bit():
     """Legacy run-cards have to stay reproducible, so the ungrouped path is pinned against a
-    verbatim copy of the pre-change implementation — not merely 'close'."""
+    verbatim copy of the pre-change implementation — not merely 'close'.
+
+    `method="percentile"` is now what asks for that path: ST-2 replaced the DEFAULT interval with a
+    t-interval after measuring the percentile one as liberal, and the legacy guarantee moved to the
+    explicit flag rather than being dropped."""
     y, good, bad = _simple()
 
     def old_paired(y_true, pc, pb, n_boot=2000, alpha=0.05, seed=0):
@@ -67,9 +71,9 @@ def test_groups_none_is_the_old_sequence_bootstrap_bit_for_bit():
         lo, hi = np.nanquantile(b, [alpha / 2, 1 - alpha / 2])
         return [float(lo), float(hi)]
 
-    new = B.paired_bootstrap_r2(y, good, bad, seed=0)
+    new = B.paired_bootstrap_r2(y, good, bad, seed=0, method="percentile")
     assert new["ci"] == old_paired(y, good, bad)
-    assert B.bootstrap_r2_ci(y, good, seed=0)["ci"] == old_single(y, good)
+    assert B.bootstrap_r2_ci(y, good, seed=0, method="percentile")["ci"] == old_single(y, good)
     assert new["unit"] == "sequence" and new["n_units"] == 300
 
 

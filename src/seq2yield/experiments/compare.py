@@ -36,6 +36,11 @@ def _compare_series(base: pd.Series, cand: pd.Series, policy: AcceptancePolicy, 
     boot = paired_bootstrap_ci(base.values, cand.values, seed=seed)
     delta = boot["mean_delta"]
     status, reasons = _decide(delta, boot["excludes_zero"], boot["ci"], policy)
+    # how the interval and the p-value were computed travels with them: a t-interval + exact
+    # sign-flip verdict is not comparable with a percentile one (audit ST-2, the C3 fence), and a
+    # unit count whose exact test cannot reach alpha is a limit of the evidence worth reporting
+    if boot.get("note"):
+        reasons = reasons + [boot["note"]]
     return {
         "status": status,
         "baseline_mean": float(base.mean()),
@@ -45,6 +50,9 @@ def _compare_series(base: pd.Series, cand: pd.Series, policy: AcceptancePolicy, 
         "ci_excludes_zero": boot["excludes_zero"],
         "p_value": boot.get("p_value"),
         "n_series": boot["n_series"],
+        "ci_method": boot.get("ci_method"),
+        "p_method": boot.get("p_method"),
+        "p_floor": boot.get("p_floor"),
         "reasons": reasons,
     }
 

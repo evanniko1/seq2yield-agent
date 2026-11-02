@@ -306,7 +306,8 @@ def _run_pooled(spec: RunSpec, run_dir: Path, vres) -> dict:
                          "baseline_mean": float(M.r2(y, base["preds"][size])),
                          "mean_delta": float(pb["mean_delta"]), "paired_bootstrap_ci": pb["ci"],
                          "ci_excludes_zero": pb["excludes_zero"], "p_value": pb["p_value"],
-                         "reasons": reasons})
+                         "ci_method": pb.get("ci_method"), "p_method": pb.get("p_method"),
+                         "p_floor": pb.get("p_floor"), "reasons": reasons})
 
     size = pol.comparison_train_size if pol.comparison_train_size in sizes else max(sizes)
     cmp = dict(next(p for p in per_size if p["train_size"] == size))

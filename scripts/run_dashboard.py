@@ -169,9 +169,13 @@ def scoreboard():
         # provenance column (ML-02): what the claim was compared against, how it was split, and
         # which code produced it. A claim with none of these predates 2026-11-01 — say so, rather
         # than letting it sit next to a stamped one looking equally solid.
+        # ci_method joins them from 2026-11-02 (ST-2): a percentile interval is not comparable
+        # with a t-interval, and the percentile one was liberal at these unit counts.
         prot = " · ".join(x for x in (_e(c["baseline_source"]), _e(c["split_strategy"]),
-                                      _e(c["code_sha"])) if x) or \
+                                      _e(c["ci_method"]), _e(c["code_sha"])) if x) or \
             "<span class='chip no'>unstamped (pre-2026-11-01)</span>"
+        if c["ci_method"] in (None, "percentile") and c["split_strategy"]:
+            prot += " <span class='chip no'>percentile CI</span>"
         b.append(f"<tr><td class=mut>{_e(c['run_id'])}</td><td>{_e(c['dataset'])}</td>"
                  f"<td>{_e(c['candidate_model'])} vs {_e(c['baseline_model'])}</td>"
                  f"<td>{_e(c['mean_delta_r2'])}</td>"

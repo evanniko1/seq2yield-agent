@@ -115,9 +115,17 @@ def _registry(tmp_path: Path, run_id: str, models=("cnn", "rf"), *, env: dict | 
     return tmp_path
 
 
-def _stamped(fingerprint: str, defaults: dict | None = None) -> dict:
-    return {"packages": {}, "code": {"git_sha": "f" * 40},
-            "numerics": {"fingerprint": fingerprint, "n_files": 24},
+def _stamped(fingerprint: str, defaults: dict | None = None, *, manifest: bool = True) -> dict:
+    """A run-card environment block. By default it carries the per-file manifest a real stamp
+    carries, so the guard checks it file by file; `manifest=False` is the v1 shape, which can only
+    be compared as one whole hash (ST-2)."""
+    numerics = {"fingerprint": fingerprint, "n_files": 24}
+    if manifest:
+        current = P.numerics_fingerprint()
+        numerics = dict(current) if fingerprint == current["fingerprint"] else dict(
+            current, fingerprint=fingerprint,
+            files=dict(current["files"], **{next(iter(current["files"])): "0" * 64}))
+    return {"packages": {}, "code": {"git_sha": "f" * 40}, "numerics": numerics,
             "model_defaults": defaults or P.model_defaults()}
 
 

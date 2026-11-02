@@ -72,6 +72,7 @@ class TournamentResult:
     leaderboard: list[Contender] = field(default_factory=list)
     method: str = "benjamini_hochberg"
     selection: str = "test"          # nested_val (M-1: ranked on val, reported on test) | test (legacy)
+    ci_method: str | None = None     # t | percentile (C3 fence; audit ST-2)
 
     def as_dict(self) -> dict:
         d = {k: v for k, v in asdict(self).items() if k != "leaderboard"}
@@ -183,7 +184,7 @@ def _rank_and_correct(dataset: str, scored: dict, basis: dict, *, min_delta: flo
                     if kv[1].get(rank_key) is not None else kv[1]["r2"]), reverse=True)
     winner = ranked[0][0]
     unit = basis["unit"]
-    comps = []                                     # (model, mean_delta, ci, p) for non-winners
+    comps, ci_method = [], None                    # (model, mean_delta, ci, p) for non-winners
     for m, info in ranked[1:]:
         if basis.get("y_test") is not None:        # row-level basis: sequence or family unit
             bs = paired_bootstrap_r2(basis["y_test"], scored[winner]["pred"], info["pred"],
@@ -192,6 +193,7 @@ def _rank_and_correct(dataset: str, scored: dict, basis: dict, *, min_delta: flo
             bs = paired_bootstrap_ci(info["per_series"], scored[winner]["per_series"],
                                      n_boot=n_boot, seed=seed)
         comps.append((m, bs["mean_delta"], bs["ci"], bs["p_value"]))
+        ci_method = bs.get("ci_method")
     fdr = benjamini_hochberg([c[3] for c in comps], alpha) if comps else {"qvalues": [], "rejected": []}
 
     board, qmap = [], {}
@@ -217,7 +219,7 @@ def _rank_and_correct(dataset: str, scored: dict, basis: dict, *, min_delta: flo
     runner_up = ranked[1][0] if len(ranked) > 1 else None
     ru = qmap.get(runner_up) if runner_up else None
     winner_significant = bool(ru and ru[0] >= min_delta and ru[4])   # beats runner-up: Δ≥min_delta + FDR
-    return board, winner_significant, runner_up
+    return board, winner_significant, runner_up, ci_method
 
 
 def _min_delta() -> float:
@@ -287,14 +289,14 @@ def run_tournament(dataset: str, *, subregion: str | None = None, family: list[s
         n_units = int(len(y_test)) if groups is None else int(len(set(groups)))
         basis = {"unit": unit, "y_test": y_test, "groups": groups}
 
-    board, sig, runner_up = _rank_and_correct(dataset, scored, basis, min_delta=md, alpha=alpha,
-                                              n_boot=n_boot, seed=seed)
+    board, sig, runner_up, ci_method = _rank_and_correct(
+        dataset, scored, basis, min_delta=md, alpha=alpha, n_boot=n_boot, seed=seed)
     selection = "nested_val" if any(c.r2_val is not None for c in board) else "test"
     return TournamentResult(
         dataset=dataset, subregion=subregion, scope=scope, bootstrap_unit=unit,
         train_size=train_size, feature_set=feature_set, family=family, winner=board[0].model,
         winner_significant=sig, runner_up=runner_up, min_delta=md, alpha=alpha,
-        n_units=n_units, leaderboard=board, selection=selection)
+        n_units=n_units, leaderboard=board, selection=selection, ci_method=ci_method)
 
 
 def best_model(dataset: str, subregion: str | None = None, *, record: bool = True,
@@ -331,6 +333,7 @@ def record_tournament(res: TournamentResult, claims_dir: str | Path | None = Non
                     "paired_bootstrap_ci": (ru.ci if ru else None),
                     "ci_excludes_zero": (ru.survives_fdr if ru else None),
                     "p_value": (ru.p_value if ru else None), "bootstrap_unit": res.bootstrap_unit,
+                    "ci_method": res.ci_method,
                     "dataset": res.dataset, "comparison_train_size": res.train_size,
                     "n_series": (res.n_units if res.bootstrap_unit == "series" else None)},
         claim_allowed=claim, claims_dir=claims_dir)

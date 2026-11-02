@@ -33,6 +33,23 @@ full resolved `model_defaults` (DECISIONS #64 / audit ML-02). A stored result **
 cannot be shown to match any code and is refused as a control — which is the state of everything
 written before 2026-11-01, R-5 included.
 
+**Method note, 2026-11-02 (DECISIONS #65 / audit ST-2): every interval published before this date
+is a percentile bootstrap interval, and the percentile method was liberal.** Measured at the
+project's own noise scale against a nominal 5%, it excluded zero under an exactly-null comparison
+15.7% of the time at 5 units, 9.5% at 10, 6.6% at 20 and 6.1% at 56; its p-value could be exactly
+0. Intervals are now t-intervals and p-values exact sign-flip permutation tests, and a result
+records `ci_method` / `p_method` / `p_floor`. The two are not comparable, so:
+
+- **what moved:** `cnn > rf` on the **first 10 E. coli series** is no longer significant at all
+  ([+0.0014, +0.0292] p=0.029 → **[−0.0014, +0.0329] p=0.071**); R-1's yeast intervals are restated
+  below. No point estimate anywhere moved — this re-describes precision, not results.
+- **what did not:** anything resting on many units. The t/percentile interval half-width ratio is
+  1.23 at 10 units, 1.10 at 20, 1.04 at 56 and **1.00 at 2,064**, so R-3's dream2022 ΔR² = 0.363
+  (CI ±0.118, 2,064 families) is untouched, and `cnn > rf` over all 56 E. coli series survives
+  ([+0.0058, +0.0195] p=0.0015 — though still under the 0.02 margin, per R-5).
+- a comparison on **5 or fewer units cannot be resolved at α = 0.05 by any exact test** (the
+  smallest attainable two-sided p is 3/33 = 0.091). Results at those unit counts now say so.
+
 ---
 
 ## R-1 — yeast pooled benchmark: R² ≈ 0.90 for every model → ≈ 0 · **RETRACTED**
@@ -46,9 +63,9 @@ identical legacy protocol re-run today (`--protocol legacy`); and the corrected 
 
 | model | published June 2026 | legacy protocol, re-run today | **corrected** |
 |---|---|---|---|
-| cnn | **0.9098** [0.8792, 0.9335] | 0.9015 [0.872, 0.926] | **−0.0375** [−0.631, 0.217] |
-| rf | **0.9001** [0.8708, 0.9249] | 0.9091 [0.885, 0.930] | **−0.0292** [−0.343, 0.098] |
-| mlp | **0.8963** [0.8684, 0.9205] | 0.8963 [0.868, 0.921] | **−0.2880** [−1.275, 0.161] |
+| cnn | **0.9098** [0.8792, 0.9335] | 0.9015 [0.872, 0.926] | **−0.0375** [−0.442, 0.367] |
+| rf | **0.9001** [0.8708, 0.9249] | 0.9091 [0.885, 0.930] | **−0.0292** [−0.501, 0.442] |
+| mlp | **0.8963** [0.8684, 0.9205] | 0.8963 [0.868, 0.921] | **−0.2880** [−0.888, 0.312] |
 | ranking | [cnn, rf, mlp] | **[rf, cnn, mlp]** | [rf, cnn, mlp] — unresolvable |
 
 | | legacy | corrected |
@@ -56,7 +73,13 @@ identical legacy protocol re-run today (`--protocol legacy`); and the corrected 
 | split | 10% out of *each* of 199 genes | 20 **whole** genes held out |
 | test rows | 392 | 397 |
 | bootstrap unit | 392 sequences | **20 families** |
-| best vs runner-up | cnn − rf = 0.0096, CI [−0.009, 0.029] | rf − cnn = 0.0083, CI [−0.318, 0.539] |
+| interval | percentile bootstrap | **t-interval** (ST-2, see the method note above) |
+| best vs runner-up | cnn − rf = 0.0096, CI [−0.009, 0.029] | rf − cnn = 0.0083, CI [−0.403, 0.419] |
+
+The first two columns are percentile intervals, as published and as the legacy protocol computes
+them — `--protocol legacy` pins the old estimator too, so it stays a reproduction rather than a
+hybrid. The corrected column was re-measured on 2026-11-02 with the t-interval; the point
+estimates did not move and no conclusion changed.
 
 The middle column is a second, independent problem found while writing this file: under the
 *identical* legacy protocol, today's code does not reproduce the published table. **mlp reproduces
@@ -180,10 +203,16 @@ actually produced:
 | first 10 series | +0.0321 [+0.0219, +0.0434] p<0.0001 · **accepted** | +0.0158 [+0.0014, +0.0292] p=0.029 · **rejected** |
 | all 56 series | +0.0228 [+0.0171, +0.0282] p<0.0001 · **accepted** | +0.0126 [+0.0060, +0.0190] p=0.0002 · **rejected** |
 
-CNN is still ahead of RF and the CI still excludes zero — the **direction survives**. What does not
-survive is the verdict: the margin is **0.0126**, below the acceptance policy's own
-`min_delta_r2 = 0.02`, so the honest status is "significantly better but not by a practically
-meaningful amount". The published +0.0228 was inflated because CNN lost more to its own drift
+Both columns are percentile intervals, so the registry-to-registry comparison is like for like.
+Re-measured the next day with the ST-2 estimator, the regenerated figures are **first-10
+[−0.0014, +0.0329] p=0.071 — not significant at all** — and all-56 **[+0.0058, +0.0195] p=0.0015**.
+The subset and the method compound: the flagship number was the easier ten series read through a
+liberal interval.
+
+CNN is still ahead of RF over all 56 series and the CI still excludes zero — the **direction
+survives**. What does not survive is the verdict: the margin is **0.0126**, below the acceptance
+policy's own `min_delta_r2 = 0.02`, so the honest status is "significantly better but not by a
+practically meaningful amount". The published +0.0228 was inflated because CNN lost more to its own drift
 (−0.0310) than RF did (−0.0208), so the *gap* carried both errors.
 
 **Not retracted on these grounds:** the five June council claims that used this registry. The drift
@@ -198,9 +227,10 @@ correct for the code of that day. This entry is the one place that says the stan
 since changed. What is stamped instead are the live documents — the June registry report and
 DECISIONS #12's result line.
 
-Current numbers: `reports/static/2026-11-01-full56_report.md`. The stale registry is now **refused
-as a control** by `orchestration/baseline_guard` (`no_provenance`), not merely annotated
-(DECISIONS #64).
+Current numbers: `reports/static/2026-11-02-2026-11-02-full56_report.md` (which reproduces the
+2026-11-01 rebuild to 3.3e-16; the pointer moved for provenance reasons only, DECISIONS #65). The
+stale June registry is now **refused as a control** by `orchestration/baseline_guard`
+(`no_provenance`), not merely annotated (DECISIONS #64).
 
 ---
 

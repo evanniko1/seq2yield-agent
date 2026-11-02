@@ -46,6 +46,12 @@ def record(*, run_id: str, proposal_id: str, status: str, comparison: dict,
         # it (docs/RETRACTIONS.md). A record with split_strategy=None predates 2026-11-01.
         "split_strategy": (comparison.get("split") or {}).get("split_strategy"),
         "n_bootstrap_units": comparison.get("n_bootstrap_units"),
+        # ...and the ESTIMATOR, for the same reason: a t-interval + exact sign-flip verdict is not
+        # comparable with a percentile one, and the percentile method was liberal at these unit
+        # counts (audit ST-2). ci_method=None likewise predates 2026-11-02.
+        "ci_method": comparison.get("ci_method"),
+        "p_method": comparison.get("p_method"),
+        "p_floor": comparison.get("p_floor"),
         # WHAT it was compared against, and WHICH code produced it. Eight claims were recorded
         # against a registry that had drifted out from under them with no way to tell (ML-02).
         "baseline_source": comparison.get("baseline_source"),

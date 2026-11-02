@@ -52,6 +52,8 @@ class TransferResult:
     verdict: str                     # beats_default | ties_default | worse_than_default
     bootstrap_unit: str = "sequence"   # sequence | family (C3 fence; family = designed library)
     n_bootstrap_units: int | None = None
+    ci_method: str | None = None       # t | percentile (C3 fence; audit ST-2)
+    p_method: str | None = None
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -161,7 +163,8 @@ def transfer(model: str, *, source_dataset: str, target_dataset: str,
         mean_delta=round(float(delta), 4), ci=[round(x, 4) for x in bs["ci"]],
         p_value=round(float(bs["p_value"]), 4), excludes_zero=bool(bs["excludes_zero"]),
         n_test=int(len(y_test)), min_delta=md, verdict=verdict,
-        bootstrap_unit=bs["unit"], n_bootstrap_units=int(bs["n_units"]))
+        bootstrap_unit=bs["unit"], n_bootstrap_units=int(bs["n_units"]),
+        ci_method=bs.get("ci_method"), p_method=bs.get("p_method"))
     if record:
         record_transfer(res)
     return res
@@ -181,5 +184,6 @@ def record_transfer(res: TransferResult, claims_dir: str | Path | None = None) -
                     "mean_delta": res.mean_delta, "paired_bootstrap_ci": res.ci,
                     "ci_excludes_zero": res.excludes_zero, "p_value": res.p_value,
                     "bootstrap_unit": res.bootstrap_unit, "dataset": res.target_dataset,
+                    "ci_method": res.ci_method, "p_method": res.p_method,
                     "comparison_train_size": None, "intervention_type": "config_transfer"},
         claim_allowed=claim, claims_dir=claims_dir)
