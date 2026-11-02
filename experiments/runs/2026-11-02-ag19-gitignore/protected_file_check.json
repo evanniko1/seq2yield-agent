@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "violations": [],
+  "by_path": {
+    ".gitignore": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_gitignore_actually_ignores.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/memory.jsonl": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/DECISIONS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    }
+  }
+}

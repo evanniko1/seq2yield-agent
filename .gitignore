@@ -3,7 +3,12 @@ data/raw/*
 data/extracted/*
 data/processed/*
 data/splits/*
-data/embeddings/*          # K2a: cached foundation-model embeddings (large, derived; extract locally)
+# K2a: cached foundation-model embeddings (large, derived; extract locally).
+# The comment is on its own line DELIBERATELY: `#` only starts a comment at the start of a line, so
+# an inline one is part of the pattern. This entry carried a trailing comment and therefore matched
+# nothing, leaving 512 MB of derived .npz showing as untracked — one `git add .` from being
+# committed (audit AG-19).
+data/embeddings/*
 !data/**/.gitkeep
 !data/manifests/*.json
 !data/manifests/*.csv
@@ -32,6 +37,10 @@ reports/dashboard_exports/*
 !reports/static/*_curve.csv
 reports/static/_run.log
 reports/model_calls.jsonl
+# Computed family-clustering cache (`data/families.py` CACHE_DIR). Content-addressed by a hash of
+# the inputs, so it is fully regenerable and was never meant to be tracked — it simply had no
+# entry (audit AG-19).
+reports/cache/*
 
 # Secrets — provider API keys never enter the repo.
 .env

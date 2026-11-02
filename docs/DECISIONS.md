@@ -475,6 +475,37 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #76 — AG-19: a `.gitignore` comment in the wrong place, and the July run's memory line
+- **Authorization.** Human approval in session ("commit and push any outstanding work"). Record:
+  `experiments/runs/2026-11-02-ag19-gitignore/`.
+- **AG-19.** `.gitignore` read `data/embeddings/*          # K2a: cached foundation-model
+  embeddings …`. In gitignore syntax `#` starts a comment **only at the start of a line**, so the
+  trailing text was part of the *pattern* and the entry matched **nothing**: 512 MB of derived
+  `.npz` sat permanently in `git status`, one `git add .` from the history. `reports/cache/*` — the
+  content-addressed family-clustering cache written by `data/families.py` — had no entry at all.
+  Comments moved onto their own lines, entry added, and verified in both directions: nothing already
+  **tracked** was swept up (`git ls-files | git check-ignore --stdin` is empty) and the deliverables
+  carved back out by negation are still trackable, because an over-broad rule loses the durable
+  record as surely as a broken one lets 512 MB in. `tests/test_gitignore_actually_ignores.py`
+  asserts the **intent** via `git check-ignore` rather than grepping for inline `#`, since the
+  broken pattern was perfectly valid syntax that simply meant something nobody wanted — **4 of its
+  16 cases fail against the real pre-fix file.**
+- **Why it is more than tidiness.** Two genuinely important artifacts — the 2026-07-16 run folder and
+  its loop report — went unnoticed for weeks in a `git status` that always had hundreds of megabytes
+  of untracked noise in it. AG-16 is what they cost; this is why they were easy to miss.
+- **The July run's research-memory line is committed too.** AG-16 committed that run's artifacts,
+  loop report and ledger line but not its `experiments/memory.jsonl` row, which carries
+  `revisit: False` for the (cnn, mlp, model_architecture, one_hot, random, global) coverage cell. A
+  fresh clone would have re-proposed a cell the campaign layer had already marked done — the ledger
+  and the loop's memory have to agree about what has been run.
+- **Correction to #75's commit message** (`87f3bcb`): it says the margin is "cleared 3x at the
+  largest size and 7x at the smallest". The 3× is right, the 7× is the ratio of the **point
+  estimate** (7.06×); the one-sided **lower limit**, which is what the accept rule actually tests,
+  exceeds the margin by **6.36×** at train 250. The claim text, DECISIONS, RETRACTIONS and BACKLOG
+  all now state it as the limit and name both numbers. Conflating a point estimate with an interval
+  limit is the ST-3 defect in miniature, which is why it is worth correcting in a sentence rather
+  than left as a rounding quibble.
+
 ## #75 — AG-16: the July prefix claim is confirmed, not retracted — the record was the defect
 - **Authorization.** Human approval in session ("do AG-16 next"). Record:
   `experiments/runs/2026-11-02-cnn-vs-mlp-ag16/`.

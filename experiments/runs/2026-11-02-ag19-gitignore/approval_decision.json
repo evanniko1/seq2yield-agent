@@ -1,0 +1,26 @@
+{
+  "run_id": "2026-11-02-ag19-gitignore",
+  "granted": true,
+  "approver": "Evangelos (vm.nikolados@gmail.com)",
+  "paths": [
+    ".gitignore",
+    "tests/test_gitignore_actually_ignores.py",
+    "experiments/memory.jsonl",
+    "docs/DECISIONS.md"
+  ],
+  "path_classes": {
+    ".gitignore": "require_review",
+    "tests/test_gitignore_actually_ignores.py": "require_review",
+    "experiments/memory.jsonl": "require_review",
+    "docs/DECISIONS.md": "require_review"
+  },
+  "strict_paths": [],
+  "conditional_paths": [
+    ".gitignore",
+    "tests/test_gitignore_actually_ignores.py",
+    "experiments/memory.jsonl",
+    "docs/DECISIONS.md"
+  ],
+  "reason": "APPROVED by 'Evangelos (vm.nikolados@gmail.com)' for conditional-protected paths: ['.gitignore', 'tests/test_gitignore_actually_ignores.py', 'experiments/memory.jsonl', 'docs/DECISIONS.md'] | note: AG-19: `.gitignore`'s data/embeddings entry carried a trailing comment, which gitignore treats as part of the pattern (# is a comment only at line start), so it matched nothing and 512 MB of derived .npz sat untracked; reports/cache/* had no entry. Both fixed, with a test asserting the intent via git check-ignore in both directions. Also commits the research-memory line for the 2026-07-16 run whose artifacts and ledger line AG-16 committed - without it a fresh clone would re-propose a cell already marked done (revisit: False). Human approval in session: 'commit and push any outstanding work'.",
+  "ts": "2026-11-02T18:37:51.369109+00:00"
+}
