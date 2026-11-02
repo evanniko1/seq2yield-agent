@@ -53,15 +53,18 @@ def test_the_old_top_quartile_rule_had_no_error_rate():
 
 
 def test_the_tested_rule_is_correctly_sized_on_data_with_no_unit_structure():
-    """Same data, the new rule: `null_verdict == "established"` should be rare, not certain."""
+    """Same data, the new rule. The bound is 12%, not 20%: the measured rate is 5.7% over 300
+    trials (sd 1.6pp at this trial count), so 12% is about four standard errors up — tight enough
+    that a real calibration break fails the test. The first version of this test allowed 20%, which
+    would have passed a rule that was four times too liberal; found by the post-close audit."""
     established = 0
-    trials = 60
+    trials = 200
     for s in range(trials):
         df = _frame(effect=0.0, seed=s)
         q = D._difficulty(df, "t", 2000)[0]
         established += (q.evidence["null_verdict"] == "established")
     rate = established / trials
-    assert rate <= 0.20, f"{rate:.0%} established under a true null (nominal 5%)"
+    assert rate <= 0.12, f"{rate:.1%} established under a true null (measured 5.7%, nominal 5%)"
 
 
 def test_a_real_unit_effect_is_still_found():
@@ -110,9 +113,11 @@ def test_the_null_refuses_when_there_is_no_replication_at_all():
 def test_the_null_preserves_the_block_effect():
     """A flat shuffle of the whole column would mix measurement occasions together and understate
     the null spread, making everything look significant. The permutation is within-block, so a
-    large iteration effect must NOT inflate the establishment rate."""
+    large occasion effect must NOT inflate the establishment rate — and measured over 300 trials it
+    does not move it at all: 5.7% at occasion sd 0.0, 0.3 and 5.0 alike."""
     established = 0
-    for s in range(30):
+    trials = 200
+    for s in range(trials):
         rng = np.random.default_rng(1000 + s)
         rows = []
         for i in range(1, 6):
@@ -123,7 +128,8 @@ def test_the_null_preserves_the_block_effect():
                                  "train_size": 2000, "rmse": 10.0 + big + rng.normal(0, 0.5)})
         q = D._difficulty(pd.DataFrame(rows), "t", 2000)[0]
         established += (q.evidence["null_verdict"] == "established")
-    assert established <= 6, f"{established}/30 established under a pure occasion effect"
+    rate = established / trials
+    assert rate <= 0.12, f"{rate:.1%} established under a pure occasion effect (measured 5.7%)"
 
 
 def test_the_real_ecoli_registry_establishes_its_hard_units(require_data):

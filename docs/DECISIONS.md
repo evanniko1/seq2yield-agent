@@ -503,6 +503,13 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   testing on it. When that registry lands the block set becomes (iteration × model × seed), 45
   blocks rather than 15, so the test picks up ML-01b's seeds as extra replication without any
   further change.
+- **Re-measured by the post-close audit of this entry**, across the regimes that could break it,
+  300 trials each: **5.7%** with no occasion effect, **5.7%** at occasion sd 0.3 and **5.7%** at
+  occasion sd 5.0 — the occasion effect's size does not move it at all, which is what the
+  within-block permutation is for — plus 3.3% at 40 units and 4.7% with only 2 blocks. That pass
+  also found that the two calibration tests I had written asserted bounds of **20%**, loose enough
+  to pass a rule four times too liberal; both are now 12% over 200 trials, roughly four standard
+  errors above the measured rate.
 - **The positive result, which is separable from the defect.** E. coli's hard series **survive the
   test**: the real gap of +2.27 sits at the 100th percentile of the null gaps, 10 units clear
   family-wise p ≤ 0.05, and the top three are at p=0.001 (the floor for 1,000 permutations).
