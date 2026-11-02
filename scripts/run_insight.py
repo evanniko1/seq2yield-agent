@@ -1,7 +1,10 @@
 """Dissect a dataset's baselines into GENERATED questions (the exploratory arm of the harness).
 
     python scripts/run_insight.py --dataset ecoli
-    python scripts/run_insight.py --dataset ecoli --metrics experiments/runs/2026-06-04-full56/metrics.csv
+    python scripts/run_insight.py --dataset ecoli --metrics <a registry>/metrics.csv
+        (default: the canonical registry in configs/baseline_registry.yaml; the
+         dated 2026-06-04 registry this example used to name is now REFUSED as a
+         control, see docs/RETRACTIONS.md R-5)
 
 Reads the per-series baseline metrics a dataset already has and surfaces questions the council can
 chase — turning reproduction/AutoML results into hypotheses. Writes experiments/insights/<dataset>.jsonl

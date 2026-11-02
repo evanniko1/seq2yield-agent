@@ -48,14 +48,21 @@ def variance_components(groups, values) -> dict:
     var_between = max(0.0, (msb - msw) / n0)
     total = var_between + var_within
     icc = (var_between / total) if total > 0 else 0.0
-    f_stat = (msb / msw) if msw > 0 else float("inf")
-    p_value = float(sstats.f.sf(f_stat, k - 1, N - k)) if msw > 0 else 0.0
+    # Zero within-group variance makes F undefined, not infinitely significant. Reporting p=0.0
+    # there was the same degenerate-significance pattern audit ST-2 removed from the bootstrap:
+    # a statistic that cannot be computed must not come back as the strongest possible evidence.
+    degenerate = not (msw > 0)
+    f_stat = (msb / msw) if not degenerate else float("inf")
+    p_value = float(sstats.f.sf(f_stat, k - 1, N - k)) if not degenerate else 1.0
     return {"n_groups": int(k), "n_obs": int(N), "grand_mean": round(grand, 4),
             "var_between": round(var_between, 6), "var_within": round(var_within, 6),
             "var_total": round(total, 6), "icc": round(icc, 4),
             "f_stat": round(f_stat, 4), "p_value": round(p_value, 6),
-            "heterogeneous": bool(p_value < 0.05 and icc >= 0.1),
-            "verdict": ("per-series heterogeneity (between-series variance is real)"
+            "degenerate": bool(degenerate),
+            "heterogeneous": bool(not degenerate and p_value < 0.05 and icc >= 0.1),
+            "verdict": ("within-group variance is 0, so the F test is undefined: nothing is "
+                        "established either way" if degenerate else
+                        "per-series heterogeneity (between-series variance is real)"
                         if (p_value < 0.05 and icc >= 0.1) else
                         "consistent with a shared optimum (no significant between-series variance)")}
 

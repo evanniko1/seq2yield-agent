@@ -37,12 +37,15 @@ _ALLOWED = {
 # that knob reset to default (baseline_model = the candidate's own model_family).
 _SAME_MODEL_BASELINE = {"feature_representation", "sampling_design", "training_procedure",
                         "feature_scaling"}
-def _baseline_run_id() -> str:
+def _baseline_run_id() -> str | None:
     """The canonical per-series registry, from configs/baseline_registry.yaml — one pointer, so
     repointing it is a single deliberate edit (audit ML-02). The harness still checks the
     registry's provenance before using it (`orchestration/baseline_guard`)."""
     from orchestration.baseline_guard import registry_run_id
-    return registry_run_id() or "2026-06-04-full56"
+    # No fallback to a dated id: the old default named `2026-06-04-full56`, which the provenance
+    # guard now REFUSES, so a missing config would have pointed every run at a registry that
+    # cannot be a control. None means "no stored baseline", and the harness trains an in-run one.
+    return registry_run_id()
 
 
 BASELINE_RUN_ID = _baseline_run_id()

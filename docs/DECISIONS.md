@@ -555,10 +555,16 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   `superior_by_margin`). The estimator detects the design (`seed_design: paired | unpaired`) and
   uses the matching variance formula; the unpaired form is the one a seed-only A/A needs, and it
   is also the shape of any comparison against a baseline built at a different seed.
-- **Residual, logged not papered over (BACKLOG ML-01b).** The per-series registry path stores one
-  R² per (series, size, model) from a **single** baseline seed, so a candidate-vs-registry
-  comparison still cannot include the baseline's seed variance. That is a different fix — storing
-  per-seed registry rows — and it is now its own row rather than being counted as closed here.
+- **Scope: this fixes the POOLED path only.** Corrected by the post-close audit, which is the
+  reason that pass exists — the first version of this entry and its BACKLOG row read as though the
+  fix were global. `experiments/runner.py`, the **per-series** path and therefore **ecoli, the
+  primary benchmark**, still uses `spec.seed` for the subsample, `set_seed` and the estimator: it
+  does not vary the model-init seed at all. Two parts remain, both in that path and both now
+  **BACKLOG ML-01b (HIGH)**: the candidate is still a single draw, and the registry stores one R²
+  per (series, size, model) from a single baseline seed, so even a multi-seed candidate could not
+  be compared seed-matched against it. The measured se_seed/se_unit ratio at 56 series is ~1.3x
+  rather than the 14x seen on a 48,936-unit random library, so the per-series exposure is real but
+  its magnitude is unmeasured until the seed loop exists there.
 - Tests: `tests/test_ml01_seed_variance.py` (13). 542 passed, 1 skipped.
 
 ## #66 — The accept rule now tests the margin it asserts (one-sided lower bound + TOST)

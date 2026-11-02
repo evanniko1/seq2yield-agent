@@ -1,0 +1,29 @@
+{
+  "run_id": "2026-11-02-audit-patches",
+  "granted": true,
+  "approver": "Evangelos (vm.nikolados@gmail.com)",
+  "paths": [
+    "docs/DECISIONS.md",
+    "scripts/run_insight.py",
+    "src/agents/council.py",
+    "src/seq2yield/statistics/mixed_effects.py",
+    "tests/test_audit_patches.py"
+  ],
+  "path_classes": {
+    "docs/DECISIONS.md": "require_review",
+    "scripts/run_insight.py": "require_review",
+    "src/agents/council.py": "require_review",
+    "src/seq2yield/statistics/mixed_effects.py": "conditional",
+    "tests/test_audit_patches.py": "require_review"
+  },
+  "strict_paths": [],
+  "conditional_paths": [
+    "docs/DECISIONS.md",
+    "scripts/run_insight.py",
+    "src/agents/council.py",
+    "src/seq2yield/statistics/mixed_effects.py",
+    "tests/test_audit_patches.py"
+  ],
+  "reason": "APPROVED by 'Evangelos (vm.nikolados@gmail.com)' for conditional-protected paths: ['docs/DECISIONS.md', 'scripts/run_insight.py', 'src/agents/council.py', 'src/seq2yield/statistics/mixed_effects.py', 'tests/test_audit_patches.py'] | note: post-close audit patches (final path list): ML-01 scope corrected to pooled-only with ML-01b promoted to HIGH, degenerate F-test no longer reports p=0, no fallback to the refused registry, ST-3 scope stated. Human approval in session.",
+  "ts": "2026-11-02T03:13:42.875863+00:00"
+}
