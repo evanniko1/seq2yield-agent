@@ -265,7 +265,7 @@ def _run_pooled(spec: RunSpec, run_dir: Path, vres) -> dict:
     import json
 
     from seq2yield.experiments import pooled_runner, transfer
-    from seq2yield.statistics.bootstrap import paired_bootstrap_r2
+    from seq2yield.statistics.bootstrap import paired_bootstrap_r2, paired_r2_multiseed
     from seq2yield.training import metrics as M
 
     pol = spec.acceptance_policy
@@ -295,8 +295,15 @@ def _run_pooled(spec: RunSpec, run_dir: Path, vres) -> dict:
     groups = cand.get("test_families")
     per_size, unit, n_units = [], "sequence", int(len(y))
     for size in sizes:
-        pb = paired_bootstrap_r2(y, cand["preds"][size], base["preds"][size], groups=groups,
-                                 seed=spec.seed)
+        # Seed AND unit variance (audit ML-01). Each arm was fitted once per model-init seed with
+        # the split and subsample held fixed, so the seed component is estimable; with one seed
+        # the estimator says so in a note rather than silently reporting the narrow interval.
+        cbs, bbs = cand.get("preds_by_seed") or {}, base.get("preds_by_seed") or {}
+        if cbs.get(size) and bbs.get(size):
+            pb = paired_r2_multiseed(y, cbs[size], bbs[size], groups=groups, seed=spec.seed)
+        else:
+            pb = paired_bootstrap_r2(y, cand["preds"][size], base["preds"][size], groups=groups,
+                                     seed=spec.seed)
         unit, n_units = pb["unit"], pb["n_units"]
         status, reasons, margin_verdict = compare_mod._decide(
             pb["mean_delta"], pb["excludes_zero"], pb["ci"], pol,
@@ -311,6 +318,10 @@ def _run_pooled(spec: RunSpec, run_dir: Path, vres) -> dict:
                          "ci_method": pb.get("ci_method"), "p_method": pb.get("p_method"),
                          "p_floor": pb.get("p_floor"), "ci_one_sided": pb.get("ci_one_sided"),
                          "margin": pol.min_delta_r2, "margin_verdict": margin_verdict,
+                         # ML-01: how much of the uncertainty is the model-init seed
+                         "n_seeds": pb.get("n_seeds"), "seed_deltas": pb.get("seed_deltas"),
+                         "seed_spread": pb.get("seed_spread"), "se_seed": pb.get("se_seed"),
+                         "se_unit": pb.get("se_unit"),
                          "reasons": reasons})
 
     size = pol.comparison_train_size if pol.comparison_train_size in sizes else max(sizes)
@@ -318,6 +329,7 @@ def _run_pooled(spec: RunSpec, run_dir: Path, vres) -> dict:
     cmp.update({"comparison_train_size": size, "candidate_model": spec.model_family,
                 "baseline_model": pol.baseline_model, "baseline_source": "in_run_pooled",
                 "bootstrap_unit": unit, "n_bootstrap_units": int(n_units),
+                "model_seeds": cand.get("model_seeds"),
                 "dataset": spec.dataset, "n_test": int(len(y))})
     # Record HOW the data was split (strategy, family source, family counts). A grouped-holdout
     # result is not comparable with an older stratified-holdout one, so the split must never be

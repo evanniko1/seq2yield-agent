@@ -19,6 +19,7 @@ Three things are recorded, in increasing usefulness:
 """
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import subprocess
@@ -118,7 +119,66 @@ def inference_fingerprint(root: str | None = None) -> dict:
     return dict(_fingerprint(INFERENCE_GLOBS, root), version=FINGERPRINT_VERSION)
 
 
-def verify_numerics(stored: dict | None, *, root: str | None = None) -> dict:
+def _resolve(module: str, level: int, from_rel: str, base: Path) -> list[Path]:
+    """Candidate project files for one import, honouring relative imports."""
+    parts = module.split(".") if module else []
+    if level:                                   # relative: resolve against the importer's package
+        pkg = Path(from_rel).parent.parts        # e.g. ('src','seq2yield','experiments')
+        pkg = [p for p in pkg if p != "src"]
+        parts = list(pkg[:len(pkg) - (level - 1)]) + parts
+    if not parts:
+        return []
+    stem = Path("src", *parts)
+    return [base / stem.with_suffix(".py"), base / stem / "__init__.py"]
+
+
+def artifact_scope(entry: str, root: str | None = None) -> tuple[str, ...]:
+    """The value-deciding files REACHABLE from `entry` through imports.
+
+    `NUMERICS_GLOBS` answers "which files can change a predicted number ANYWHERE". A stored
+    artifact needs the narrower question — "which can change THIS number" — and the difference is
+    not cosmetic: the per-series registry is built by `reproduce_baselines.py`, which never imports
+    `pooled_runner`, so an edit there cannot have moved a single stored value. Asserting that by
+    hand is how a guard rots, so it is DERIVED here by walking the import graph (every `Import` /
+    `ImportFrom` node, including ones inside functions) and intersecting with the value-deciding
+    set. Anything unreachable or unparseable is simply absent, and the caller treats an empty or
+    suspiciously small scope as "check everything".
+    """
+    base = Path(root or ROOT)
+    want = {Path(p).as_posix() for g in NUMERICS_GLOBS for p in
+            (q.relative_to(base) for q in base.glob(g) if q.is_file())}
+    seen: set[str] = set()
+    queue = [entry]
+    while queue:
+        rel = queue.pop()
+        if rel in seen:
+            continue
+        seen.add(rel)
+        path = base / rel
+        if not path.is_file():
+            continue
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8", errors="ignore"))
+        except SyntaxError:
+            continue
+        for node in ast.walk(tree):
+            cands: list[Path] = []
+            if isinstance(node, ast.Import):
+                for a in node.names:
+                    cands += _resolve(a.name, 0, rel, base)
+            elif isinstance(node, ast.ImportFrom):
+                cands += _resolve(node.module or "", node.level, rel, base)
+                for a in node.names:                 # `from pkg import submodule`
+                    mod = f"{node.module}.{a.name}" if node.module else a.name
+                    cands += _resolve(mod, node.level, rel, base)
+            for c in cands:
+                if c.is_file():
+                    queue.append(c.relative_to(base).as_posix())
+    return tuple(sorted(want & seen))
+
+
+def verify_numerics(stored: dict | None, *, scope: tuple[str, ...] | None = None,
+                    root: str | None = None) -> dict:
     """Does a stored run-card's `numerics` block still describe this checkout?
 
     A rolled-up hash alone cannot answer this once the SET's own definition moves: when the
@@ -142,11 +202,21 @@ def verify_numerics(stored: dict | None, *, root: str | None = None) -> dict:
                            "be checked file by file, so it must be regenerated")}
     cur = _fingerprint(NUMERICS_GLOBS, root)
     changed = sorted(rel for rel, sha in cur["files"].items() if stored["files"].get(rel) != sha)
-    ok = not changed
-    return {"ok": ok, "version": version, "changed": changed,
-            "reason": ("matches" if ok else
-                       f"{len(changed)} value-deciding file(s) changed: {', '.join(changed[:4])}"
-                       + (" …" if len(changed) > 4 else ""))}
+    # A scope narrows the comparison to the files this artifact's own pipeline executes. Only a
+    # manifest-bearing stamp can be re-checked this way, which is what the manifest is for. Changes
+    # outside the scope are REPORTED, never silently dropped.
+    in_scope = [c for c in changed if c in set(scope)] if scope else changed
+    out_of_scope = [c for c in changed if c not in set(in_scope)]
+    ok = not in_scope
+    reason = "matches"
+    if in_scope:
+        reason = (f"{len(in_scope)} value-deciding file(s) changed: {', '.join(in_scope[:4])}"
+                  + (" …" if len(in_scope) > 4 else ""))
+    elif out_of_scope:
+        reason = (f"matches: {len(out_of_scope)} value-deciding file(s) changed but none are "
+                  f"reachable from this artifact's own pipeline ({', '.join(out_of_scope[:3])})")
+    return {"ok": ok, "version": version, "changed": in_scope,
+            "changed_out_of_scope": out_of_scope, "scoped": bool(scope), "reason": reason}
 
 
 @lru_cache(maxsize=1)

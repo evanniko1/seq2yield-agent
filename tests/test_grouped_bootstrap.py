@@ -264,12 +264,14 @@ def test_real_yeast_comparison_is_resampled_by_family(require_data):
     """On the real frame: the held-out rows carry families, the unit count is the family count
     (not the row count), and the interval is wider than the sequence-level one."""
     require_data("yeast")
-    from types import SimpleNamespace
-
     from seq2yield.experiments import pooled_runner as PR
-    spec = SimpleNamespace(dataset="yeast", seed=1, feature_set="one_hot",
-                           feature_scaling="none", train_sizes=[500], sampling_policy="random",
-                           hyperparameters=None, model_family="rf")
+    from seq2yield.experiments.run_spec import AcceptancePolicy, RunSpec
+    # A real RunSpec, not a duck-typed namespace: `run_pooled` grew a model_seeds loop (ML-01) and
+    # a stand-in that silently lacks the field would quietly restore single-seed behaviour.
+    spec = RunSpec(run_id="t-yeast-families", dataset="yeast", model_family="rf",
+                   intervention_type="model_architecture", train_sizes=[500], seed=1,
+                   model_seeds=[1], maturity_tier="tier_1",
+                   acceptance_policy=AcceptancePolicy(track="performance", baseline_model="mlp"))
     out = PR.run_pooled(spec)
     fams = out["test_families"]
     assert fams is not None and len(set(fams)) < len(fams)      # really clustered

@@ -160,6 +160,13 @@ docs/RETRACTIONS.md. `p_floor` is the smallest p the test could have returned: w
 alpha, nothing at that unit count is resolvable and `excludes_zero` is false whatever the interval
 says.
 
+A pooled comparison also REQUIRES `model_seeds`, `n_seeds`, `seed_deltas`, `seed_spread` and
+`se_seed` / `se_unit` (audit ML-01). A verdict from one model-init seed describes only unit
+variance, and on a large random library the seed component is **14x** the unit component — so
+`ci_method: "t_two_component"` identifies an interval that carries both, `seed_design` says whether
+the arms were seed-paired, and a result whose per-seed deltas disagree in direction is not
+significant whatever the interval says.
+
 A comparison also REQUIRES `margin`, `margin_verdict` and `ci_one_sided` (audit ST-3). `accepted`
 means the **one-sided lower limit** cleared `margin` — not that the point estimate did, which a
 true effect *under* the margin passed about 42% of the time. `margin_verdict` is one of

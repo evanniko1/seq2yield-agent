@@ -1,0 +1,56 @@
+{
+  "passed": true,
+  "violations": [],
+  "by_path": {
+    "docs/CONTRACTS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/DECISIONS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/orchestration/baseline_guard.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/orchestration/execution_harness.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/experiments/pooled_runner.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/experiments/run_spec.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/statistics/bootstrap.py": {
+      "class": "conditional",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/training/provenance.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_grouped_bootstrap.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_ml01_seed_variance.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    }
+  }
+}

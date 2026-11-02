@@ -157,9 +157,13 @@ def subsample(train: pd.DataFrame, size: int, policy: str, seed: int) -> pd.Data
     return train.loc[idx].reset_index(drop=True)
 
 
-def fit_predict(spec, model_family: str, train: pd.DataFrame, test: pd.DataFrame):
+def fit_predict(spec, model_family: str, train: pd.DataFrame, test: pd.DataFrame,
+                *, model_seed: int | None = None):
+    """`model_seed` overrides the model-INIT seed while leaving the split and the subsample alone,
+    which is what isolates seed variance from everything else (audit ML-01)."""
     length = datasets.seq_len(spec.dataset)
-    set_seed(spec.seed)
+    init_seed = spec.seed if model_seed is None else int(model_seed)
+    set_seed(init_seed)
     Xtr = features_for(model_family, train, spec.feature_set, length, spec.dataset)
     Xte = features_for(model_family, test, spec.feature_set, length, spec.dataset)
     if spec.feature_scaling not in (None, "none") and model_registry.feature_kind(model_family) == "flat":
@@ -169,7 +173,7 @@ def fit_predict(spec, model_family: str, train: pd.DataFrame, test: pd.DataFrame
         if scaler is not None:
             scaler.fit(Xtr)
             Xtr, Xte = scaler.transform(Xtr), scaler.transform(Xte)
-    model = model_registry.make(model_family, seed=spec.seed,
+    model = model_registry.make(model_family, seed=init_seed,
                                 hyperparameters=spec.hyperparameters or None)
     model.fit(Xtr, train[TARGET_COL].to_numpy())
     return model.predict(Xte)
@@ -177,16 +181,26 @@ def fit_predict(spec, model_family: str, train: pd.DataFrame, test: pd.DataFrame
 
 def run_pooled(spec, *, model_family: str | None = None, frac: float = 0.1) -> dict:
     """Train `model_family` pooled at each train_size; return per-sequence predictions on a fixed
-    held-out test set. {y_test, test_series, preds:{size:ndarray}, n_train_full}."""
+    held-out test set.
+
+    Repeats each fit over `spec.model_seeds` (audit ML-01): the split and the subsample are held
+    fixed and ONLY the model-init seed moves, so `preds_by_seed` isolates seed variance, which the
+    comparison then carries as its own variance component. `preds` keeps the first seed's
+    predictions so single-model readers (metrics rows, the insight layer) are unaffected.
+    """
     mf = model_family or spec.model_family
     train_full, test = holdout(spec, frac=frac)
-    preds = {}
+    seeds = list(spec.model_seeds or [spec.seed])
+    preds, preds_by_seed = {}, {}
     for size in sorted(set(spec.train_sizes)):
         sub = subsample(train_full, size, spec.sampling_policy, spec.seed)
-        preds[size] = fit_predict(spec, mf, sub, test)
+        by_seed = {int(s): fit_predict(spec, mf, sub, test, model_seed=s) for s in seeds}
+        preds_by_seed[size] = by_seed
+        preds[size] = by_seed[int(seeds[0])]
     return {"y_test": test[TARGET_COL].to_numpy(),
             "test_series": test[SERIES_COL].to_numpy() if SERIES_COL in test.columns else None,
             # Design families of the held-out rows: the correct resampling unit for a dataset whose
             # members are not independent (a 4-member family is not 4 observations).
             "test_families": families_of(test),
-            "preds": preds, "n_train_full": int(len(train_full))}
+            "preds": preds, "preds_by_seed": preds_by_seed, "model_seeds": [int(s) for s in seeds],
+            "n_train_full": int(len(train_full))}

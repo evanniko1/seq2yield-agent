@@ -51,6 +51,11 @@ class RunSpec(BaseModel):
     series: list[int] | None = None             # None -> all series in the split
     n_series: int | None = None                 # used if series is None
     seed: int = 1
+    # Model-INIT seeds, one fit per seed with the split and subsample held fixed (audit ML-01).
+    # Three is the minimum that lets the seed variance component be estimated at all; a single
+    # seed is accepted but the comparison then says so in a note, because two runs of the same
+    # model differing only in this seed were called `accepted` in 23-35% of A/A pairs.
+    model_seeds: list[int] = Field(default_factory=lambda: [1, 2, 3])
 
     primary_metric: str = "r2"
     secondary_metrics: list[str] = Field(default_factory=lambda: ["rmse", "pearson", "spearman"])
@@ -112,6 +117,14 @@ def validate_runspec(spec: RunSpec, *, unlocked_tier: str, primary_metric: str =
     # per-series datasets use MC-CV repeats; pooled datasets use ONE stratified holdout with a
     # SEQUENCE-LEVEL bootstrap (CIs come from resampling test sequences, not repeats).
     if per_series:
+        # `requires_repeated_seed` used to be satisfied by >=2 MC-CV SPLIT FILES while the
+        # model-init seed was a scalar reused in every iteration — a misnomer that let every
+        # single-seed verdict through (audit ML-01). It now means what it says.
+        if spec.acceptance_policy.requires_repeated_seed and len(set(spec.model_seeds or [])) < 3:
+            errors.append(
+                "acceptance_policy.requires_repeated_seed but <3 distinct model_seeds: model-init "
+                "seed variance is not estimable, and it is large enough on this project's own "
+                "data to be read as signal (audit ML-01)")
         if spec.acceptance_policy.requires_repeated_seed and len(spec.iterations) < 2:
             errors.append("acceptance_policy.requires_repeated_seed but <2 iterations (repeats)")
         if len(spec.iterations) < min_seeds_for_repeats:

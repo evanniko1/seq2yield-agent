@@ -24,6 +24,11 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "configs" / "baseline_registry.yaml"
+# The script that produces the registry: the entry point its provenance scope is derived from.
+BUILDER = "scripts/reproduce_baselines.py"
+# Below this many files the import walk has clearly failed (the real scope is ~22), and a guard
+# that silently narrowed itself to nothing would be worse than a noisy one.
+MIN_SCOPE = 8
 
 
 @lru_cache(maxsize=1)
@@ -184,9 +189,17 @@ def check(run_id: str | None, models, *, root: Path | None = None) -> dict:
         return out
 
     if req.get("numerics_fingerprint", True):
-        # file-by-file where the stamp carries a manifest, so a change in the SET's own definition
-        # (ST-2 moved the bootstrap out of it) does not condemn a registry whose numbers are intact
-        checks = {m: provenance.verify_numerics(e.get("numerics")) for m, e in envs.items()}
+        # File-by-file where the stamp carries a manifest, so a change in the SET's own definition
+        # (ST-2 moved the bootstrap out of it) does not condemn a registry whose numbers are intact.
+        # Scoped to the files the registry's OWN builder actually executes, derived from its import
+        # graph: `pooled_runner` is value-deciding somewhere, but not here, and refusing a registry
+        # over a file its pipeline never loads is how a guard earns being switched off. A scope that
+        # comes back empty or implausibly small means the walk failed — then check everything.
+        scope = provenance.artifact_scope(BUILDER)
+        if len(scope) < MIN_SCOPE:
+            scope = None
+        checks = {m: provenance.verify_numerics(e.get("numerics"), scope=scope)
+                  for m, e in envs.items()}
         stale = {m: v for m, v in checks.items() if not v["ok"]}
         if stale:
             out["violations"].append("numerics_fingerprint")

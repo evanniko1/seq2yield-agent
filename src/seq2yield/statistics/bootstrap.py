@@ -295,6 +295,122 @@ def bootstrap_r2_ci(y_true, y_pred, *, groups=None, n_boot: int = 2000, alpha: f
     return out | {"ci": [float(lo), float(hi)], "ci_method": "percentile"}
 
 
+def paired_r2_multiseed(y_true, cand_by_seed: dict, base_by_seed: dict, *, groups=None,
+                        alpha: float = 0.05, seed: int = 0, atol: float = ZERO_TOL) -> dict:
+    """ΔR² with BOTH variance components: across resampling units AND across model-init seeds.
+
+    AUDIT ML-01. A verdict used to come from one training seed while the interval resampled test
+    rows only, so seed variance was read as signal. Measured on this project's own data, two runs of
+    the SAME model differing only in the torch seed were called `accepted` in 7 of 30 ordered pairs
+    on dream2022 (worst ΔR² +0.0366, CI [+0.024, +0.050]) and 7 of 20 on cuperus_2017 (worst
+    +0.0558). Nothing in the repo varied that seed, so nothing could see it.
+
+    The estimator is the standard two-component (random-effects) form on the ST-2 linearization.
+    With `v[s][u]` the per-unit value for seed pair s (its mean over u is that pair's ΔR²):
+
+        unit component   var(mean over seeds of v[.][u]) / U
+        seed component   var(mean over units of v[s][.]) / S
+        se_total         sqrt(unit + seed)        -- independent components
+        df               Welch-Satterthwaite across the two
+
+    Both components are needed: the unit component alone is the old, too-narrow interval, and the
+    seed component alone would ignore that a per-unit effect can be consistent across the test set.
+    `seed_deltas` and `seed_spread` are reported so the reader can see how much of the uncertainty
+    is the seed, and `n_seeds` so a single-seed result is identifiable as such.
+    """
+    from scipy import stats
+    y_true = np.asarray(y_true, float)
+    cs, bs = sorted(cand_by_seed), sorted(base_by_seed)
+    n = len(y_true)
+    units = None if groups is None else _units(groups, n)
+    n_units = n if units is None else len(units)
+    ss = _ss_tot(y_true)
+    # PAIRED when both arms were fitted at the same init seeds (what the harness does: pairing
+    # removes the seed effect common to both models and gives the tighter interval). UNPAIRED when
+    # the seed sets differ — which is exactly the shape of a seed-only A/A diagnostic, where the
+    # two arms are the same model at DIFFERENT seeds, so there is nothing to pair.
+    paired = bool(cs) and cs == bs
+    pairs = [(s, s) for s in cs] if paired else [(a, b) for a in cs for b in bs]
+    out = {"unit": "sequence" if units is None else "family", "n_units": int(n_units),
+           "n_seeds": len(cs), "seeds": {"candidate": cs, "baseline": bs},
+           "seed_design": "paired" if paired else "unpaired",
+           "n_seed_pairs": len(pairs), "ci_method": "t_two_component"}
+    if not pairs or not ss:
+        return out | {"mean_delta": float("nan")} | _no_inference(n_units)
+
+    per_seed = []
+    for a, b in pairs:
+        pc = np.asarray(cand_by_seed[a], float)
+        pb = np.asarray(base_by_seed[b], float)
+        per_seed.append(_linearize(((y_true - pb) ** 2 - (y_true - pc) ** 2) / ss, units))
+    V = np.vstack(per_seed)                      # (len(pairs), U)
+    mean = float(V.mean())
+    out["mean_delta"] = mean
+    seed_deltas = V.mean(axis=1)                 # one ΔR² per seed pair
+    out["seed_deltas"] = [float(x) for x in seed_deltas]
+    out["seed_spread"] = float(seed_deltas.max() - seed_deltas.min()) if len(pairs) > 1 else 0.0
+    out["seed_signs_agree"] = bool(len(set(np.sign(seed_deltas[seed_deltas != 0]))) <= 1)
+
+    if n_units < 2:
+        return out | _no_inference(n_units)
+    if abs(mean) <= atol:
+        return out | {"ci": [mean, mean], "ci_one_sided": [mean, mean], "excludes_zero": False,
+                      "p_value": 1.0, "p_method": "below_tolerance", "p_floor": 1.0, "alpha": alpha,
+                      "note": f"|mean delta| = {abs(mean):.3g} is at or below the numerical "
+                              f"tolerance {atol:g}: reported as no effect, not as a result"}
+
+    unit_means = V.mean(axis=0)                  # seed-averaged per-unit values
+    var_unit = float(unit_means.var(ddof=1) / n_units)
+    # Seed component. Paired: the variance of the per-pair deltas. Unpaired: the two arms'
+    # own seed variances, each divided by that arm's seed count — the arms are independent, so
+    # the variance of the difference of their means is the sum.
+    n_seed_eff = len(cs) if paired else min(len(cs), len(bs))
+    if paired and len(cs) > 1:
+        var_seed = float(seed_deltas.var(ddof=1) / len(cs))
+        df_seed = len(cs) - 1
+    elif not paired and len(cs) > 1 and len(bs) > 1:
+        arm_c = np.array([_linearize(-((y_true - np.asarray(cand_by_seed[s], float)) ** 2) / ss,
+                                     units).mean() for s in cs])
+        arm_b = np.array([_linearize(-((y_true - np.asarray(base_by_seed[s], float)) ** 2) / ss,
+                                     units).mean() for s in bs])
+        var_seed = float(arm_c.var(ddof=1) / len(cs) + arm_b.var(ddof=1) / len(bs))
+        df_seed = len(cs) + len(bs) - 2
+        out["arm_seed_r2"] = {"candidate": [float(x) for x in arm_c],
+                              "baseline": [float(x) for x in arm_b]}
+    else:
+        var_seed, df_seed = 0.0, 0
+    if var_seed > 0:
+        df = ((var_unit + var_seed) ** 2 /
+              (var_unit ** 2 / max(n_units - 1, 1) + var_seed ** 2 / max(df_seed, 1)))
+    else:                                        # one seed: the component is not estimable
+        df = float(n_units - 1)
+        out["note"] = ("ONE model-init seed per arm: the seed variance component is not estimable, "
+                       "so this interval describes only unit variance (audit ML-01 — two runs of "
+                       "the same model differing only in the seed were accepted in 23–35% of A/A "
+                       "pairs)")
+    se = float(np.sqrt(var_unit + var_seed))
+    out["se_unit"], out["se_seed"], out["se_total"] = float(np.sqrt(var_unit)), \
+        float(np.sqrt(var_seed)), se
+    out["n_seeds_effective"] = int(n_seed_eff)
+    df = max(float(df), 1.0)
+    out["df"] = df
+    for key, a in (("ci", alpha / 2), ("ci_one_sided", alpha)):
+        crit = float(stats.t.ppf(1 - a, df))
+        out[key] = [mean - crit * se, mean + crit * se]
+    # The exact test stays unit-level (the seed-averaged per-unit values are the exchangeable
+    # quantities); the seed component is carried by the interval, and `seed_signs_agree` exposes
+    # the case where seed pairs disagree in direction.
+    out |= _sign_flip_p(unit_means, np.random.default_rng(seed))
+    out["alpha"] = alpha
+    ci_excl = bool(out["ci"][0] > 0 or out["ci"][1] < 0)
+    out["ci_excludes_zero"] = ci_excl
+    out["excludes_zero"] = bool(ci_excl and out["p_value"] <= alpha and out["seed_signs_agree"])
+    if ci_excl and not out["seed_signs_agree"]:
+        out["note"] = (f"seed pairs disagree in direction ({out['seed_deltas']}): the interval "
+                       "excludes 0 but the effect is not consistent across model-init seeds")
+    return out
+
+
 def paired_bootstrap_r2(y_true, pred_candidate, pred_baseline, *, groups=None, n_boot: int = 2000,
                         alpha: float = 0.05, seed: int = 0, method: str = "t",
                         atol: float = ZERO_TOL) -> dict:

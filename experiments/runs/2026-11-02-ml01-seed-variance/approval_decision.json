@@ -1,0 +1,44 @@
+{
+  "run_id": "2026-11-02-ml01-seed-variance",
+  "granted": true,
+  "approver": "Evangelos (vm.nikolados@gmail.com)",
+  "paths": [
+    "docs/CONTRACTS.md",
+    "docs/DECISIONS.md",
+    "src/orchestration/baseline_guard.py",
+    "src/orchestration/execution_harness.py",
+    "src/seq2yield/experiments/pooled_runner.py",
+    "src/seq2yield/experiments/run_spec.py",
+    "src/seq2yield/statistics/bootstrap.py",
+    "src/seq2yield/training/provenance.py",
+    "tests/test_grouped_bootstrap.py",
+    "tests/test_ml01_seed_variance.py"
+  ],
+  "path_classes": {
+    "docs/CONTRACTS.md": "require_review",
+    "docs/DECISIONS.md": "require_review",
+    "src/orchestration/baseline_guard.py": "require_review",
+    "src/orchestration/execution_harness.py": "require_review",
+    "src/seq2yield/experiments/pooled_runner.py": "require_review",
+    "src/seq2yield/experiments/run_spec.py": "require_review",
+    "src/seq2yield/statistics/bootstrap.py": "conditional",
+    "src/seq2yield/training/provenance.py": "require_review",
+    "tests/test_grouped_bootstrap.py": "require_review",
+    "tests/test_ml01_seed_variance.py": "require_review"
+  },
+  "strict_paths": [],
+  "conditional_paths": [
+    "docs/CONTRACTS.md",
+    "docs/DECISIONS.md",
+    "src/orchestration/baseline_guard.py",
+    "src/orchestration/execution_harness.py",
+    "src/seq2yield/experiments/pooled_runner.py",
+    "src/seq2yield/experiments/run_spec.py",
+    "src/seq2yield/statistics/bootstrap.py",
+    "src/seq2yield/training/provenance.py",
+    "tests/test_grouped_bootstrap.py",
+    "tests/test_ml01_seed_variance.py"
+  ],
+  "reason": "APPROVED by 'Evangelos (vm.nikolados@gmail.com)' for conditional-protected paths: ['docs/CONTRACTS.md', 'docs/DECISIONS.md', 'src/orchestration/baseline_guard.py', 'src/orchestration/execution_harness.py', 'src/seq2yield/experiments/pooled_runner.py', 'src/seq2yield/experiments/run_spec.py', 'src/seq2yield/statistics/bootstrap.py', 'src/seq2yield/training/provenance.py', 'tests/test_grouped_bootstrap.py', 'tests/test_ml01_seed_variance.py'] | note: audit ML-01 (final path list): model_seeds loop, two-component interval, requires_repeated_seed enforced, plus the import-scoped provenance fix it needed as a blocker. Human approval in session.",
+  "ts": "2026-11-02T02:55:43.499842+00:00"
+}

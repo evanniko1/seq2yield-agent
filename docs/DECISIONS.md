@@ -475,6 +475,54 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #67 — Model-init seed variance is measured instead of assumed to be zero
+- **Authorization.** `statistics/**` is CONDITIONALLY protected. Human approval in session;
+  `approvals.decide('2026-11-02-ml01-seed-variance', paths, approver=…)` granted,
+  `git_guard.check_paths(..., human_review=True)` passed, record in
+  `experiments/runs/2026-11-02-ml01-seed-variance/`.
+- **Why (audit ML-01, CRITICAL).** A verdict came from ONE training seed while the interval
+  resampled test rows only, so seed variance was read as signal — and **nothing in the repo ever
+  varied the model-init seed**, so nothing could see it. `reproduce_baselines.py` even said so in
+  its own run-cards: *"single training seed (sampling); 5 MC-CV repeats provide variance"*. And
+  `requires_repeated_seed` was a misnomer, satisfied by ≥2 MC-CV *split files* while `spec.seed`
+  stayed a scalar reused everywhere.
+- **What the fix is.** `fit_predict` takes a `model_seed` override that moves the init seed while
+  holding the split and the subsample fixed; `run_pooled` fits once per `spec.model_seeds`
+  (default `[1, 2, 3]`) and returns `preds_by_seed`; `paired_r2_multiseed` reports ΔR² with **both
+  variance components** — units and seeds — in the standard random-effects form
+  (`se_total = √(se_unit² + se_seed²)`, Welch–Satterthwaite df), plus the per-seed deltas, their
+  spread, and whether they agree in direction. `requires_repeated_seed` now means ≥3 distinct
+  model-init seeds and is enforced by `validate_runspec`. A verdict whose seed pairs disagree in
+  direction is not significant, however tight the unit-level interval is.
+- **Measured, and it corrects the audit's own framing.** Re-running the seed-only A/A with today's
+  estimator and margin rule, before this change:
+
+  | dataset | units | A/A `accepted` (audit, old rules) | A/A `accepted` (today, 1 seed/arm) | after (3 seeds/arm) |
+  |---|---|---|---|---|
+  | dream2022 | 2,064 families | 7/30 | **0/30** | 0/6 |
+  | cuperus_2017 | 48,936 singletons | 7/20 | **5/30 (17%)** | 0/6 |
+
+  So ST-7's family unit had **already** absorbed the whole effect on dream2022 — the 23% figure
+  does not reproduce there, and claiming this change fixed it would be an overclaim. On
+  cuperus_2017 it very much does survive: worst seed-only ΔR² **+0.0552 with CI [+0.0508, +0.0597]
+  and verdict `superior_by_margin`** — a confidently wrong accept. The mechanism is now explicit:
+  the unit interval shrinks with the unit count while seed noise does not, so **se_seed/se_unit =
+  14x** on a 48,936-unit random library (0.0167 vs 0.0012) and ~1.3x on 2,064 clustered families.
+  The defect is worst exactly where the test set is largest, which is the opposite of the intuition
+  that more test data makes a verdict safer.
+- **Pairing matters, and the production path is the good case.** When both arms are fitted at the
+  *same* init seeds (what the harness does), the common seed effect cancels: on dream2022 `cnn` vs
+  `rf` gives per-seed ΔR² [0.3630, 0.3681, 0.3583], se_seed **0.0028** against se_unit 0.0446 —
+  0.3% of the variance — and the real effect survives unchanged (`accepted`,
+  `superior_by_margin`). The estimator detects the design (`seed_design: paired | unpaired`) and
+  uses the matching variance formula; the unpaired form is the one a seed-only A/A needs, and it
+  is also the shape of any comparison against a baseline built at a different seed.
+- **Residual, logged not papered over (BACKLOG ML-01b).** The per-series registry path stores one
+  R² per (series, size, model) from a **single** baseline seed, so a candidate-vs-registry
+  comparison still cannot include the baseline's seed variance. That is a different fix — storing
+  per-seed registry rows — and it is now its own row rather than being counted as closed here.
+- Tests: `tests/test_ml01_seed_variance.py` (13). 542 passed, 1 skipped.
+
 ## #66 — The accept rule now tests the margin it asserts (one-sided lower bound + TOST)
 - **Authorization.** `compare.py` and `statistics/**` are CONDITIONALLY protected. Human approval
   in session; `approvals.decide('2026-11-02-st3-margin-rule', paths, approver=…)` granted,
