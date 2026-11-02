@@ -16,7 +16,6 @@ Runtime key precedence (model_clients/base.py): real env var > keychain > .env.
 """
 from __future__ import annotations
 
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -28,10 +27,17 @@ import yaml  # noqa: E402
 from flask import Flask, render_template_string, request  # noqa: E402
 
 from agents import secrets  # noqa: E402
+from orchestration import console_guard  # noqa: E402
 from agents.model_clients import base  # noqa: E402,F401  (import triggers keychain + .env load)
 from agents.schemas import ExperimentIdea  # noqa: E402
 
 app = Flask(__name__)
+PORT = 5058
+# This console writes the OS keychain and can delete API keys, so every unsafe request needs its
+# own CSRF token, Origin and loopback Host (audit AG-04): a cross-origin POST to /key/delete used
+# to return 200 and call secrets.delete('ANTHROPIC_API_KEY').
+console_guard.install(app, port=PORT)
+_CSRF = console_guard.hidden_field()        # constant per process; every form carries it
 RUNTIME = ROOT / "configs/runtime.yaml"
 POLICY = ROOT / "configs/provider_policy.yaml"
 
@@ -62,16 +68,13 @@ def _runtime() -> dict:
     return (yaml.safe_load(RUNTIME.read_text(encoding="utf-8")) or {}).get("runtime", {}) if RUNTIME.exists() else {}
 
 
-def _set_scalar(path: Path, key: str, value) -> bool:
-    """Replace `  key: <old>` with the new value on its first match — comments preserved."""
-    txt = path.read_text(encoding="utf-8")
-    pat = re.compile(rf"^(\s*{re.escape(key)}:\s*)([^\n#]*)(.*)$", re.MULTILINE)
-    new, n = pat.subn(
-        lambda m: f"{m.group(1)}{value}{'  ' + m.group(3).strip() if m.group(3).strip() else ''}",
-        txt, count=1)
-    if n:
-        path.write_text(new, encoding="utf-8")
-    return bool(n)
+def _set_scalar(path: Path, key: str, value, *, allowed: set | None = None) -> bool:
+    """Replace `  key: <old>` on its first match — comments preserved, and the result VERIFIED.
+
+    `local_model="llama3.1:8b\\n  mode: deterministic"` used to inject a sibling key through this
+    writer (audit AG-04). The textual edit keeps the YAML's comments; `set_scalar_checked` re-parses
+    afterwards and restores the file unless exactly this key changed."""
+    return console_guard.set_scalar_checked(path, key, value, allowed=allowed)
 
 
 def _live_test(name: str, model: str) -> tuple[bool, str]:
@@ -221,7 +224,7 @@ def _render(msg: str = "", verify_rows: list[tuple[str, bool, str]] | None = Non
     }
     b.append('<div class=step><h2><span class=num>1</span> Provider mode</h2>'
              '<div class=hint>Written to <code>configs/runtime.yaml</code>.</div>'
-             '<form method=post action=/mode><div class=radio>')
+             '<form method=post action=/mode>' + _CSRF + '<div class=radio>')
     for m in _MODES:
         title, desc = opts[m]
         sel = " sel" if m == mode else ""
@@ -240,7 +243,7 @@ def _render(msg: str = "", verify_rows: list[tuple[str, bool, str]] | None = Non
                  f'<span class=mono>{", ".join(env_keys)}</span>. Move them into the keychain and '
                  'retire the file — keys are verified in the keychain before <code>.env</code> is '
                  'touched.</div>'
-                 '<form method=post action=/migrate_env style="margin-top:.55em">'
+                 '<form method=post action=/migrate_env style="margin-top:.55em">' + _CSRF +
                  '<button class=primary type=submit>Migrate .env → keychain &amp; remove file</button>'
                  '</form></div>')
     if mode == "local":
@@ -258,13 +261,13 @@ def _render(msg: str = "", verify_rows: list[tuple[str, bool, str]] | None = Non
         masked = f'<span class=mono>{s.get("masked")}</span>' if s.get("masked") else ''
         b.append(f'<div class=keyrow><div><span class=keyname>{name}</span> &nbsp;'
                  f'<span class=keyenv>{env}</span></div><div class=row>{masked} {chip}</div></div>')
-        b.append(f'<form method=post action=/key class=row style="margin:.3em 0 1em">'
+        b.append(f'<form method=post action=/key class=row style="margin:.3em 0 1em">{_CSRF}'
                  f'<input type=hidden name=env value="{env}">'
                  f'<input type=password name=value placeholder="paste {name} key" autocomplete=off '
                  f'style="max-width:340px">'
                  f'<button class=primary type=submit>Save to keychain</button>')
         if s.get("in_keychain"):
-            b.append(f'</form><form method=post action=/key/delete class=inline>'
+            b.append(f'</form><form method=post action=/key/delete class=inline>{_CSRF}'
                      f'<input type=hidden name=env value="{env}">'
                      f'<button class=danger type=submit>Remove</button></form>')
         else:
@@ -275,7 +278,7 @@ def _render(msg: str = "", verify_rows: list[tuple[str, bool, str]] | None = Non
     b.append('<div class=step><h2><span class=num>3</span> Local model (Ollama)</h2>'
              '<div class=hint>Used by diversity roles in hybrid/local mode. Pull it first: '
              f'<code>ollama pull {local_model}</code>.</div>'
-             '<form method=post action=/local_model class=row>'
+             '<form method=post action=/local_model class=row>' + _CSRF +
              f'<input type=text name=local_model value="{local_model}" style="max-width:280px">'
              '<button class=primary type=submit>Set model</button></form></div>')
 
@@ -289,7 +292,7 @@ def _render(msg: str = "", verify_rows: list[tuple[str, bool, str]] | None = Non
             chip = '<span class="chip ok">OK</span>' if ok else '<span class="chip no">FAIL</span>'
             b.append(f'<div class=keyrow><div class=keyname>{nm}</div>'
                      f'<div class=row>{chip} <span class=mono>{detail}</span></div></div>')
-    b.append('<form method=post action=/verify style="margin-top:.6em">'
+    b.append('<form method=post action=/verify style="margin-top:.6em">' + _CSRF +
              '<button type=submit>Test connection (live)</button></form></div>')
 
     # --- Step 5: launch --------------------------------------------------------------------------
@@ -302,7 +305,7 @@ def _render(msg: str = "", verify_rows: list[tuple[str, bool, str]] | None = Non
     if not ready:
         b.append('<div class="banner warn">No authority key is set and mode isn\'t <b>local</b> — '
                  'the council can\'t reach a paid provider. Add a key above or switch to local mode.</div>')
-    b.append('<form method=post action=/launch><button class=primary type=submit>'
+    b.append('<form method=post action=/launch>' + _CSRF + '<button class=primary type=submit>'
              'Launch council cycle</button></form></div>')
 
     b.append('<hr><p class=hint>After launching, watch progress in the read-only dashboard: '
@@ -322,7 +325,7 @@ def index():
 def set_mode():
     m = (request.form.get("mode") or "").strip()
     if m in _MODES:
-        _set_scalar(RUNTIME, "mode", m)
+        _set_scalar(RUNTIME, "mode", m, allowed=set(_MODES))
         return _page(_render(f'<div class="banner ok">✓ Provider mode set to <b>{m}</b>.</div>'))
     return _page(_render('<div class="banner warn">Invalid mode.</div>'))
 

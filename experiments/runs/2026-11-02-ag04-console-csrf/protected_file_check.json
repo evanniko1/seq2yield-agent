@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "violations": [],
+  "by_path": {
+    "docs/DECISIONS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "scripts/config_app.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "scripts/run_onboarding.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "src/orchestration/console_guard.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_ag04_console_csrf.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    }
+  }
+}

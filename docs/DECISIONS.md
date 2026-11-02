@@ -475,6 +475,44 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #68 — 127.0.0.1 is not a security boundary: the consoles now refuse forged writes
+- **Authorization.** Human approval in session;
+  `approvals.decide('2026-11-02-ag04-console-csrf', paths, approver=…)` granted,
+  `git_guard.check_paths(..., human_review=True)` passed, record in
+  `experiments/runs/2026-11-02-ag04-console-csrf/`.
+- **Why (audit AG-04 / IM-02's open half).** A page the user merely visits can POST a plain form to
+  a localhost port: form posts are CORS-simple, so the browser does not block them and neither app
+  rejected them. Demonstrated with Flask test clients — a cross-origin POST with
+  `Origin: https://evil.example` returned **200** and wrote `max_total_cost_usd=9999`,
+  `max_total_tokens=999999999`, `max_calls=99999`, `unlocked_tier=tier_3` and
+  `novel_dataset=5.0`, while `/launch` spawned a real paid `run_council.py` and `/key/delete`
+  called `secrets.delete('ANTHROPIC_API_KEY')`. No `secret_key`, no `before_request`, no auth.
+- **Four independent checks** (`orchestration/console_guard.install`), because any one of them can
+  be defeated alone: a per-process **CSRF token** the attacker's page cannot read (the same-origin
+  policy stops it fetching the console's HTML), compared with `compare_digest`; an **Origin**
+  allow-list; a loopback **Host** pin, which is what stops DNS rebinding — a domain resolving to
+  127.0.0.1 would otherwise satisfy an Origin check against its own origin; and **`Sec-Fetch-Site`**
+  rejected unless `same-origin`/`none`, which page script cannot forge.
+- **The YAML writer was the other half.** `_set_scalar` was a regex over YAML text, so
+  `local_model="llama3.1:8b\n  mode: deterministic"` injected a sibling key. The audit suggested
+  `safe_dump`, but that would destroy the comments these configs are written around, and
+  `ruamel.yaml` (which preserves them) is not a dependency. `set_scalar_checked` keeps the textual
+  edit and **verifies it**: re-parse the file, compare against the original structure, and restore
+  it unless exactly the intended key changed. That is strictly stronger than `safe_dump` — it
+  catches any injection mechanism, not just newlines — and the comments survive, which a test pins.
+- **Output escaping completed.** IM-02's dashboard half shipped 2026-11-01; the operator console's
+  approver name, bonus keys, methodology flags and run rows now go through `markupsafe.escape`
+  too, and the approver name is validated as a scalar before it is stored, since the loop reads it
+  back as an identity.
+- **The console still works**, which is half of the test file: a legitimate same-origin POST with
+  the token succeeds, comments are preserved, GETs are untouched, and both apps still build with
+  all 12 routes.
+- `safe_scalar`'s scope is deliberately YAML/HTML injection, not path safety: `/` and `.` are
+  needed for model tags, so `../../etc` passes. No caller treats these values as a path — they
+  become YAML scalars or file content — and the docstring says so, because an undocumented
+  allow-list is the kind of thing that gets misread as a path guard later.
+- Tests: `tests/test_ag04_console_csrf.py` (25). 567 passed, 1 skipped.
+
 ## #67 — Model-init seed variance is measured instead of assumed to be zero
 - **Authorization.** `statistics/**` is CONDITIONALLY protected. Human approval in session;
   `approvals.decide('2026-11-02-ml01-seed-variance', paths, approver=…)` granted,
