@@ -475,6 +475,47 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #79 — The proposer seam: the harness is the asset, the council is a plugin
+- **Authorization.** Human approval in session ("the harness we're building should be re-usable in
+  plug-and-play fashion"). Record: `experiments/runs/2026-11-02-proposer-seam/`.
+- **Why.** `docs/COUNCIL_EVIDENCE.md` reviews the 2025–26 evidence. The least contested finding in
+  it is that the **verifier**, not the generator, is the binding constraint: ICLR 2025 work shows
+  self-critique *degrading* performance while a sound external verifier improves it substantially,
+  and the generation–verification gap grows with verifier capability. MAST's own authors report that
+  redesigned verification topology helped more than prompt changes. Against that, the deliberation
+  scheme is the swappable part — so hard-wiring one is the architectural mistake, whatever one
+  thinks of councils.
+- **What shipped.** `src/orchestration/proposer.py` on the trusted side of the seam: a `ProposalSet`
+  record, a `Proposer` protocol (`propose() -> ProposalSet`), a registry, and two implementations —
+  `CouncilProposer` (lazy-importing the existing council) and `SweepProposer`. The harness needed no
+  change, because `execution_harness.run` already took only a `RunSpec`.
+- **The seam grants no authority.** `ProposalSet.runspec` is a **dict**, not a `RunSpec`, so a
+  proposer cannot hand back a pre-validated object and decide its own admissibility (AGENTS.md
+  §0.1). Tier policy, the ≥3-seed floor, the protected-file guard and the ST-3 margin all live on
+  the harness side and are pinned by tests that mutate the sweep's own output and confirm it is
+  still refused.
+- **`SweepProposer` is the control arm the whole MAD literature says is missing.** Deterministic
+  enumeration, **zero** model calls, scored by the same harness, the same two-component estimator
+  and the same margin rule as the council. `ProposalSet.model_calls` makes the budget axis explicit
+  — equal-compute accounting is precisely the control whose absence invalidated the original debate
+  results. "Does the council beat a sweep on E. coli?" is now a measurable question, and a null
+  answer is a finding under AGENTS.md §7.
+- **The plug-and-play property is mechanically tested, not asserted.** A subprocess test proves the
+  sweep path imports **no** `agents.*`, model-client, `anthropic`, `openai` or `httpx` module, and
+  that merely constructing `CouncilProposer` does not drag `agents` in. Without that, "reusable"
+  would mean "reusable if you have a provider configured", which is not the same claim.
+- **Known limit, stated rather than papered over.** Four modules in the experiment layer —
+  `tournament.py`, `config_transfer.py`, `hpo_distribution.py` and `reporting/dashboard_export.py` —
+  still import `agents` directly for hyperparameter priors and the gated search. The *harness core*
+  is clean; those paths are not, so a full swap today covers the main loop and not the tournament /
+  transfer / HPO entry points. Inverting them needs a `HyperparameterPriors` protocol; not done
+  here, and not claimed.
+- **Found while counting the roles, logged as AG-24.** The live council is 13 defined / 8 enabled /
+  **1 critic** — and `require_direct_provider` is enforced for only 2 of the 8. The collapse folded
+  `methodology_reviewer` into `adversarial_critic` but left the policy entry on the retired role, so
+  the one role AGENTS.md §5 most wants on a direct provider is the one that no longer gets it.
+  `runspec_compiler` is dead config; `methodology_critic` is invoked but declared nowhere.
+
 ## #78 — Bookkeeping corrections: four colliding audit ids, a duplicate finding, and a test that could not fail
 - **Authorization.** Same session approval as #77 ("do AG-17 next … then give me a breakdown of
   still open items"). Found while enumerating the open rows to answer that second half — which is

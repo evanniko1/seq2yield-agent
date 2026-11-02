@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "violations": [],
+  "by_path": {
+    "src/orchestration/proposer.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_proposer_seam.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/COUNCIL_EVIDENCE.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/DECISIONS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    }
+  }
+}

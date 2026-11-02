@@ -1,0 +1,26 @@
+{
+  "run_id": "2026-11-02-proposer-seam",
+  "granted": true,
+  "approver": "Evangelos (vm.nikolados@gmail.com)",
+  "paths": [
+    "src/orchestration/proposer.py",
+    "tests/test_proposer_seam.py",
+    "docs/COUNCIL_EVIDENCE.md",
+    "docs/DECISIONS.md"
+  ],
+  "path_classes": {
+    "src/orchestration/proposer.py": "require_review",
+    "tests/test_proposer_seam.py": "require_review",
+    "docs/COUNCIL_EVIDENCE.md": "require_review",
+    "docs/DECISIONS.md": "require_review"
+  },
+  "strict_paths": [],
+  "conditional_paths": [
+    "src/orchestration/proposer.py",
+    "tests/test_proposer_seam.py",
+    "docs/COUNCIL_EVIDENCE.md",
+    "docs/DECISIONS.md"
+  ],
+  "reason": "APPROVED by 'Evangelos (vm.nikolados@gmail.com)' for conditional-protected paths: ['src/orchestration/proposer.py', 'tests/test_proposer_seam.py', 'docs/COUNCIL_EVIDENCE.md', 'docs/DECISIONS.md'] | note: DECISIONS #79: the proposer seam. A Proposer protocol + registry in orchestration/ with two implementations - CouncilProposer (lazy-importing the existing council) and a deterministic zero-model-call SweepProposer that is the equal-compute control arm the multi-agent-debate literature says is almost never run. The harness needed no change (execution_harness.run already took only a RunSpec). The seam grants no authority: runspec is a dict, so tier policy, the 3-seed floor, the protected-file guard and the ST-3 margin all stay on the harness side, pinned by tests that mutate the sweep's own output and confirm refusal. Plug-and-play is mechanically tested in a subprocess: the sweep path imports no agents/model-client module. Also adds docs/COUNCIL_EVIDENCE.md, a critical review of the 2025-26 evidence, and logs AG-24 (require_direct_provider enforced for only 2 of 8 enabled roles; the collapse left the policy entry on the retired methodology_reviewer so the only live critic lacks the AGENTS.md \u00a75 guarantee). Human approval in session: 'the harness we're building should be re-usable in plug-and-play fashion'.",
+  "ts": "2026-11-02T20:35:26.178748+00:00"
+}
