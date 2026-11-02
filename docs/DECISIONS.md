@@ -475,6 +475,53 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #74 — cnn > rf on E. coli, re-decided seed-matched: the direction is solid, the margin is not met
+- **Authorization.** Human approval in session ("do both, separate commits"). Record:
+  `experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/`.
+- **Why now.** R-5 withdrew the flagship `cnn > rf` accept when the registry was rebuilt, and #66
+  then showed the withdrawal was the right verdict under the ST-3 margin rule — but every figure in
+  that chain came from a registry holding **one** model-init seed per arm, so the seed component was
+  not in any of those intervals. #73 made a three-seed registry canonical, which is the first time
+  this comparison can be run as a fully paired design: both arms are rows of ONE registry, same
+  provided splits, same subsample seed 1, same five MC-CV iterations, same three seeds, differing
+  only in the model family.
+- **The result, through `compare_per_size` → `compare_multiseed` → `_decide` (no hand-rolling):**
+
+  | train | ΔR² | one-sided | p | se_unit | se_seed | status / verdict |
+  |---|---|---|---|---|---|---|
+  | 250 | +0.0286 | [+0.0134, +0.0439] | 0.0024 | 0.0085 | 0.0032 | `inconclusive / superior_margin_unresolved` |
+  | 500 | +0.0320 | [+0.0188, +0.0452] | 0.0002 | 0.0065 | 0.0040 | `inconclusive / superior_margin_unresolved` |
+  | 1000 | +0.0233 | [+0.0157, +0.0310] | 0.0002 | 0.0041 | 0.0018 | `inconclusive / superior_margin_unresolved` |
+  | **2000** | **+0.0104** | **[+0.0047, +0.0161]** | 0.0027 | 0.0032 | 0.0011 | **`rejected / superior_but_below_margin`** |
+
+- **Decision: no claim.** `claim_allowed: null`. The direction is as well supported as it has been —
+  zero excluded at all four sizes, seed signs agreeing everywhere, all twelve (size × seed) deltas
+  positive — and the **0.02 margin is established at no size**. At the primary size the gap is
+  *shown* to lie inside the margin, which is a conclusive negative rather than an unresolved one;
+  at the three smaller sizes the interval still reaches past the margin, so those are `inconclusive`
+  by the rule's own vocabulary. Under AGENTS.md §7 this counts as a useful result, and the
+  withdrawal in R-5 now rests on measurement rather than on provenance.
+- **Two findings that are new, not confirmations.** (a) **The advantage decays with data**: +0.0320
+  at 500 → +0.0104 at 2000, RF closing most of the gap. "CNN beats RF on E. coli" quoted without its
+  train size is the misleading version of a true sentence, and the run-card's limitations say so.
+  (b) **`se_seed` never dominates on the per-series path** — ratio 0.37, 0.61, 0.45, 0.35 across the
+  sizes, consistent with ML-01b's 0.40× at train 2000 on six seeds. This **closes ML-01b's "measured
+  at train 2000 only" residual**, and corrects its guess: the ratio does rise at smaller sizes but
+  peaks at **500**, not at the smallest. Series heterogeneity, not initialisation, is where the
+  imprecision lives, so more seeds is not where more precision would come from.
+- **Scope held deliberately.** The margin itself is not re-opened — 0.02 is the practical bar and
+  moving it to fit a result is the one thing the ST-3 rule exists to prevent. One dataset, one
+  feature set, no transfer claim. The series-unit interval is used (the project's primary metric)
+  although 6 of 56 series carry grouped structure the mixed-effects estimator handles; that is named
+  in the limitations rather than silently chosen.
+- **Found while recording, and left alone on purpose.** `experiments/claims/registry.jsonl` carries
+  an uncommitted line from a real 2026-07-16 loop run — `accepted`, `n_series: 10` (a sorted
+  prefix), `p_value: 0.0`, and none of `margin_verdict` / `ci_method` / `series_selection`. It
+  self-identifies as pre-contract through exactly those null fields, which is what they are for, but
+  an `accepted` prefix claim is what SA-2 and ST-2 both bear on. It is **not** folded into this
+  commit: only this run's own claim line was staged, and the July row is logged as AG-16 for its own
+  decision rather than being quietly carried in on an unrelated commit.
+
 ## #73 — The seed-complete registry becomes canonical, and a pointer in prose is still a pointer
 - **Authorization.** Human approval in session ("do both, separate commits"). Record:
   `experiments/runs/2026-11-02-registry-pointer-seeds/`.

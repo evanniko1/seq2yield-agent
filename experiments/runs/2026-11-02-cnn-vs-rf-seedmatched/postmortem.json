@@ -1,0 +1,25 @@
+{
+  "run_id": "2026-11-02-cnn-vs-rf-seedmatched",
+  "state": "POSTMORTEM_COMPLETE",
+  "outcome": "rejected",
+  "margin_verdict": "superior_but_below_margin",
+  "what_was_asked": "re-decide ecoli cnn vs rf on the seed-complete registry, through the estimator and the claim gate, after R-5 withdrew the earlier accept",
+  "what_was_found": [
+    "cnn > rf reproduces at all four train sizes: 0 excluded everywhere, every one of the 12 (size x seed) deltas positive, seed signs agreeing at every size",
+    "the 0.02 margin is established at NO train size - which is why no claim is recorded",
+    "at the primary size the interval is now tight enough to place the gap INSIDE the margin ([+0.0047, +0.0161]), turning an unresolved negative into a conclusive one",
+    "the advantage decays with training data: +0.0286 (250), +0.0320 (500), +0.0233 (1000), +0.0104 (2000) - rf closes most of the gap by 2000",
+    "se_seed/se_unit is 0.37, 0.61, 0.45, 0.35 across the sizes: the seed component never dominates on the per-series path, consistent with ML-01b's 0.40x at train 2000, and it is LARGER at the small sizes than at 2000 - which closes ML-01b's 'measured at train 2000 only' residual, with the peak at 500 rather than at the smallest size"
+  ],
+  "why_it_matters": "R-5 withdrew the `cnn > rf` accept when the registry was rebuilt. This re-decides it on the strongest design available - one registry, both arms, seed-matched - and the answer is that the direction is solid and the project's own practical bar is not met. The withdrawal stands, now for a measured reason rather than a provenance one.",
+  "what_would_change_it": [
+    "a margin smaller than 0.0047 would make the primary size an accept; 0.02 was chosen as the practical bar and is not re-opened here",
+    "a cnn variant that holds its 500-sample advantage out to 2000 would clear the bar",
+    "more model-init seeds would narrow se_seed, but se_unit (series heterogeneity) is the larger component at every size, so seeds are not where the precision is"
+  ],
+  "claim_registry_entry": {
+    "status": "rejected",
+    "claim_allowed": null,
+    "claim_withheld": null
+  }
+}

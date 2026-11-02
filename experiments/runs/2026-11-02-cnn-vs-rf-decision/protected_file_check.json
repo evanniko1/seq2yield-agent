@@ -1,0 +1,46 @@
+{
+  "passed": true,
+  "violations": [],
+  "by_path": {
+    "docs/DECISIONS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/RETRACTIONS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_cnn_vs_rf_seedmatched.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/claims/registry.jsonl": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/run_card.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/statistical_tests.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/postmortem.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/claims/2026-11-02-cnn-vs-rf-seedmatched.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    }
+  }
+}

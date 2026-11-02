@@ -1,0 +1,47 @@
+{
+  "ts": "2026-11-02T17:34:37.316992+00:00",
+  "run_id": "2026-11-02-cnn-vs-rf-seedmatched",
+  "proposal_id": "manual-2026-11-02-pointer-swap",
+  "status": "rejected",
+  "candidate_model": "cnn",
+  "baseline_model": "rf",
+  "mean_delta_r2": 0.010407246831133643,
+  "bootstrap_ci_95": [
+    0.003573563541879865,
+    0.01724093012038742
+  ],
+  "ci_excludes_zero": true,
+  "p_value": 0.002684891383939468,
+  "bootstrap_unit": "series",
+  "split_strategy": "provided_per_series_fixed_holdout",
+  "n_bootstrap_units": 56,
+  "ci_method": "t_two_component",
+  "p_method": "sign_flip_mc",
+  "p_floor": 0.000244081034903588,
+  "margin_verdict": "superior_but_below_margin",
+  "margin": 0.02,
+  "ci_one_sided": [
+    0.00470625669408467,
+    0.016108236968182615
+  ],
+  "baseline_source": {
+    "kind": "registry",
+    "run_id": "2026-11-02-full56-seeds",
+    "numerics_fingerprint": "c92189526f4c7d8e",
+    "seed_matched": true,
+    "note": "both arms are rows of ONE registry: same provided splits, same subsample seed 1, same 5 MC-CV iterations, same 3 model-init seeds. Fully paired on every axis except the model family."
+  },
+  "provenance": {
+    "git_sha": "659b3aac8168",
+    "numerics": "c92189526f4c7d8e"
+  },
+  "dataset": "ecoli",
+  "transfer": null,
+  "n_series": 56,
+  "train_size": 2000,
+  "series_selection": "all",
+  "n_series_available": 56,
+  "series_used": null,
+  "claim_withheld": null,
+  "claim": null
+}

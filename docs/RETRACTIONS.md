@@ -233,6 +233,38 @@ have accepted this claim whenever the point estimate drifted over 0.02, which it
 effect of 0.019 about 42% of the time. The published +0.0228 was inflated because CNN lost more to its own drift
 (−0.0310) than RF did (−0.0208), so the *gap* carried both errors.
 
+**Re-decided 2026-11-02 on the seed-complete registry, and the withdrawal stands — now for a
+measured reason rather than a provenance one** (DECISIONS #74,
+`experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/`). Every figure above came from a registry with
+ONE model-init seed per arm. Both arms are now rows of a single three-seed registry — same provided
+splits, same subsample seed, same five iterations, same three seeds — so the interval carries the
+seed component as well as the series component, and the comparison is paired on every axis except
+the model family:
+
+| train | ΔR² | one-sided limits | p | se_unit / se_seed | verdict |
+|---|---|---|---|---|---|
+| 250 | +0.0286 | [+0.0134, +0.0439] | 0.0024 | 0.0085 / 0.0032 | `inconclusive / superior_margin_unresolved` |
+| 500 | +0.0320 | [+0.0188, +0.0452] | 0.0002 | 0.0065 / 0.0040 | `inconclusive / superior_margin_unresolved` |
+| 1000 | +0.0233 | [+0.0157, +0.0310] | 0.0002 | 0.0041 / 0.0018 | `inconclusive / superior_margin_unresolved` |
+| **2000** | **+0.0104** | **[+0.0047, +0.0161]** | 0.0027 | 0.0032 / 0.0011 | **`rejected / superior_but_below_margin`** |
+
+The direction is as solid as it has ever looked: zero excluded at all four sizes, all three
+model-init seeds agreeing in sign at every size, every one of the twelve (size × seed) deltas
+positive. **The 0.02 margin is established at no size.** At the primary size the seed-matched
+interval places the gap *inside* the margin — the same conclusion the single-seed estimate reached
+([+0.0069, +0.0183] against [+0.0047, +0.0161]), now with the component that was missing.
+
+Two things are new rather than confirmed. **The advantage decays with training data** — +0.0320 at
+500 falling to +0.0104 at 2000, RF closing most of the gap — so "CNN beats RF on E. coli" quoted
+without its train size is the misleading version of a true statement. And **`se_seed` never
+dominates on the per-series path**: the ratio runs 0.37, 0.61, 0.45, 0.35 across the sizes, which
+closes ML-01b's "measured at train 2000 only" residual and places the peak at 500 rather than at
+the smallest size, as that note had guessed. Series heterogeneity, not initialisation, is where the
+imprecision lives — so more seeds is not where more precision would come from.
+
+**No claim is recorded.** `claim_allowed: null`, with the reason stored on the run-card rather than
+left to be inferred from a missing field.
+
 **Not retracted on these grounds:** the five June council claims that used this registry. The drift
 commits both post-date them (06-05/06-06 runs), so candidate and baseline came from the same code,
 and the only post-drift registry claim (`2026-07-16-council-cnn-vs-mlp`) is scored against **MLP**,

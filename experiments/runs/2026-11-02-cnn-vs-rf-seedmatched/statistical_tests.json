@@ -1,0 +1,173 @@
+{
+  "comparison": "ecoli cnn vs rf, per-series R2, seed-matched",
+  "estimator": "bootstrap.paired_series_multiseed - two-component (series x model-init seed) random-effects interval, se_total = sqrt(se_unit^2 + se_seed^2), Welch-Satterthwaite df, exact sign-flip p over series means",
+  "acceptance_rule": "compare._decide - one-sided lower limit vs margin (audit ST-3); TOST for equivalence",
+  "margin": 0.02,
+  "primary_train_size": 2000,
+  "per_size": [
+    {
+      "status": "inconclusive",
+      "baseline_mean": 0.36911413018096556,
+      "candidate_mean": 0.39773694933540005,
+      "mean_delta": 0.02862281915443444,
+      "paired_bootstrap_ci": [
+        0.010328813719968504,
+        0.04691682458890038
+      ],
+      "ci_excludes_zero": true,
+      "p_value": 0.00244081034903588,
+      "n_series": 56,
+      "ci_method": "t_two_component",
+      "p_method": "sign_flip_mc",
+      "p_floor": 0.000244081034903588,
+      "ci_one_sided": [
+        0.013365424529904838,
+        0.04388021377896405
+      ],
+      "margin": 0.02,
+      "margin_verdict": "superior_margin_unresolved",
+      "reasons": [
+        "beats the baseline (0 excluded) but the interval still reaches past the margin ([+0.0134, +0.0439] vs \u00b10.02): superior, margin not established"
+      ],
+      "n_seeds": 3,
+      "seed_design": "paired",
+      "seed_deltas": [
+        0.02816166594626909,
+        0.03435070901812938,
+        0.023356082498904862
+      ],
+      "seed_spread": 0.010994626519224518,
+      "seed_signs_agree": true,
+      "se_unit": 0.008515882262487092,
+      "se_seed": 0.0031822397660222304,
+      "se_total": 0.009091034079630078,
+      "df": 46.49892222725237,
+      "train_size": 250,
+      "series_selection": "all",
+      "n_series_available": 56
+    },
+    {
+      "status": "inconclusive",
+      "baseline_mean": 0.4740780945998153,
+      "candidate_mean": 0.5060580781462205,
+      "mean_delta": 0.03197998354640509,
+      "paired_bootstrap_ci": [
+        0.016045786857850748,
+        0.047914180234959435
+      ],
+      "ci_excludes_zero": true,
+      "p_value": 0.000244081034903588,
+      "n_series": 56,
+      "ci_method": "t_two_component",
+      "p_method": "sign_flip_mc",
+      "p_floor": 0.000244081034903588,
+      "ci_one_sided": [
+        0.018792744483157972,
+        0.04516722260965221
+      ],
+      "margin": 0.02,
+      "margin_verdict": "superior_margin_unresolved",
+      "reasons": [
+        "beats the baseline (0 excluded) but the interval still reaches past the margin ([+0.0188, +0.0452] vs \u00b10.02): superior, margin not established"
+      ],
+      "n_seeds": 3,
+      "seed_design": "paired",
+      "seed_deltas": [
+        0.0348269409355259,
+        0.0370479022973831,
+        0.024065107406306293
+      ],
+      "seed_spread": 0.012982794891076805,
+      "seed_signs_agree": true,
+      "se_unit": 0.006537283422529864,
+      "se_seed": 0.004009036275613075,
+      "se_total": 0.007668666533737487,
+      "df": 21.30005645244115,
+      "train_size": 500,
+      "series_selection": "all",
+      "n_series_available": 56
+    },
+    {
+      "status": "inconclusive",
+      "baseline_mean": 0.5845739576385639,
+      "candidate_mean": 0.6078916514665276,
+      "mean_delta": 0.02331769382796359,
+      "paired_bootstrap_ci": [
+        0.014148195908590924,
+        0.03248719174733626
+      ],
+      "ci_excludes_zero": true,
+      "p_value": 0.000244081034903588,
+      "n_series": 56,
+      "ci_method": "t_two_component",
+      "p_method": "sign_flip_mc",
+      "p_floor": 0.000244081034903588,
+      "ci_one_sided": [
+        0.01568128053729078,
+        0.0309541071186364
+      ],
+      "margin": 0.02,
+      "margin_verdict": "superior_margin_unresolved",
+      "reasons": [
+        "beats the baseline (0 excluded) but the interval still reaches past the margin ([+0.0157, +0.0310] vs \u00b10.02): superior, margin not established"
+      ],
+      "n_seeds": 3,
+      "seed_design": "paired",
+      "seed_deltas": [
+        0.026818696138484654,
+        0.02256610463433333,
+        0.020568280711072782
+      ],
+      "seed_spread": 0.006250415427411872,
+      "seed_signs_agree": true,
+      "se_unit": 0.004137246102880586,
+      "se_seed": 0.0018430579653385315,
+      "se_total": 0.0045292016933890684,
+      "df": 37.92337238792973,
+      "train_size": 1000,
+      "series_selection": "all",
+      "n_series_available": 56
+    },
+    {
+      "status": "rejected",
+      "baseline_mean": 0.696490386706415,
+      "candidate_mean": 0.7068976335375488,
+      "mean_delta": 0.010407246831133643,
+      "paired_bootstrap_ci": [
+        0.003573563541879865,
+        0.01724093012038742
+      ],
+      "ci_excludes_zero": true,
+      "p_value": 0.002684891383939468,
+      "n_series": 56,
+      "ci_method": "t_two_component",
+      "p_method": "sign_flip_mc",
+      "p_floor": 0.000244081034903588,
+      "ci_one_sided": [
+        0.00470625669408467,
+        0.016108236968182615
+      ],
+      "margin": 0.02,
+      "margin_verdict": "superior_but_below_margin",
+      "reasons": [
+        "better than the baseline (\u0394R\u00b2=+0.0104, 0 excluded) but the gap is established to lie in [+0.0047, +0.0161], inside the \u00b10.02 margin: a conclusive negative, not an unresolved one"
+      ],
+      "n_seeds": 3,
+      "seed_design": "paired",
+      "seed_deltas": [
+        0.01264713006316746,
+        0.009589812411859506,
+        0.008984798018373966
+      ],
+      "seed_spread": 0.0036623320447934943,
+      "seed_signs_agree": true,
+      "se_unit": 0.0032055010046809058,
+      "se_seed": 0.0011334781682856914,
+      "se_total": 0.0034000013895571545,
+      "df": 48.683236657703674,
+      "train_size": 2000,
+      "series_selection": "all",
+      "n_series_available": 56
+    }
+  ]
+}

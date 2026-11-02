@@ -1,0 +1,38 @@
+{
+  "run_id": "2026-11-02-cnn-vs-rf-decision",
+  "granted": true,
+  "approver": "Evangelos (vm.nikolados@gmail.com)",
+  "paths": [
+    "docs/DECISIONS.md",
+    "docs/RETRACTIONS.md",
+    "tests/test_cnn_vs_rf_seedmatched.py",
+    "experiments/claims/registry.jsonl",
+    "experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/run_card.json",
+    "experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/statistical_tests.json",
+    "experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/postmortem.json",
+    "experiments/claims/2026-11-02-cnn-vs-rf-seedmatched.json"
+  ],
+  "path_classes": {
+    "docs/DECISIONS.md": "require_review",
+    "docs/RETRACTIONS.md": "require_review",
+    "tests/test_cnn_vs_rf_seedmatched.py": "require_review",
+    "experiments/claims/registry.jsonl": "require_review",
+    "experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/run_card.json": "require_review",
+    "experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/statistical_tests.json": "require_review",
+    "experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/postmortem.json": "require_review",
+    "experiments/claims/2026-11-02-cnn-vs-rf-seedmatched.json": "require_review"
+  },
+  "strict_paths": [],
+  "conditional_paths": [
+    "docs/DECISIONS.md",
+    "docs/RETRACTIONS.md",
+    "tests/test_cnn_vs_rf_seedmatched.py",
+    "experiments/claims/registry.jsonl",
+    "experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/run_card.json",
+    "experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/statistical_tests.json",
+    "experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/postmortem.json",
+    "experiments/claims/2026-11-02-cnn-vs-rf-seedmatched.json"
+  ],
+  "reason": "APPROVED by 'Evangelos (vm.nikolados@gmail.com)' for conditional-protected paths: ['docs/DECISIONS.md', 'docs/RETRACTIONS.md', 'tests/test_cnn_vs_rf_seedmatched.py', 'experiments/claims/registry.jsonl', 'experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/run_card.json', 'experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/statistical_tests.json', 'experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/postmortem.json', 'experiments/claims/2026-11-02-cnn-vs-rf-seedmatched.json'] | note: Re-decided ecoli cnn vs rf on the seed-matched registry through compare_per_size -> compare_multiseed -> _decide and the claim gate (DECISIONS #74, R-5 re-decided). Outcome: rejected / superior_but_below_margin at the primary size (train 2000, delta +0.0104, one-sided [+0.0047, +0.0161]) and inconclusive / superior_margin_unresolved at 250/500/1000. The 0.02 margin is established at NO size, so claim_allowed is null and no claim enters the ledger. The margin itself was NOT re-opened. Human approval in session: 'do both, separate commits'.",
+  "ts": "2026-11-02T17:40:47.745173+00:00"
+}
