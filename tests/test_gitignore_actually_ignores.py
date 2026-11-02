@@ -66,15 +66,31 @@ def test_deliverables_and_source_stay_trackable(path):
         "durable record as surely as a broken one lets 512 MB in.")
 
 
-def test_no_tracked_file_is_matched_by_an_ignore_rule():
-    """The condition that makes the two lists above safe to extend: if a rule ever starts matching
-    something already tracked, git keeps serving it from the index and the mismatch is invisible
-    until someone re-clones."""
+def test_every_tracked_but_ignored_file_is_part_of_the_durable_record():
+    """Tracked-AND-ignored is this repo's deliberate pattern, not a defect: `experiments/runs/*`
+    and `experiments/claims/*` are ignored so a run does not dirty the tree, and the few durable
+    files — run-cards, approval records, claim ledger, council reviews — are `git add -f`'d on
+    purpose. There are 123 of them.
+
+    So the invariant is not "nothing tracked is ignored" (that assertion was WRONG) but "everything
+    in that set is durable record". This is what would catch a 512 MB `.npz`, a `.env`, or a cache
+    file being force-added into the history, which is the failure that actually matters.
+
+    This test previously asserted the empty set and PASSED — because `git check-ignore` skips index
+    entries unless `--no-index` is passed, so it could not fail. A test that cannot fail is the
+    "dead and unproven" category of audit AG-18, and this one shipped one commit after it."""
     tracked = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, check=True)
-    r = subprocess.run(["git", "check-ignore", "--stdin"], cwd=ROOT,
+    r = subprocess.run(["git", "check-ignore", "--stdin", "--no-index"], cwd=ROOT,
                        input=tracked.stdout, capture_output=True)
-    swept = [ln for ln in r.stdout.decode(errors="replace").splitlines() if ln.strip()]
-    assert not swept, f"tracked files now matched by an ignore rule: {swept[:10]}"
+    both = [ln.strip() for ln in r.stdout.decode(errors="replace").splitlines() if ln.strip()]
+    assert both, ("no tracked-but-ignored files at all — either the force-added durable record is "
+                  "gone or --no-index stopped working; both mean this test is now vacuous")
+    ALLOWED = ("experiments/runs/", "experiments/claims/", "experiments/council_reviews/",
+               "experiments/memory.jsonl", "experiments/insights/", "reports/static/")
+    stray = [p for p in both if not p.startswith(ALLOWED)]
+    assert not stray, (
+        f"{len(stray)} tracked-but-ignored file(s) are NOT part of the durable record, so something "
+        f"was force-added that an ignore rule meant to keep out: {stray[:10]}")
 
 
 def test_the_env_file_is_ignored_and_has_never_been_tracked():

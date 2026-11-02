@@ -256,6 +256,8 @@ def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
     else:
         cmp = compare_mod.compare(base_ps, cand_ps, pol, seed=spec.seed)
         cmp["n_seeds"] = {"candidate": len(cand_by), "baseline": len(base_by)}
+        cmp["seeds"] = {"candidate": sorted(cand_by), "baseline": sorted(base_by)}
+        cmp["seed_design"] = "seed_averaged_single_component"      # AG-17: one shape
         cmp["reasons"] = cmp["reasons"] + [
             f"single-seed arm (candidate {len(cand_by)} seed(s), baseline {len(base_by)}): the "
             "model-init variance component is NOT in this interval (audit ML-01b)"]
@@ -381,7 +383,9 @@ def _run_pooled(spec: RunSpec, run_dir: Path, vres) -> dict:
                          "p_floor": pb.get("p_floor"), "ci_one_sided": pb.get("ci_one_sided"),
                          "margin": pol.min_delta_r2, "margin_verdict": margin_verdict,
                          # ML-01: how much of the uncertainty is the model-init seed
-                         "n_seeds": pb.get("n_seeds"), "seed_deltas": pb.get("seed_deltas"),
+                         "n_seeds": pb.get("n_seeds"), "seeds": pb.get("seeds"),
+                         "seed_design": pb.get("seed_design"),
+                         "seed_deltas": pb.get("seed_deltas"),
                          "seed_spread": pb.get("seed_spread"), "se_seed": pb.get("se_seed"),
                          "se_unit": pb.get("se_unit"),
                          "reasons": reasons})

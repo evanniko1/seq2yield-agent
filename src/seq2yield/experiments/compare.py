@@ -134,7 +134,12 @@ def _package(boot: dict, base_mean: float, cand_mean: float, policy: AcceptanceP
     }
     # ML-01b: the seed side of the uncertainty, when there was one. `se_unit`/`se_seed` are what
     # make "the interval is wide because of the seed, not the series" readable instead of inferred.
-    for key in ("n_seeds", "seed_design", "seed_deltas", "seed_spread", "seed_signs_agree",
+    # `seeds` and `n_seed_pairs` were computed by the estimator and dropped here (audit AG-17).
+    # `seeds` is the one that matters: without the actual per-arm seed ids, `seed_design: "paired"`
+    # is an assertion the record cannot be checked against, and "paired" is precisely the claim
+    # that both arms used the SAME seeds rather than merely the same number of them.
+    for key in ("n_seeds", "seeds", "n_seed_pairs", "n_seeds_effective", "seed_design",
+                "seed_deltas", "seed_spread", "seed_signs_agree",
                 "se_unit", "se_seed", "se_total", "df"):
         if key in boot:
             out[key] = boot[key]
@@ -214,7 +219,11 @@ def compare_per_size(base_df: pd.DataFrame, cand_df: pd.DataFrame, sizes,
             if len(common) == 0:
                 continue
             res = _compare_series(b.loc[common], c.loc[common], policy, seed)
+            # same field shape as the two-component path (audit AG-17), plus the seed ids, so a
+            # record is readable without first knowing which estimator produced it
             res["n_seeds"] = {"candidate": len(c_by), "baseline": len(b_by)}
+            res["seeds"] = {"candidate": sorted(c_by), "baseline": sorted(b_by)}
+            res["seed_design"] = "seed_averaged_single_component"
             res["reasons"] = res["reasons"] + [
                 f"single-seed arm (candidate {len(c_by)} seed(s), baseline {len(b_by)}): the "
                 "model-init variance component is NOT in this interval, so it describes series "

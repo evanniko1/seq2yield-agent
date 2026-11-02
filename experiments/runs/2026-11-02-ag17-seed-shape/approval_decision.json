@@ -1,0 +1,47 @@
+{
+  "run_id": "2026-11-02-ag17-seed-shape",
+  "granted": true,
+  "approver": "Evangelos (vm.nikolados@gmail.com)",
+  "paths": [
+    "src/seq2yield/statistics/bootstrap.py",
+    "src/seq2yield/experiments/compare.py",
+    "src/orchestration/execution_harness.py",
+    "docs/CONTRACTS.md",
+    "docs/DECISIONS.md",
+    "tests/test_ag17_seed_field_shape.py",
+    "tests/test_ml01b_series_seeds.py",
+    "tests/test_cnn_vs_rf_seedmatched.py",
+    "experiments/claims/registry.jsonl",
+    "experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/run_card.json",
+    "experiments/runs/2026-11-02-cnn-vs-mlp-seedmatched/run_card.json"
+  ],
+  "path_classes": {
+    "src/seq2yield/statistics/bootstrap.py": "conditional",
+    "src/seq2yield/experiments/compare.py": "conditional",
+    "src/orchestration/execution_harness.py": "require_review",
+    "docs/CONTRACTS.md": "require_review",
+    "docs/DECISIONS.md": "require_review",
+    "tests/test_ag17_seed_field_shape.py": "require_review",
+    "tests/test_ml01b_series_seeds.py": "require_review",
+    "tests/test_cnn_vs_rf_seedmatched.py": "require_review",
+    "experiments/claims/registry.jsonl": "require_review",
+    "experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/run_card.json": "require_review",
+    "experiments/runs/2026-11-02-cnn-vs-mlp-seedmatched/run_card.json": "require_review"
+  },
+  "strict_paths": [],
+  "conditional_paths": [
+    "src/seq2yield/statistics/bootstrap.py",
+    "src/seq2yield/experiments/compare.py",
+    "src/orchestration/execution_harness.py",
+    "docs/CONTRACTS.md",
+    "docs/DECISIONS.md",
+    "tests/test_ag17_seed_field_shape.py",
+    "tests/test_ml01b_series_seeds.py",
+    "tests/test_cnn_vs_rf_seedmatched.py",
+    "experiments/claims/registry.jsonl",
+    "experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/run_card.json",
+    "experiments/runs/2026-11-02-cnn-vs-mlp-seedmatched/run_card.json"
+  ],
+  "reason": "APPROVED by 'Evangelos (vm.nikolados@gmail.com)' for conditional-protected paths: ['src/seq2yield/statistics/bootstrap.py', 'src/seq2yield/experiments/compare.py', 'src/orchestration/execution_harness.py', 'docs/CONTRACTS.md', 'docs/DECISIONS.md', 'tests/test_ag17_seed_field_shape.py', 'tests/test_ml01b_series_seeds.py', 'tests/test_cnn_vs_rf_seedmatched.py', 'experiments/claims/registry.jsonl', 'experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/run_card.json', 'experiments/runs/2026-11-02-cnn-vs-mlp-seedmatched/run_card.json'] | note: AG-17 (DECISIONS #77): `n_seeds` was an int from the two-component estimator and a {candidate, baseline} dict from both single-seed fallbacks, so a field meant to say whether the seed component was estimated needed the answer to be read. One shape now - the per-arm dict, which two of three producers already used and which is the only shape able to express the case the fallback exists for ({candidate: 3, baseline: 1}). Also carries `seeds`, `n_seed_pairs` and `n_seeds_effective` through `_package`, which was dropping them: without the per-arm seed ids, `seed_design: paired` was an assertion no record could be checked against. No interval, verdict or claim moves. Touches two conditionally-protected files (compare.py, bootstrap.py). Human approval in session: 'do AG-17 next'.",
+  "ts": "2026-11-02T19:56:50.374397+00:00"
+}

@@ -1,0 +1,61 @@
+{
+  "passed": true,
+  "violations": [],
+  "by_path": {
+    "src/seq2yield/statistics/bootstrap.py": {
+      "class": "conditional",
+      "ok": true,
+      "reason": null
+    },
+    "src/seq2yield/experiments/compare.py": {
+      "class": "conditional",
+      "ok": true,
+      "reason": null
+    },
+    "src/orchestration/execution_harness.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/CONTRACTS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/DECISIONS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_ag17_seed_field_shape.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_ml01b_series_seeds.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_cnn_vs_rf_seedmatched.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/claims/registry.jsonl": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/run_card.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-11-02-cnn-vs-mlp-seedmatched/run_card.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    }
+  }
+}

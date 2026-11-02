@@ -475,6 +475,72 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #78 — Bookkeeping corrections: four colliding audit ids, a duplicate finding, and a test that could not fail
+- **Authorization.** Same session approval as #77 ("do AG-17 next … then give me a breakdown of
+  still open items"). Found while enumerating the open rows to answer that second half — which is
+  the only reason they were found at all.
+- **Four ids collided, and they were mine.** The "NEW 2026-11-02" block I appended used
+  **AG-05, AG-06, AG-07, AG-08** — ids section 4 had already assigned to the original audit's
+  *provisional claim firewall*, *`--auto` mode policy*, *budget + call logging* and *prompt
+  caching*. All four of mine are FIXED; all four of the originals are **still open**. So when this
+  session reported "AG-05 and AG-06 closed", that was true of my rows and reads as if the audit's
+  were — they are not. Mine are renumbered **AG-20…AG-23** (an open row's id is the one people
+  quote, and the audit document already references the section-4 numbering), each carrying a note
+  that the 2026-11-02 commits refer to it by the old id. No duplicate ids remain.
+- **AG-19 was a rediscovery, not a discovery.** `IM-09`, filed by the 2026-11-01 audit, already
+  said: *"An inline comment makes `data/embeddings/* # …` never match, so 512 MB of embeddings are
+  one `git add -A` away."* That is exactly what #76 "found" and fixed a day later. I filed a new row
+  instead of checking the backlog I was working from. Merged into IM-09, which now marks that clause
+  fixed and keeps its other two.
+- **And IM-09's clause 2 was reframed, because my own test on it was both vacuous and wrong.**
+  `test_no_tracked_file_is_matched_by_an_ignore_rule` asserted the empty set and passed — because
+  `git check-ignore` **skips index entries unless `--no-index`**, so it could not fail. There are in
+  fact **123** tracked-but-ignored files, not IM-09's ~45. But they are the **deliberate durable
+  record** — run-cards, approval records, the claim ledger, council reviews — force-added precisely
+  because `experiments/runs/*` is ignored so a run does not dirty the tree. So IM-09's prescribed
+  fix ("untrack run artifacts") is wrong, and the assertion I wrote would have been wrong too had it
+  been capable of failing. The real invariant is that nothing *other than* durable record is
+  force-added — which is what would catch a 512 MB `.npz` or a `.env` entering history — and that is
+  what the test now asserts, verified against four stray paths.
+- **The uncomfortable part.** A test that cannot fail is the exact "dead and unproven" category
+  #74's audit raised as AG-18, and I shipped one in the very next commit. The lesson AG-18 drew —
+  *drive a real value through the consumer* — applies to assertions as much as to record fields: an
+  assertion that has never been observed to fail is not known to work.
+
+## #77 — AG-17: one shape for `n_seeds`, and the field that made "paired" checkable
+- **Authorization.** Human approval in session ("do AG-17 next"). Record:
+  `experiments/runs/2026-11-02-ag17-seed-shape/`.
+- **The defect.** `n_seeds` was an `int` from `bootstrap._two_component` and a
+  `{"candidate": n, "baseline": n}` dict from both single-seed fallbacks (`compare_per_size` and
+  `execution_harness`). Nothing broke, because nothing reads it for logic — the cost was that a
+  field whose entire purpose is to answer *"was the seed component estimated, and from how many
+  seeds per arm?"* could not be read without already knowing which estimator had produced the
+  record, which is the answer.
+- **The dict won on evidence, not taste.** Two of the three producers already emitted it, and an
+  `int` cannot express the case the fallback exists *for*: `{"candidate": 3, "baseline": 1}`. The
+  useful scalar already had a precise name, `n_seed_pairs`. Changed at three sites in `bootstrap.py`
+  (the main output and both degenerate early returns) so the pooled and per-series estimators stay
+  identical through their shared `_two_component`, plus both fallbacks.
+- **The more useful half was found on the way.** `compare._package` was **dropping** `seeds`,
+  `n_seed_pairs` and `n_seeds_effective`, all of which the estimator already computed. `seeds` is
+  the one that matters: `seed_design: "paired"` asserts that both arms used the **same seeds**, not
+  merely the same *number* of them, and without the per-arm seed ids no record could be checked
+  against that claim. All three now travel, the fallback reports
+  `seed_design: "seed_averaged_single_component"` with its seed ids, and an unpaired design is now
+  verifiable from the record (`{"candidate": [7,8,9], "baseline": [1,2]}` → `"unpaired"`).
+- **One thing deliberately left alone.** The fallback carries **no** `se_seed` key at all rather
+  than `se_seed: 0.0`. Absent is the honest encoding of a component that was not estimated; a zero
+  would read as "measured, and there is no seed variance", which is the ML-01b error in one field.
+  A test pins the absence.
+- **Records.** Both committed run-cards were regenerated — and the first regeneration wrote
+  `seeds: null`, because the recorders copy a fixed key list that predated the change. An explicit
+  `null` reads as "we looked and there were none", so the generators were fixed rather than the
+  output. That is the second time this session that lesson has come up.
+- **Not a behaviour change.** No interval, verdict, p-value or claim moves: the full suite is green
+  and every statistical assertion in `test_ml01b_series_seeds.py` and `test_st3_margin.py` passes
+  unchanged. `tests/test_ag17_seed_field_shape.py` exercises all three producers and every run-card
+  on disk; **4 of its 10 cases fail against the old int shape.**
+
 ## #76 — AG-19: a `.gitignore` comment in the wrong place, and the July run's memory line
 - **Authorization.** Human approval in session ("commit and push any outstanding work"). Record:
   `experiments/runs/2026-11-02-ag19-gitignore/`.

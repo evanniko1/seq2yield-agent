@@ -1,5 +1,5 @@
 {
-  "ts": "2026-11-02T17:45:47.481840+00:00",
+  "ts": "2026-11-02T19:55:14.413788+00:00",
   "run_id": "2026-11-02-cnn-vs-rf-seedmatched",
   "proposal_id": "manual-2026-11-02-pointer-swap",
   "status": "rejected",
@@ -26,7 +26,7 @@
   ],
   "baseline_source": "registry:2026-11-02-full56-seeds (seed-matched, both arms)",
   "provenance": {
-    "git_sha": "3b49252929f7",
+    "git_sha": "3a4807403ad7",
     "numerics": "c92189526f4c7d8e"
   },
   "dataset": "ecoli",

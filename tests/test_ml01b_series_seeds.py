@@ -135,7 +135,9 @@ def test_a_single_seed_result_says_the_seed_component_is_missing():
     rng = np.random.default_rng(2)
     base = pd.Series(rng.normal(0.5, 0.1, 20))
     out = paired_series_multiseed({1: base}, {1: base + 0.03}, seed=0)
-    assert out["n_seeds"] == 1 and out["se_seed"] == 0.0
+    # per-arm on every path (AG-17); `seeds` is what makes "paired" checkable rather than asserted
+    assert out["n_seeds"] == {"candidate": 1, "baseline": 1} and out["se_seed"] == 0.0
+    assert out["seeds"] == {"candidate": [1], "baseline": [1]}
     assert "not estimable" in out["note"]
 
 
@@ -258,11 +260,16 @@ def test_per_size_uses_the_two_component_estimator_only_when_both_arms_have_seed
     multi = C.compare_per_size(frame("rf", [1, 2, 3], vals),
                                frame("cnn", [1, 2, 3], [v + 0.03 for v in vals]),
                                [250], "rf", "cnn", POL)
-    assert multi[0]["ci_method"] == "t_two_component" and multi[0]["n_seeds"] == 3
+    assert multi[0]["ci_method"] == "t_two_component"
+    assert multi[0]["n_seeds"] == {"candidate": 3, "baseline": 3}       # AG-17: one shape
+    assert multi[0]["seeds"] == {"candidate": [1, 2, 3], "baseline": [1, 2, 3]}
     one = C.compare_per_size(frame("rf", [1], vals),
                              frame("cnn", [1, 2, 3], [v + 0.03 for v in vals]),
                              [250], "rf", "cnn", POL)
     assert one[0]["ci_method"] == "t"
+    # the case an int could not express, which is why the shape changed (AG-17)
+    assert one[0]["n_seeds"] == {"candidate": 3, "baseline": 1}
+    assert one[0]["seeds"] == {"candidate": [1, 2, 3], "baseline": [1]}
     assert any("NOT in this interval" in r for r in one[0]["reasons"])
 
 

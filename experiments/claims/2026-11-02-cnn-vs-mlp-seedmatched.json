@@ -1,5 +1,5 @@
 {
-  "ts": "2026-11-02T18:34:52.162804+00:00",
+  "ts": "2026-11-02T19:55:19.842709+00:00",
   "run_id": "2026-11-02-cnn-vs-mlp-seedmatched",
   "proposal_id": "ag16-remeasure-of-2026-07-16-council-cnn-vs-mlp-203850",
   "status": "accepted",
@@ -26,7 +26,7 @@
   ],
   "baseline_source": "registry:2026-11-02-full56-seeds (seed-matched, both arms)",
   "provenance": {
-    "git_sha": "84a02acf1304",
+    "git_sha": "3a4807403ad7",
     "numerics": "c92189526f4c7d8e"
   },
   "dataset": "ecoli",

@@ -49,7 +49,24 @@
       "ci_method": "t_two_component",
       "margin": 0.02,
       "n_series": 56,
-      "n_seeds": 3,
+      "n_seeds": {
+        "candidate": 3,
+        "baseline": 3
+      },
+      "seeds": {
+        "candidate": [
+          1,
+          2,
+          3
+        ],
+        "baseline": [
+          1,
+          2,
+          3
+        ]
+      },
+      "n_seed_pairs": 3,
+      "n_seeds_effective": 3,
       "se_unit": 0.0032055010046809058,
       "se_seed": 0.0011334781682856914,
       "se_total": 0.0034000013895571545,
@@ -186,8 +203,8 @@
     },
     "cuda": true,
     "code": {
-      "git_sha": "3b49252929f75091747d467b04c8af4e3ba97bf9",
-      "git_sha_short": "3b49252929f7",
+      "git_sha": "3a4807403ad7d4bf5bfed1c0887e05042da8dc1a",
+      "git_sha_short": "3a4807403ad7",
       "branch": "main",
       "dirty": true
     },
@@ -226,12 +243,12 @@
       "version": 3
     },
     "inference": {
-      "fingerprint": "53d7302c272f2a65",
+      "fingerprint": "3849a964c7e9e7e6",
       "n_files": 7,
       "files": {
-        "src/seq2yield/experiments/compare.py": "7ffe580846f7e93136154670b937457a9716ff1bd69bcf2039c0dfa575582a8a",
+        "src/seq2yield/experiments/compare.py": "d407abfaf4320afbdc33df89bd7a9c38554dd3d1d0678e44ee8d138d3d9fa7ac",
         "src/seq2yield/statistics/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "src/seq2yield/statistics/bootstrap.py": "93d9ad8803521277f4165ff6f0190122c8239de0eb9d13e8f0b4b9e80fbb6036",
+        "src/seq2yield/statistics/bootstrap.py": "513a1b970d0051f28d666527a6b73f59ff122a8e6331a0aefc3e77be984fb54e",
         "src/seq2yield/statistics/calibration.py": "e537ccdda82079d9a1c2de673d7f53584da3adb9561c8497256c750e29e1087d",
         "src/seq2yield/statistics/mixed_effects.py": "91ff966e3f5011bab906172960b36f6ce92f881cac4ee7c18a0b4255e5f1616f",
         "src/seq2yield/statistics/multiple_comparisons.py": "9bf69a73db900d74f633e202e1101311bbe1da8d99a6a9775683e1978cc7b565",

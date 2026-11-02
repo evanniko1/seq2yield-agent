@@ -97,10 +97,10 @@ def test_both_arms_carry_three_seeds_so_the_interval_has_both_components(recompu
     is what every pre-2026-11-02 figure in R-5 was."""
     for size in SIZES:
         r = recomputed[size]
-        # NB `n_seeds` is an int on the two-component path and a {candidate, baseline} dict on
-        # `compare_per_size`'s single-seed fallback. An int here is itself the evidence that the
-        # multiseed estimator ran; the dict would mean it did not (logged as AG-17).
-        assert r["n_seeds"] == 3, f"train {size}: {r.get('n_seeds')!r}"
+        # one shape on every path since AG-17; `ci_method` is what says which estimator ran,
+        # and `seeds` is what makes `seed_design: "paired"` checkable instead of asserted
+        assert r["n_seeds"] == {"candidate": 3, "baseline": 3}, f"train {size}: {r.get('n_seeds')!r}"
+        assert r["seeds"] == {"candidate": [1, 2, 3], "baseline": [1, 2, 3]}
         assert r["seed_design"] == "paired"
         assert r["se_seed"] > 0 and r["se_unit"] > 0
         assert r["se_total"] >= max(r["se_unit"], r["se_seed"])

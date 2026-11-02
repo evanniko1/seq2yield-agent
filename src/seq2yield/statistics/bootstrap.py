@@ -315,7 +315,12 @@ def _two_component(V: np.ndarray, *, n_units: int, cs: list, bs: list, paired: b
     mean = float(V.mean())
     seed_deltas = V.mean(axis=1)
     n_pairs = V.shape[0]
-    out = {"mean_delta": mean, "n_seeds": len(cs), "seeds": {"candidate": cs, "baseline": bs},
+    # `n_seeds` is PER ARM on every path (audit AG-17). An int cannot express the case the
+    # single-seed fallback exists for — "candidate 3, baseline 1" — which is the one thing
+    # this field is for; the useful scalar is `n_seed_pairs`, which already has a precise name.
+    out = {"mean_delta": mean,
+           "n_seeds": {"candidate": len(cs), "baseline": len(bs)},
+           "seeds": {"candidate": cs, "baseline": bs},
            "seed_design": "paired" if paired else "unpaired", "n_seed_pairs": n_pairs,
            "ci_method": "t_two_component",
            "seed_deltas": [float(x) for x in seed_deltas],
@@ -414,7 +419,9 @@ def paired_series_multiseed(baseline_by_seed: dict, candidate_by_seed: dict, *,
     n_units = lens.pop() if lens else 0
     base = {"unit": "series", "n_units": int(n_units), "n_series": int(n_units)}
     if not pairs or n_units == 0:
-        return base | {"mean_delta": float("nan"), "n_seeds": len(cs),
+        return base | {"mean_delta": float("nan"),
+                       "n_seeds": {"candidate": len(cs), "baseline": len(bs)},
+                       "seeds": {"candidate": cs, "baseline": bs},
                        "seed_design": "paired" if paired else "unpaired"} | _no_inference(n_units)
     V = np.vstack([np.asarray(candidate_by_seed[a], float) - np.asarray(baseline_by_seed[b], float)
                    for a, b in pairs])
@@ -464,7 +471,9 @@ def paired_r2_multiseed(y_true, cand_by_seed: dict, base_by_seed: dict, *, group
     pairs = [(s, s) for s in cs] if paired else [(a, b) for a in cs for b in bs]
     base = {"unit": "sequence" if units is None else "family", "n_units": int(n_units)}
     if not pairs or not ss:
-        return base | {"mean_delta": float("nan"), "n_seeds": len(cs),
+        return base | {"mean_delta": float("nan"),
+                       "n_seeds": {"candidate": len(cs), "baseline": len(bs)},
+                       "seeds": {"candidate": cs, "baseline": bs},
                        "seed_design": "paired" if paired else "unpaired"} | _no_inference(n_units)
 
     V = np.vstack([_linearize(((y_true - np.asarray(base_by_seed[b], float)) ** 2

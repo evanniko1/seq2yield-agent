@@ -165,7 +165,17 @@ EVERY comparison, pooled or per-series, REQUIRES `model_seeds`, `n_seeds`, `seed
 verdict from one model-init seed describes only unit variance; `ci_method: "t_two_component"`
 identifies an interval that carries both components, `seed_design` says whether the arms were
 seed-paired, and a result whose per-seed deltas disagree in direction is not significant whatever
-the interval says. The size of the seed component is a property of the design and must be read
+the interval says.
+
+`n_seeds` is **always** `{"candidate": n, "baseline": n}` — per arm, on every code path (audit
+AG-17). It was an `int` from the two-component estimator and a dict from the two single-seed
+fallbacks, so reading it required knowing which estimator had run. The per-arm shape is the
+load-bearing one because the fallback exists precisely for the case an int cannot express:
+`{"candidate": 3, "baseline": 1}`. The useful scalar is `n_seed_pairs`, which already says exactly
+what it is. `seeds` carries the per-arm seed **ids**, which is what makes `seed_design: "paired"`
+checkable rather than asserted — "paired" claims both arms used the *same* seeds, not merely the
+same number of them, and without the ids nothing in the record can confirm it. `seed_design` is
+`"paired"`, `"unpaired"`, or `"seed_averaged_single_component"` on the fallback. The size of the seed component is a property of the design and must be read
 from the record, not assumed: it is **14x** the unit component on a 48,936-unit random library and
 **0.31x** on the 56-series E. coli grid, where averaging over seeds therefore *narrows* the
 interval rather than widening it. A single-seed comparison is still recorded and still says so in
