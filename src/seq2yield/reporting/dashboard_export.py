@@ -131,6 +131,12 @@ def build_html(records: list[dict], claims: list[dict], cost: dict | None = None
 
     claim_rows = [f"<li><b>{_esc(c['run_id'])}</b>: {_esc(c['claim'])}</li>"
                   for c in reversed(accepted_claims)] or ["<li><i>no accepted claims yet</i></li>"]
+    # A run the harness accepted whose claim the protocol could not support (audit SA-2) drops out
+    # of the list above, which would make it look as if the run never happened. Show it as
+    # withheld: an audit UI that hides its own refusals is not an audit UI.
+    withheld_rows = [f"<li><b>{_esc(c['run_id'])}</b>: {_esc(c.get('claim_withheld'))}</li>"
+                     for c in reversed(claims)
+                     if c.get("status") == "accepted" and c.get("claim_withheld")]
 
     return f"""<!doctype html><html><head><meta charset="utf-8">
 <title>seq2yield-agent — research dashboard</title>
@@ -168,6 +174,9 @@ def build_html(records: list[dict], claims: list[dict], cost: dict | None = None
 
 <h2>Accepted claims</h2>
 <ul>{''.join(claim_rows)}</ul>
+{(f'<h2>Claims withheld ({len(withheld_rows)})</h2>'
+  f'<p class="sub">The harness accepted these runs; the protocol does not support stating them '
+  f'as claims.</p><ul>{"".join(withheld_rows)}</ul>') if withheld_rows else ''}
 
 <h2>Question-space coverage map</h2>
 <div class="legend"><span><span class="sw" style="background:#1a7f37"></span>settled</span>

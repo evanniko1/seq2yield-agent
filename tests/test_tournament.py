@@ -81,7 +81,10 @@ def test_series_unit_tournament_uses_series_bootstrap(monkeypatch):
             "rf":    {"per_series": base + 0.02, "source": "biology_prior", "hparams": {}},
             "ridge": {"per_series": base - 0.10, "source": "default", "hparams": {}},
         }
-        return {m: {**v, "per_series": np.asarray(v["per_series"])} for m, v in out.items()}, list(range(8))
+        # (scored, series_ids, n_series_available) — the third element is SA-2's: a subset
+        # claim has to know how many series it was a subset OF
+        return ({m: {**v, "per_series": np.asarray(v["per_series"])} for m, v in out.items()},
+                list(range(8)), 56)
 
     monkeypatch.setattr(T, "_series_unit_family", _canned_series)
     res = T.run_tournament("ecoli", family=["cnn", "rf", "ridge"], n_boot=2000)

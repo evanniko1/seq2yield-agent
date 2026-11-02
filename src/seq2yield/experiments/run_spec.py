@@ -50,6 +50,12 @@ class RunSpec(BaseModel):
     iterations: list[int] = Field(default_factory=lambda: [1, 2, 3, 4, 5])
     series: list[int] | None = None             # None -> all series in the split
     n_series: int | None = None                 # used if series is None
+    # HOW a bounded subset of series is chosen, recorded because it is part of the protocol
+    # (audit SA-2): every E. coli claim so far used the same sorted prefix, which is not a sample.
+    # `random` (default) | `stratified` (on working-set size) | `prefix` (legacy, cannot carry a
+    # claim). See runner.select_series.
+    series_selection: str = "random"
+    series_sample_seed: int | None = None       # None -> `seed`
     seed: int = 1
     # Model-INIT seeds, one fit per seed with the split and subsample held fixed (audit ML-01).
     # Three is the minimum that lets the seed variance component be estimated at all; a single
@@ -130,6 +136,19 @@ def validate_runspec(spec: RunSpec, *, unlocked_tier: str, primary_metric: str =
         if len(spec.iterations) < min_seeds_for_repeats:
             warnings.append(f"only {len(spec.iterations)} repeats (<{min_seeds_for_repeats}); "
                             "primary R² less stable than the paper's 5-repeat protocol")
+
+    # audit SA-2: the series-selection rule is part of the protocol, so an unknown one is an error
+    # and a prefix subset is a warning here — the CLAIM is what gets withheld
+    # (`claim_registry._withheld`), because a bounded prefix run is a perfectly good probe.
+    from ..data.series_sample import SERIES_SELECTIONS
+    if spec.series_selection not in SERIES_SELECTIONS:
+        errors.append(f"unknown series_selection '{spec.series_selection}' "
+                      f"(have {list(SERIES_SELECTIONS)})")
+    elif spec.series_selection == "prefix" and spec.n_series and not spec.series:
+        warnings.append(
+            f"series_selection='prefix' on {spec.n_series} series: a sorted prefix is not a sample, "
+            "so this run can probe but cannot carry a claim (audit SA-2 — the first-10 CNN−RF "
+            "delta is +0.0310 against +0.0210 on all 56 at size 500)")
 
     if spec.acceptance_policy.track == "performance" and not spec.acceptance_policy.baseline_run_id:
         errors.append("performance track requires acceptance_policy.baseline_run_id")

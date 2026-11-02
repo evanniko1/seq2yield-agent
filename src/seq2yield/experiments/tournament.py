@@ -74,6 +74,10 @@ class TournamentResult:
     selection: str = "test"          # nested_val (M-1: ranked on val, reported on test) | test (legacy)
     ci_method: str | None = None     # t | percentile (C3 fence; audit ST-2)
     margin_verdict: str | None = None   # winner vs runner-up, against the margin (audit ST-3)
+    # SA-2: HOW the series subset was chosen, and out of how many. "prefix" on a strict subset
+    # cannot carry a claim; None means the scope has no series subset to choose (pooled).
+    series_selection: str | None = None
+    n_series_available: int | None = None
 
     def as_dict(self) -> dict:
         d = {k: v for k, v in asdict(self).items() if k != "leaderboard"}
@@ -138,7 +142,7 @@ def _seq_unit_family(dataset, family, train_full, test, *, train_size, feature_s
 
 
 def _series_unit_family(dataset, family, *, train_size, feature_set, feature_scaling, tune,
-                        n_series, seed):
+                        n_series, seed, series_selection="random"):
     """Series-unit (E. coli): one model per series; the per-series R² vector is the paired basis."""
     from ..data.loaders import load_split_csv, series_subset
     from ..data.splits import load_manifest
@@ -146,7 +150,12 @@ def _series_unit_family(dataset, family, *, train_size, feature_set, feature_sca
     it = next(iter(man["iterations"]))
     work = load_split_csv(man["iterations"][it]["working_set"]["path"])
     held = load_split_csv(man["iterations"][it]["heldout_set"]["path"])
-    series_ids = sorted(work["mut_series"].unique())[:n_series]
+    # SA-2: the same seeded sample rule as the harness, not a sorted prefix — this was the third
+    # copy of `[:n_series]` in the codebase and its subsets fed accepted claims directly
+    from ..data.series_sample import select_series
+    all_series = sorted(int(x) for x in work["mut_series"].unique())
+    series_ids = select_series(all_series, n_series, selection=series_selection, seed=seed,
+                               sizes=dict(work["mut_series"].value_counts()))
     from ..training import metrics as M
     from ..models._torch_train import stratified_val_indices
     out = {m: {"per_series": [], "per_series_val": [], "source": None, "hparams": None} for m in family}
@@ -170,7 +179,7 @@ def _series_unit_family(dataset, family, *, train_size, feature_set, feature_sca
     for m in family:
         out[m]["per_series"] = np.asarray(out[m]["per_series"], dtype=float)
         out[m]["per_series_val"] = np.asarray(out[m]["per_series_val"], dtype=float)
-    return out, series_ids
+    return out, series_ids, len(all_series)
 
 
 # ------------------------------------------------------------------ the tournament
@@ -247,7 +256,7 @@ def run_tournament(dataset: str, *, subregion: str | None = None, family: list[s
                    train_size: int = 1000, feature_set: str = "one_hot",
                    feature_scaling: str = "auto", tune: bool = False, n_series: int = 8,
                    n_boot: int = 2000, alpha: float = 0.05, min_delta: float | None = None,
-                   seed: int = 0) -> TournamentResult:
+                   seed: int = 0, series_selection: str = "random") -> TournamentResult:
     """Rank a model `family` on a scope and FDR-correct the winner's edge. Returns a
     TournamentResult (leaderboard + winner + significance). `feature_scaling='auto'` keeps the
     flat models on a fair footing; conv models ignore scaling."""
@@ -259,14 +268,17 @@ def run_tournament(dataset: str, *, subregion: str | None = None, family: list[s
         strata.parse_subregion(subregion)                        # raises ValueError if not 'stratum=level'
 
     if ds.structure == "per_series" and subregion is None:
-        scored_raw, series_ids = _series_unit_family(
+        scored_raw, series_ids, n_avail = _series_unit_family(
             dataset, family, train_size=train_size, feature_set=feature_set,
-            feature_scaling=feature_scaling, tune=tune, n_series=n_series, seed=seed)
+            feature_scaling=feature_scaling, tune=tune, n_series=n_series, seed=seed,
+            series_selection=series_selection)
         scored = {m: {"r2": float(np.mean(v["per_series"])), "per_series": v["per_series"],
                       "r2_val": (float(np.mean(v["per_series_val"])) if v.get("per_series_val") is not None else None),
                       "source": v["source"], "hparams": v["hparams"]} for m, v in scored_raw.items()}
         basis, scope, unit, n_units = {"unit": "series"}, "per_series", "series", len(series_ids)
+        series_sel, n_series_avail = series_selection, n_avail
     else:
+        series_sel, n_series_avail = None, None
         if ds.structure == "per_series":                 # single series -> sequence unit
             from ..data.loaders import load_split_csv, series_subset
             from ..data.splits import load_manifest
@@ -309,7 +321,8 @@ def run_tournament(dataset: str, *, subregion: str | None = None, family: list[s
         train_size=train_size, feature_set=feature_set, family=family, winner=board[0].model,
         winner_significant=sig, runner_up=runner_up, min_delta=md, alpha=alpha,
         n_units=n_units, leaderboard=board, selection=selection, ci_method=ci_method,
-        margin_verdict=margin_verdict)
+        margin_verdict=margin_verdict, series_selection=series_sel,
+        n_series_available=n_series_avail)
 
 
 def best_model(dataset: str, subregion: str | None = None, *, record: bool = True,
@@ -349,6 +362,10 @@ def record_tournament(res: TournamentResult, claims_dir: str | Path | None = Non
                     "ci_method": res.ci_method, "margin_verdict": res.margin_verdict,
                     "margin": res.min_delta,
                     "dataset": res.dataset, "comparison_train_size": res.train_size,
-                    "n_series": (res.n_units if res.bootstrap_unit == "series" else None)},
+                    "n_series": (res.n_units if res.bootstrap_unit == "series" else None),
+                    # SA-2: tournaments write accepted claims directly, so the selection rule has
+                    # to reach the registry from here too
+                    "series_selection": res.series_selection,
+                    "n_series_available": res.n_series_available},
         claim_allowed=claim, claims_dir=claims_dir)
     return entry

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from ..statistics.bootstrap import paired_bootstrap_ci
+from ..statistics.bootstrap import paired_bootstrap_ci, paired_series_multiseed
 from .run_spec import AcceptancePolicy
 
 
@@ -100,8 +100,11 @@ def _decide(delta: float, ci_excludes_zero: bool, ci, policy: AcceptancePolicy,
                             f"±{margin} difference or its absence"], "unresolved"
 
 
-def _compare_series(base: pd.Series, cand: pd.Series, policy: AcceptancePolicy, seed: int) -> dict:
-    boot = paired_bootstrap_ci(base.values, cand.values, seed=seed)
+def _package(boot: dict, base_mean: float, cand_mean: float, policy: AcceptancePolicy) -> dict:
+    """Turn an estimator's output + the acceptance rule into the comparison record.
+
+    One packaging function for both the single-seed and the (series × seed) estimator, so the two
+    cannot report different field sets for the same comparison."""
     delta = boot["mean_delta"]
     status, reasons, margin_verdict = _decide(delta, boot["excludes_zero"], boot["ci"], policy,
                                               ci_one_sided=boot.get("ci_one_sided"))
@@ -110,15 +113,15 @@ def _compare_series(base: pd.Series, cand: pd.Series, policy: AcceptancePolicy, 
     # unit count whose exact test cannot reach alpha is a limit of the evidence worth reporting
     if boot.get("note"):
         reasons = reasons + [boot["note"]]
-    return {
+    out = {
         "status": status,
-        "baseline_mean": float(base.mean()),
-        "candidate_mean": float(cand.mean()),
+        "baseline_mean": float(base_mean),
+        "candidate_mean": float(cand_mean),
         "mean_delta": float(delta),
         "paired_bootstrap_ci": boot["ci"],
         "ci_excludes_zero": boot["excludes_zero"],
         "p_value": boot.get("p_value"),
-        "n_series": boot["n_series"],
+        "n_series": boot.get("n_series", boot.get("n_units")),
         "ci_method": boot.get("ci_method"),
         "p_method": boot.get("p_method"),
         "p_floor": boot.get("p_floor"),
@@ -129,6 +132,26 @@ def _compare_series(base: pd.Series, cand: pd.Series, policy: AcceptancePolicy, 
         "margin_verdict": margin_verdict,
         "reasons": reasons,
     }
+    # ML-01b: the seed side of the uncertainty, when there was one. `se_unit`/`se_seed` are what
+    # make "the interval is wide because of the seed, not the series" readable instead of inferred.
+    for key in ("n_seeds", "seed_design", "seed_deltas", "seed_spread", "seed_signs_agree",
+                "se_unit", "se_seed", "se_total", "df"):
+        if key in boot:
+            out[key] = boot[key]
+    return out
+
+
+def _compare_series(base: pd.Series, cand: pd.Series, policy: AcceptancePolicy, seed: int) -> dict:
+    boot = paired_bootstrap_ci(base.values, cand.values, seed=seed)
+    return _package(boot, base.mean(), cand.mean(), policy)
+
+
+def _compare_series_multiseed(base_by_seed: dict, cand_by_seed: dict,
+                              policy: AcceptancePolicy, seed: int) -> dict:
+    boot = paired_series_multiseed(base_by_seed, cand_by_seed, seed=seed)
+    base_mean = float(pd.concat(list(base_by_seed.values())).mean())
+    cand_mean = float(pd.concat(list(cand_by_seed.values())).mean())
+    return _package(boot, base_mean, cand_mean, policy)
 
 
 def compare(baseline_per_series: pd.Series, candidate_per_series: pd.Series,
@@ -139,19 +162,63 @@ def compare(baseline_per_series: pd.Series, candidate_per_series: pd.Series,
                            policy, seed)
 
 
+def compare_multiseed(baseline_by_seed: dict, candidate_by_seed: dict,
+                      policy: AcceptancePolicy, *, seed: int = 0) -> dict:
+    """Same decision over a (series × model-init seed) grid, carrying BOTH variance components.
+
+    AUDIT ML-01b. `compare` above sees one R² per series and therefore cannot know how much of the
+    gap is model initialisation. This takes `{seed: per-series R²}` for each arm and reports an
+    interval that includes the seed component, so a candidate that only got a luckier draw is not
+    accepted. The series set is intersected across every seed of both arms first: a ragged grid
+    would average the two arms over different series and silently break the pairing.
+
+    With one seed per arm the estimator reduces to `compare`'s exactly, so this is safe to call on
+    single-seed records — what it is NOT safe to do is call it on a multi-seed candidate against a
+    single-seed baseline and read the result as if both components were estimated. That case is
+    refused upstream (`execution_harness._baseline_choice`), because the baseline's missing seed
+    variance is not zero, it is unmeasured."""
+    common = None
+    for s in list(baseline_by_seed.values()) + list(candidate_by_seed.values()):
+        common = s.index if common is None else common.intersection(s.index)
+    if common is None or len(common) == 0:
+        return _package({"mean_delta": float("nan"), "ci": [float("nan"), float("nan")],
+                         "excludes_zero": False, "p_value": 1.0, "n_units": 0,
+                         "note": "no series shared by every arm and seed"},
+                        float("nan"), float("nan"), policy)
+    return _compare_series_multiseed({k: v.loc[common] for k, v in baseline_by_seed.items()},
+                                     {k: v.loc[common] for k, v in candidate_by_seed.items()},
+                                     policy, seed)
+
+
 def compare_per_size(base_df: pd.DataFrame, cand_df: pd.DataFrame, sizes,
                      baseline_model: str, candidate_model: str, policy: AcceptancePolicy,
                      *, seed: int = 0) -> list[dict]:
-    """A paired-bootstrap verdict at EACH train size (rigorous per-size data-efficiency curve)."""
-    from .runner import per_series_r2
+    """A paired verdict at EACH train size (rigorous per-size data-efficiency curve).
+
+    Routes to the (series × seed) estimator when BOTH arms carry ≥2 model-init seeds, and to the
+    series-only one otherwise — with the deficiency named in `reasons` rather than left to be
+    inferred from a missing field (audit ML-01b)."""
+    from .runner import per_series_r2_by_seed
     out = []
     for size in sorted(set(sizes)):
-        b = per_series_r2(base_df, size, baseline_model)
-        c = per_series_r2(cand_df, size, candidate_model)
-        common = b.index.intersection(c.index)
-        if len(common) == 0:
+        b_by = per_series_r2_by_seed(base_df, size, baseline_model)
+        c_by = per_series_r2_by_seed(cand_df, size, candidate_model)
+        if not b_by or not c_by:
             continue
-        res = _compare_series(b.loc[common], c.loc[common], policy, seed)
+        if len(b_by) > 1 and len(c_by) > 1:
+            res = compare_multiseed(b_by, c_by, policy, seed=seed)
+        else:
+            b = pd.concat(list(b_by.values()), axis=1).mean(axis=1)
+            c = pd.concat(list(c_by.values()), axis=1).mean(axis=1)
+            common = b.index.intersection(c.index)
+            if len(common) == 0:
+                continue
+            res = _compare_series(b.loc[common], c.loc[common], policy, seed)
+            res["n_seeds"] = {"candidate": len(c_by), "baseline": len(b_by)}
+            res["reasons"] = res["reasons"] + [
+                f"single-seed arm (candidate {len(c_by)} seed(s), baseline {len(b_by)}): the "
+                "model-init variance component is NOT in this interval, so it describes series "
+                "variance only (audit ML-01b)"]
         res["train_size"] = int(size)
         out.append(res)
     return out

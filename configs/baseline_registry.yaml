@@ -30,6 +30,23 @@ require:
   # the comparison record (`ci_method`), not here.
   inference_fingerprint: false
 
+# A refused registry with no recorded reason is decoration; a refused registry whose replacement is
+# named and dated is an honest known state. This block is what the difference looks like, and
+# `tests/test_retractions.py` accepts a refusal only while it is present (audit ML-01b, #69).
+pending_rebuild:
+  run_id: 2026-11-02-full56-seeds
+  started: 2026-11-02
+  reason: >
+    ML-01b added a model-init seed loop to the registry builder and moved the series-selection rule
+    into `data/series_sample.py`, so the stored registry can no longer prove it matches the code
+    that would produce it — and, separately, it holds one baseline seed, which cannot be paired
+    seed-matched against a candidate's three. The rebuild is `--model-seeds 1 2 3` over all 56
+    series, 5 iterations, 4 sizes, 3 models: 10,080 fits, roughly 5-6 h, checkpointed per
+    (iteration, series) and resumable. Until it lands the harness trains an in-run baseline at the
+    candidate's own seeds, which is a CORRECT comparison and simply slower — the rebuild is a
+    compute optimisation, not a correctness prerequisite. Move `run_id` above to this id when it
+    completes and delete this block.
+
 superseded:
   - run_id: 2026-11-01-full56
     locked: 2026-11-01

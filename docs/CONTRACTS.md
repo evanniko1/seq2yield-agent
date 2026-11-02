@@ -160,12 +160,23 @@ docs/RETRACTIONS.md. `p_floor` is the smallest p the test could have returned: w
 alpha, nothing at that unit count is resolvable and `excludes_zero` is false whatever the interval
 says.
 
-A pooled comparison also REQUIRES `model_seeds`, `n_seeds`, `seed_deltas`, `seed_spread` and
-`se_seed` / `se_unit` (audit ML-01). A verdict from one model-init seed describes only unit
-variance, and on a large random library the seed component is **14x** the unit component — so
-`ci_method: "t_two_component"` identifies an interval that carries both, `seed_design` says whether
-the arms were seed-paired, and a result whose per-seed deltas disagree in direction is not
-significant whatever the interval says.
+EVERY comparison, pooled or per-series, REQUIRES `model_seeds`, `n_seeds`, `seed_deltas`,
+`seed_spread` and `se_seed` / `se_unit` (audit ML-01, extended to the per-series path by ML-01b). A
+verdict from one model-init seed describes only unit variance; `ci_method: "t_two_component"`
+identifies an interval that carries both components, `seed_design` says whether the arms were
+seed-paired, and a result whose per-seed deltas disagree in direction is not significant whatever
+the interval says. The size of the seed component is a property of the design and must be read
+from the record, not assumed: it is **14x** the unit component on a 48,936-unit random library and
+**0.31x** on the 56-series E. coli grid, where averaging over seeds therefore *narrows* the
+interval rather than widening it. A single-seed comparison is still recorded and still says so in
+`reasons`, so an interval that omits the component is identifiable rather than indistinguishable.
+
+A per-series comparison also REQUIRES `series_selection`, `series_sample_seed` and
+`n_series_available` (audit SA-2). A bounded subset chosen as a sorted prefix has no sampling
+distribution, so `claim_registry` withholds the claim and records `claim_withheld`; `random` and
+`stratified` are seeded sample rules whose subset estimates are unbiased (measured) and whose
+residual over-claim rate is ≤8.5%. `series_selection: null` identifies a record written before
+2026-11-02, when the rule was always the prefix.
 
 A comparison also REQUIRES `margin`, `margin_verdict` and `ci_one_sided` (audit ST-3). `accepted`
 means the **one-sided lower limit** cleared `margin` — not that the point estimate did, which a

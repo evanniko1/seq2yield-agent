@@ -58,8 +58,15 @@ NUMERICS_GLOBS_V1 = (
 # `reproduce_baselines.py` does not even import it. Keeping it in the value-deciding set meant the
 # first honest statistics fix invalidated a registry whose every stored R² was unaffected, which is
 # precisely the cry-wolf failure the set was drawn narrowly to avoid. It moved to INFERENCE_GLOBS.
+#
+# V3 (audit SA-2): `data/series_sample.py` added. It decides WHICH SERIES a stored artifact
+# contains, which is as value-deciding as the sampling policy next to it. It is a module of its own
+# precisely so that the registry builder can import the selection rule without pulling
+# `experiments/runner.py` — the whole execution path — into the registry's derived scope.
 NUMERICS_GLOBS = tuple(g for g in NUMERICS_GLOBS_V1
-                       if g != "src/seq2yield/statistics/bootstrap.py")
+                       if g != "src/seq2yield/statistics/bootstrap.py") + (
+    "src/seq2yield/data/series_sample.py",
+)
 # Files that decide an interval, a p-value or an accept/reject verdict. A stored CI computed under
 # a different inference fingerprint is not comparable with a fresh one (the C3 fence), even when
 # both describe identical predictions.
@@ -67,7 +74,7 @@ INFERENCE_GLOBS = (
     "src/seq2yield/statistics/**/*.py",
     "src/seq2yield/experiments/compare.py",
 )
-FINGERPRINT_VERSION = 2
+FINGERPRINT_VERSION = 3
 FAMILIES = ("rf", "mlp", "cnn", "ridge", "svr", "transformer")
 # Knobs that do not change the computed value (or encode the run's own seed, not a default).
 _IGNORED_PARAMS = {"random_state", "seed", "n_jobs", "verbose", "verbose_feature_names_out"}

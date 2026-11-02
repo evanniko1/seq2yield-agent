@@ -192,8 +192,18 @@ held constant and only the control changes:
 | `2026-11-01-full56` (today) | **+0.0000** [0, 0] | **+0.0000** [−0.0000, +0.0000] |
 
 Unchanged code was being scored as a significant regression against its own baseline; against the
-regenerated registry it reproduces **bit-for-bit** (max per-series \|Δ\| = 1.1e-16, 8 of 10 series
-exactly 0 — one float ULP, not a difference).
+regenerated registry it reproduces exactly, to within the estimator's own run-to-run
+nondeterminism (max per-series \|Δ\| = 1.1e-16, 8 of 10 series exactly 0).
+
+**Correction, 2026-11-02 (found while building ML-01b):** this used to say "bit-for-bit", and that
+is the wrong phrase for anything that goes through `rf`. Re-running the *identical* spec four times
+over three series gives a max |ΔR²| of **1.1e-16 for rf** and **exactly 0.0 for mlp and cnn** —
+`rf` runs with `n_jobs=-1`, so sklearn accumulates tree predictions across threads and the float
+sum depends on thread scheduling. The residual above is therefore that same nondeterminism and was
+never evidence about the code; it is also nine orders of magnitude below
+`bootstrap.ZERO_TOL = 1e-9`, so no interval or verdict can see it. The ML-02 conclusion is
+unaffected and slightly strengthened: the reproduction was exact for the two deterministic
+families, which is what pins the drift to RF's and CNN's own defaults.
 
 **The accept is withdrawn.** The flagship comparison, re-measured on a registry that today's code
 actually produced:

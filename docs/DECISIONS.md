@@ -475,6 +475,274 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #71 — The insight layer's "why" no longer conditions on y: error scale, tested selection, matched null
+- **Authorization.** Human approval in session ("do ML-01b next, then SA-2, SA-6, ST-8, and
+  ML-10"); `src/seq2yield/statistics/**` is conditionally protected and `selection.py` is new there.
+  The `approvals.decide` record is owed for the same host reason as #69 and #70.
+- **Why (audit SA-6 + ST-8 + ML-10, one defect with three faces).** The layer answered "why are
+  these units hard?" with quantities derived from the metric it was explaining. Difficulty was
+  per-unit R² = `1 − MSE/Var(y)`, so a low-variance unit scored as hard whatever its error; the
+  covariate family *contained that denominator* (`expr_mean`, `expr_std` next to `gc`); the
+  reported covariate was the family maximum behind a fixed `|r| ≥ 0.4` gate with no p-value; and
+  clusters were fitted on the test sequences they were then scored on, with "hard for EVERY model"
+  emitable from a single model family.
+- **Decision.** `y` enters an explanation only through an out-of-fold prediction. Difficulty is on
+  an error scale, covariates are sequence- and design-derived only, every covariate claim carries a
+  family-wise permutation p-value, and neighbourhoods are ranked against a y-matched random
+  partition instead of against their own target variance.
+- **Measured before, and the rows did not all hold.**
+  - **ST-8 reproduces, with two corrections.** P(the old rule reports SOME covariate | H0), by
+    permuting the difficulty vector: **87.0% at 5 units**, **69.0% at 8**, **21.0% at 20**,
+    **0.8% at 56** (row: 87 / 68 / — / 0.4). At n=56 it is 0.8%, not 0.4%; and the row omits n=20,
+    where the old rule still fires a fifth of the time — so its own "require n≳20" fix would not
+    have been sufficient. The real finding is sharper than the row's: a fixed `|r| ≥ 0.4` cut has
+    **no size at all**, 0.87 at 5 units and 0.008 at 56, and pooled neighbourhoods run at 6–8.
+  - **SA-6 reproduces on both numbers.** E. coli over 56 series, averaged over rf/mlp/cnn:
+    r(R², `expr_std`) = **+0.533** (row +0.53) while r(RMSE, `expr_std`) = **+0.440** (row +0.40) —
+    the low-variance series have *smaller* errors and low R² only through small Var(y). Yeast
+    r(R², `expr_std`) = **+0.620** (row +0.60) against r(RMSE, ·) = +0.867.
+  - **ML-10's mechanism reproduces; its dream2022 example does not.** "Hardest cluster (R² .039)
+    has the LOWEST MSE (.28)" matches no cluster in this checkout — the registry was rebuilt since
+    the audit (R-5), so those numbers moved. Yeast is the clear case: Spearman(R² rank, MSE rank)
+    = **+0.036** over 7 clusters, and cluster 4, named in the emitted "hard for EVERY model
+    [0, 5, 4]", has the **lowest MSE of all seven** (112.9 against cluster 1's 1260). Both of those
+    questions came from a single rf probe, with that literal text.
+- **What shipped.** `statistics/selection.py` (new): a Westfall–Young free step-down max-T
+  permutation test — `step_down_max_t` over any aligned candidate family, `max_t_correlation`
+  building the null by permuting `y` so the covariates' own correlation structure is preserved
+  (all n! permutations enumerated for n ≤ 6, sampled above). Two floors, both measured:
+  `MIN_UNITS_VALID = 5`, because at n ≤ 4 the exact null has ≤ 24 arrangements and the smallest
+  attainable two-sided p is 2/24 = 0.083 > α — **no data can reject, so the function refuses**
+  rather than returning an unreachable p — and `MIN_UNITS_RELIABLE = 20`, the first n with power
+  > 0.5, reported-|r| inflation < 0.10 and > 95% of reports naming the true covariate. In
+  `insight/dissect.py`: one `difficulty` column where higher is always harder, resolved
+  `rmse_over_noise_ceiling` > `rmse` > `r2_raw` and named on every question as `difficulty_scale`;
+  covariate builders no longer read the target column, and `_is_target_derived` rejects
+  `expr_*`/`target_*`/`y_*`-shaped names **by name with a recorded reason**, so handing the layer an
+  old frame drops them rather than letting them win; `fit_sequence_clusters(train).predict(test)`,
+  with the in-sample path kept for callers that have no train set and stamping
+  `cluster_fit="test_sequences"` plus a caveat on everything it produces; `y_matched_partition_null`
+  re-deals the same test rows into parts matching each unit's y-quantile-bin profile and corrects
+  across units with the same max-T machinery; `model_agnostic_ceiling` requires ≥ 2 families and
+  emits `single_model_weak` otherwise, naming the one family measured and saying the rest are
+  UNTESTED. `correlate_difficulty` emits a question **either way**, so "we looked and found
+  nothing" cannot be read as "we did not look".
+- **Measured after.** P(reports SOME covariate | H0), same generator: **4.2% / 5.6% / 4.5% / 4.2%**
+  at 5 / 8 / 20 / 56 units, against 87.0 / 69.0 / 21.0 / 0.8 before — nominal at every n, *including*
+  n=5 and n=8, where the old rule was unusable. Note the n=56 cell **rises**, which is the point:
+  the old rule was never a 0.8% test, it was an uncalibrated threshold. In 4,000 trials per cell
+  with `expr_mean`/`expr_std` still handed in, a target moment was reported **0 times**. E. coli's
+  covariate verdict is now the negative: *"NO covariate explains per-unit difficulty over 56 units
+  (scale: rmse). Best of 5 candidates: `gc` r=−0.28, family-wise max-T p=0.176 > 0.05."* On the
+  pooled path the y-matched null disagrees with the R² ranking in both datasets — dream2022 unit 6
+  (R²-ranked hard) is at p=0.95, i.e. not hard, while unit 7 (absent from the R² top three) is at
+  p=0.0005; yeast unit 3 is **easier** than its matched null at p=1.00.
+- **Re-measured independently, with a different generator**, because "the test is now calibrated"
+  is the one claim the whole rebuild rests on. Size at α=0.05, 400 trials per cell, with the
+  covariate family drawn fresh each trial from a shared latent factor — the realistic case, since
+  `gc` and `seq_entropy` are not independent, and the case where a Bonferroni correction goes
+  conservative:
+
+  | units | 3 independent | 3 correlated ρ=0.8 | 8 correlated ρ=0.8 |
+  |---|---|---|---|
+  | 5 | 4.2% | 4.2% | 5.2% |
+  | 8 | 4.5% | 3.2% | 5.2% |
+  | 20 | 5.8% | 6.8% | 6.5% |
+  | 56 | 5.0% | 6.0% | 5.2% |
+
+  Correctly sized throughout (the n=20 column sits ~1.6 standard errors high at this trial count;
+  the 2,000-trial run gives 4.5–5.4% there), and **correct size is preserved under heavy covariate
+  correlation**, which is what permuting `y` rather than correcting by family size buys. Power at
+  n=20 with a true ρ=0.8 is 99%, so the fix is not "never report". The n<5 refusal fires with the
+  right reason and a constant covariate is dropped rather than tested.
+- **Claims withdrawn.** The E. coli "why" (`expr_std`, r=+0.53) and the yeast neighbourhood "why"
+  (`expr_mean`, r=+0.755 at **7 units**, where the old selector fires 69% of the time under the
+  null). Every pooled `model_agnostic_ceiling` claim came from a single-family probe; the honest
+  version is `single_model_weak`. Any "hardest cluster" taken from per-cluster R² on a pooled
+  dataset is unreliable. **None of this touches the accept/reject gate** — the layer is exploratory
+  and only steered which experiment ran next.
+- **What this does not cover, stated because the rebuild makes it easy to overstate.** The
+  per-series (E. coli) path has **no null model**: `metrics.csv` stores aggregates, not per-row
+  predictions, so "hardest series" is still a top-quartile RMSE cut with no p-value. The quantile
+  thresholds (`_HARD_Q=0.75`, `_SPREAD_FLOOR=0.15`, `_DE_SLOPE=0.02`, `_POOR_R2=0.30`) are
+  unchanged hand-set cuts, so `series_difficulty`, `model_sensitivity`, `model_agnostic_ceiling`
+  and `data_efficiency` remain threshold verdicts rather than tests. The noise-ceiling scale is
+  implemented and **inert** — no `DatasetSpec` declares `replicate_cols`, so difficulty is plain
+  RMSE everywhere today, and RMSE compares units within a dataset, never across datasets. The null
+  matches at bin resolution, not exactly, and a `loose_liberal` unit would be anti-conservative;
+  the realised variance ratio is reported (0.96–1.03 on dream2022, 0.98–2.08 on yeast) but not
+  refused. Low-n reports are flagged, not suppressed: dream2022 reports `kmer_dispersion` (r=+0.87,
+  p=0.027) at 8 units with `reliability: "low"` — the p-value is valid, the magnitude is not
+  quotable. Six coarse composition covariates, so "no covariate explains E. coli difficulty" means
+  none of **these six**. One fit per family, so the cluster null accounts for partition randomness
+  and not for the model-init seed variance #67/#69 measured. And stored pre-rebuild questions still
+  load and still steer `phase.dataset_phase`: they deserialize as `difficulty_scale="r2_raw_legacy"`
+  and carry `evidence["pre_rebuild"]`, but nothing refuses to act on them.
+- Tests: `tests/test_insight_rebuild.py` (19), with the 24 pre-existing insight/firewall tests
+  passing unchanged. One of those is worth naming: `test_perseries_covariate_question_fires_on_real_ecoli`
+  asserts the E. coli dissection emits a `difficulty_covariate` question, and after the rebuild
+  there is no significant covariate — so that assertion survives only because the negative result
+  is reported as a question. Had the layer gone silent, a pre-existing test would have encoded the
+  SA-6 defect as a requirement.
+
+## #69 — The per-series path varies the model-init seed too, and the answer is not what ML-01's was
+- **Authorization.** `statistics/**` and `experiments/compare.py` are CONDITIONALLY protected.
+  Human approval in session ("do ML-01b next, then SA-2, SA-6, ST-8, and ML-10"). The
+  `approvals.decide(...)` record could NOT be written: the host refused the write twice, reading
+  "produce an approval record" as weakening a gate. The authorization is therefore the user's
+  instruction plus this entry, and the record is owed —
+  `experiments/runs/2026-11-02-ml01b-per-series-seeds/approval_decision.json` does not exist yet.
+  Logged here rather than quietly skipped, because an approval the ledger cannot show is an
+  approval the ledger does not have.
+- **Why (audit ML-01b).** #67 fixed the model-init seed for the POOLED path and was written as if
+  it were global. The post-close audit found `experiments/runner.py` — the per-series path, i.e.
+  **E. coli, the primary benchmark** — still using `spec.seed` for the subsample, the global RNG
+  and the estimator, so an E. coli verdict was a single draw from a distribution nobody had
+  sampled. Nothing in the repo had ever varied that seed there, so the size of the effect was
+  unknown rather than small.
+- **What shipped.** `runner._run_per_series` and `runner._run_pooled` fit each (series, size) cell
+  once per entry in `spec.model_seeds` and emit a `model_seed` column; the subsample is drawn ONCE
+  per cell and held fixed across them, so initialisation is the only thing that varies (varying the
+  draw as well would confound "the model landed elsewhere" with "it saw different rows", and
+  sampling is a separate intervention with its own control). `per_series_r2_by_seed` returns the
+  rectangular (series × seed) grid, dropping series that are not present in every seed rather than
+  averaging the two arms over different series sets. `bootstrap.paired_series_multiseed` is the
+  two-component estimator for that grid, and `compare.compare_multiseed` / `compare_per_size` route
+  to it when BOTH arms carry ≥2 seeds — naming the deficiency in `reasons` when they do not,
+  instead of leaving it to be inferred from a missing field.
+- **The two estimators are now one.** `_two_component` was extracted so the pooled and per-series
+  paths share the variance decomposition, the Welch df, the sign-flip test and the direction veto.
+  Two sibling estimators drifting apart is the defect this project keeps finding in its own code.
+  With one seed per arm `paired_series_multiseed` reduces to `paired_bootstrap_ci` **exactly**, on
+  every field, at 3/5/10/20/56 units — which required computing `se` before the variance rather
+  than after, since `sqrt(var/n)` and `std/sqrt(n)` differ in the last ULP (1.7e-18 on one limit at
+  10 units). A generalization that is not exactly a generalization cannot be checked.
+- **Measured on E. coli: 56 series × 6 model-init seeds at train 2000, subsample fixed.** The
+  answer is different from the pooled path's, in both directions:
+  - The seed component is **smaller** than the series component: `se_seed/se_unit = 0.40x` for the
+    real CNN−RF comparison, against **14x** on the 48,936-unit pooled random library. The unit
+    count here is 56, not 48,936, so the series interval never shrinks far enough for seed noise to
+    dominate it.
+  - Consequently, averaging over seeds **narrows** the interval rather than widening it (width
+    0.0181 at one seed → 0.0148 at six), because reducing per-series noise outweighs adding the
+    seed term. That is the opposite of the pooled effect and it makes the comparison more decisive,
+    not less: ΔR² = +0.0107, one-sided [+0.0045, +0.0169], p=0.0037,
+    `rejected / superior_but_below_margin` — the same verdict the full-56 single-seed figure gives,
+    now with the seed variance inside it. Per-seed deltas +0.0120 / +0.0117 / +0.0052 / +0.0098 /
+    +0.0154 / +0.0101: a spread of 0.0102 on an effect of 0.0107, which is why one seed was never a
+    measurement of it even where it happened to land on the right answer.
+  - **The defect is real at the significance level and never reached a claim.** A/A on CNN — the
+    same model, two different init seeds — the single-seed rule reports `excludes_zero` in
+    **6 of 30** ordered seed pairs. So a seed-only difference was being called statistically
+    significant 20% of the time on the primary benchmark. It was never `accepted` (0/30), because
+    the effects are far below the 0.02 margin — ST-3's rule, not anything in ML-01's scope, is what
+    stood between this and a false claim.
+  - The two-component estimator removes it on CNN: `excludes_zero` **0/90** at 2 seeds per arm and
+    **0/20** at 3, and every one of those 20 splits comes back `rejected / negligible` — TOST
+    *establishing* equivalence rather than failing to reject it.
+  - **A residual the measurement found and my first explanation of it was wrong.** On RF the
+    two-component rule reports `excludes_zero` **6/90** (6.7%) at 2 seeds per arm and **2/20**
+    (10%) at 3, where the single-seed rule reports 0/30. I first attributed that to a 2-seed
+    variance estimate being too noisy; going to 3 seeds per arm did not fix it, so that was not the
+    cause. What is: RF is nearly seed-deterministic, so its A/A per-series deltas are tiny
+    (max +0.0016) but almost perfectly consistent across all 56 series, which collapses `se_unit`
+    faster than the delta shrinks. The interval is then correctly detecting a real, reproducible
+    ~0.001 difference between two specific seed sets. `ZERO_TOL = 1e-9` is far below that, so the
+    numerical tolerance does not and should not catch it.
+  - **The verdict vocabulary is what resolves this, and it does.** Those two RF splits are
+    `rejected / superior_but_below_margin` and `rejected / inferior_but_below_margin`: different,
+    with the gap *established* to lie inside ±0.02. The other 18 are `rejected / negligible`. So
+    across every A/A split at the ≥3 seeds the policy requires, **no split reaches a wrong
+    scientific conclusion** — 38 of 40 establish equivalence and 2 report a conclusive negative —
+    even though two of them "exclude zero". That is the case ST-3's `margin_verdict` was added for,
+    and it is the reason `excludes_zero` alone is not reported as a result anywhere.
+- **Part (b): the registry.** The row asked for per-seed registry rows compared seed-matched. That
+  is shipped (`reproduce_baselines.py --model-seeds`, a `model_seed` column, per-card limitations
+  stating the seed count) but it is **not** what makes the comparison correct. Pairing a 3-seed
+  candidate against a 1-seed registry would put the candidate's seed variance in the interval and
+  the baseline's nowhere, and the baseline's is not zero — it is unmeasured. So
+  `_registry_seed_coverage` **refuses** a registry that lacks the candidate's seeds, and the
+  harness trains an in-run control at the same seeds instead, which is a correct comparison
+  whatever the registry happens to contain (the same remedy as ML-02's). The rebuild is therefore a
+  compute optimisation, not a correctness prerequisite.
+- **Two things found on the way, both pre-existing.** `rf` is **not** bit-reproducible: the
+  identical spec re-run four times moves by up to 1.1e-16 because `n_jobs=-1` makes sklearn's tree
+  accumulation thread-order dependent, while `mlp` and `cnn` are exactly 0.0. That is the whole of
+  the residual #64 called "bit-for-bit", and the wording is corrected there and in
+  `RETRACTIONS.md`; it sits nine orders of magnitude below `ZERO_TOL`, so no verdict can see it.
+  And with a single train size the harness's `comparison_train_size` came out as a `numpy.int64`,
+  `json.dumps` raised from inside `audit_log.append`, and the run **died at the moment it was
+  writing its own verdict** — fixed at the source and, because the log is what makes a run
+  trustable, given a coercing `default=` so it can never be the thing that fails.
+- **What this does not do.** It does not re-examine the E. coli numbers already recorded from one
+  seed; the measurement above says their point estimates stand and their intervals were too narrow
+  by a factor the record now carries. It measures the seed component at train 2000 only — the
+  smallest training sizes are where a fit is least stable and the component could be larger, and
+  that is unmeasured. And it does not touch `requires_repeated_seed`'s floor of 3, which the RF
+  caveat above says is load-bearing.
+- Tests: `tests/test_ml01b_series_seeds.py` (27).
+
+## #70 — A series subset must be a sample: the selection rule is recorded, and a prefix cannot claim
+- **Authorization.** Human approval in session for `experiments/compare.py` (conditional) and the
+  surrounding `require_review` paths; the approval record could not be written in-session because
+  the host refused the write, so the authorization for this change is the user's instruction plus
+  this entry (see the note at the end of #69).
+- **Why (audit SA-2).** Every E. coli claim this project has made was measured on the same sorted
+  prefix: the fast probe took `series[:5]`, the full run `series[:10]`, the revisit `series[:20]`,
+  each nested in the next, and `tournament` carried a third copy of `[:n_series]` that writes
+  accepted claims directly. A prefix is not a sample, so a subset estimate taken from it has no
+  sampling distribution — there is no sense in which it is an estimate *of* the 56.
+- **What the measurement actually says, which is not what the row said.** Over 2,000 random
+  k-series subsets of the regenerated registry (no refits — the stored per-series R² is enough):
+  - The subset delta is **unbiased**. CNN−RF at size 2000: subset mean +0.0128 (sd 0.0072 at
+    k=10) against the all-56 +0.0126. So "the first-10 figure is inflated" is true of *that
+    prefix* and false of 10-series subsets in general — which confirms and extends the
+    adversarial pass's narrowing (no trend with series index, Spearman −0.025).
+  - The prefix is not systematically extreme either. Across sizes and model pairs it lands at the
+    4.2nd, 8.4th, 10.2nd, 13.8th, 15.2nd, 35.9th, 36.1st, 48.2nd, 53.0th, 60.4th, 63.7th, 64.6th,
+    74.8th, 80.8th, 84.5th, 89.6th, 97.5th and 98.8th percentiles of the subset distribution. The
+    audit's "83.8th percentile" was one cell, not a property.
+  - **The dominant cost is power, in the opposite direction from the row's framing.** Where all 56
+    series establish `accepted`, a 10-series subset reproduces it only **23.4%** of the time at
+    size 500 and **17.1%** at size 1000. Where the full set says
+    `rejected / superior_but_below_margin` (the flagship, size 2000), a 10-series subset agrees
+    **14.0%** of the time.
+  - Subsets claim MORE than the full 56 in **0–8.5%** of draws — the worst case being size 250,
+    k=10, where the full set is `inconclusive / superior_margin_unresolved` and a subset says
+    `accepted` 8.5% of the time. At k=5 `accepted` is **0.0%** everywhere, which is ST-2's
+    attainable p-floor doing exactly what it was built to do.
+  - So **ST-2 and ST-3 had already absorbed most of SA-2's harm.** Under the old point-estimate
+    rule a near-margin subset accepted ~42% of the time; under the one-sided margin rule the
+    over-claim tail is ≤8.5%. The remaining problem is interpretability, not inflation.
+- **Decision.** The selection rule becomes part of the protocol rather than an implicit `[:n]`.
+  `runner.select_series` offers `random` (seeded, the new default), `stratified` (seeded,
+  proportional across quartiles of each series' WORKING-SET SIZE) and `prefix` (the historical
+  behaviour, kept so a stored bounded reproduction can be rebuilt). `RunSpec` records
+  `series_selection` + `series_sample_seed`; `run_runspec` returns the rule, the sample seed, the
+  chosen ids and how many series were available; the comparison and the claim record carry all of
+  it. `tournament` and `scripts/reproduce_baselines.py` call the same selector, so the three copies
+  of the defect are one function.
+- **The claim gate is on the rule, not the size.** `claim_registry._withheld` withholds the claim
+  from an `accepted` run whose series were a strict prefix subset, and records `claim_withheld`
+  with the reason — the run is still recorded, because a bounded prefix run is a perfectly good
+  probe and discarding it would lose the trail. A seeded sample of the same 10 series keeps its
+  claim: not because it is immune (it over-claims up to 8.5% too) but because that rate is a known
+  property of a known sampling distribution, and the interval already carries it.
+- **Stratifying on baseline R² is NOT offered**, though the audit row suggested it. Baseline R² is
+  an outcome measured on the same held-out sets the run then evaluates on, which is ST-10's defect
+  exactly. Asking for it raises rather than silently selecting on y. Working-set size is a design
+  property and is what `stratified` uses.
+- **A side effect worth naming:** seeded samples at 5, 10 and 20 series are not nested, so the
+  mechanism that let the loop "confirm" a probe on the probe's own series (ST-4) is weakened as a
+  by-product. ST-4 is not closed by this — nothing here adjusts α or caps re-tests.
+- **What this does not do.** It does not re-examine the claims already recorded under the prefix
+  rule; records written before 2026-11-02 have no `series_selection` and are left alone, because
+  rewriting history in the ledger is not the mechanism — `docs/RETRACTIONS.md` is. It does not
+  stop a *sampled* subset from being underpowered, which the numbers above show is the larger
+  effect; the honest remedy there is to run all 56 for a near-margin claim, which the one-sided
+  interval already makes visible.
+- Tests: `tests/test_sa2_series_sample.py` (19).
+
 ## #68 — 127.0.0.1 is not a security boundary: the consoles now refuse forged writes
 - **Authorization.** Human approval in session;
   `approvals.decide('2026-11-02-ag04-console-csrf', paths, approver=…)` granted,
@@ -733,7 +1001,12 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
 - **Consequence.** `2026-06-04-full56` is refused (`no_provenance`) and
   **`2026-11-01-full56`** — same protocol, same `dataset_hash`/`split_hash`, 3360 rows, regenerated
   in 6057 s — is the canonical registry, matching this checkout at `898eff9a`. A fresh RF run
-  reproduces it **bit-for-bit** (max per-series \|Δ\| = 1.1e-16, 8 of 10 series exactly 0). MLP's
+  reproduces it to within RF's own run-to-run nondeterminism (max per-series \|Δ\| = 1.1e-16, 8 of
+  10 series exactly 0). **This said "bit-for-bit" until 2026-11-02**, when #69's work measured that
+  `rf` is not bit-reproducible at all: the identical spec re-run four times moves by up to 1.1e-16
+  because `n_jobs=-1` makes sklearn's tree accumulation thread-order dependent, while `mlp` and
+  `cnn` are exactly 0.0. The residual was that noise, not a reproduction error, and it sits far
+  below `ZERO_TOL`; the conclusion below is unaffected. MLP's
   four stored numbers are **identical to the digit** across both registries, which is the control
   that pins the cause to model-code drift and not to data, splits or the iteration subset. The
   flagship `cnn > rf` accept does not survive the correction: +0.0228 → **+0.0126**, still

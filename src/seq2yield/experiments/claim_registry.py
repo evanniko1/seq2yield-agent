@@ -26,10 +26,30 @@ def _provenance() -> dict:
         return {}
 
 
+def _withheld(status: str, comparison: dict) -> str | None:
+    """Why an accepted run still may not state a claim (None = it may).
+
+    Audit SA-2. The gate is on the SELECTION RULE, not on the subset size: a seeded random sample
+    of 10 series has a sampling distribution and an interval that accounts for it, while the sorted
+    first 10 does not, however large it is. `series_selection=None` is a record written before
+    2026-11-02, when the rule was always the prefix — those are left alone rather than
+    retroactively invalidated here; `docs/RETRACTIONS.md` is where restatements live."""
+    if status != "accepted":
+        return None
+    sel = comparison.get("series_selection")
+    used, avail = comparison.get("n_series"), comparison.get("n_series_available")
+    if sel == "prefix" and used and avail and used < avail:
+        return (f"series_selection='prefix': {used} of {avail} series taken as a sorted prefix, "
+                "which is not a sample — the subset estimate has no sampling distribution "
+                "(audit SA-2). Re-run with series_selection='random'/'stratified' or all series.")
+    return None
+
+
 def record(*, run_id: str, proposal_id: str, status: str, comparison: dict,
            claim_allowed: str | None, claims_dir: str | Path | None = None) -> dict:
     claims_dir = Path(claims_dir or CLAIMS_DIR)
     claims_dir.mkdir(parents=True, exist_ok=True)
+    withheld = _withheld(status, comparison)
     entry = {
         "ts": datetime.now(timezone.utc).isoformat(),
         "run_id": run_id,
@@ -67,8 +87,16 @@ def record(*, run_id: str, proposal_id: str, status: str, comparison: dict,
         "transfer": (comparison.get("transfer") or {}).get("verdict"),  # K1: replication verdict
         "n_series": comparison.get("n_series"),
         "train_size": comparison.get("comparison_train_size"),
-        # claim only survives if the harness accepted the run
-        "claim": claim_allowed if status == "accepted" else None,
+        # ...and HOW the series were chosen (audit SA-2). Every E. coli claim so far was measured
+        # on the same sorted prefix, which is not a sample of the 56: the first-10 CNN−RF delta is
+        # +0.0310 against +0.0210 on all 56 at size 500, and the prefix sits at the 83.8th
+        # percentile of random 10-series subsets. A prefix subset is fine for a probe and cannot
+        # carry a claim, so the claim is withheld below rather than the run being discarded.
+        "series_selection": comparison.get("series_selection"),
+        "n_series_available": comparison.get("n_series_available"),
+        "claim_withheld": withheld,
+        # claim only survives if the harness accepted the run AND the protocol can support it
+        "claim": claim_allowed if status == "accepted" and not withheld else None,
     }
     (claims_dir / f"{run_id}.json").write_text(json.dumps(entry, indent=2), encoding="utf-8")
     with open(claims_dir / "registry.jsonl", "a", encoding="utf-8") as f:

@@ -61,15 +61,20 @@ def test_the_canonical_pointer_is_the_only_source_of_the_registry_id():
 
 
 # ---------------------------------------------------------------- the scope claims stay honest
-def test_ml01_is_documented_as_pooled_only_until_the_per_series_half_lands():
-    """The audit's own finding: ML-01's fix covers `run_pooled`, not `runner.py`. If someone adds
-    the seed loop to the per-series path, this test should be deleted along with ML-01b."""
-    runner = (ROOT / "src/seq2yield/experiments/runner.py").read_text(encoding="utf-8")
-    decisions = (ROOT / "docs/DECISIONS.md").read_text(encoding="utf-8")
-    varies_seed = "model_seeds" in runner
-    if not varies_seed:
-        assert "POOLED path only" in decisions, (
-            "runner.py still does not vary the model-init seed, so #67 must say it is pooled-only")
+def test_the_per_series_path_varies_the_model_init_seed():
+    """This test used to assert the opposite — that #67 was *documented* as pooled-only, because
+    `runner.py` did not vary the seed. ML-01b closed that half (DECISIONS #69), so the assertion
+    becomes the behaviour itself: the per-series runner fits each cell once per seed, and the two
+    arms are compared on the (series x seed) grid rather than on one draw."""
+    import pandas as pd
+
+    from seq2yield.experiments import runner as R
+    from seq2yield.experiments.run_spec import RunSpec
+    spec = RunSpec(run_id="t", model_family="rf", dataset="ecoli", model_seeds=[4, 5, 6])
+    assert R.model_seeds(spec) == [4, 5, 6]
+    df = pd.DataFrame({"series": [1, 2] * 3, "model": ["rf"] * 6, "train_size": [250] * 6,
+                       "model_seed": [4, 4, 5, 5, 6, 6], "r2": [0.1, 0.2] * 3})
+    assert sorted(R.per_series_r2_by_seed(df, 250, "rf")) == [4, 5, 6]
 
 
 def test_the_margin_rule_covers_every_claim_gate():

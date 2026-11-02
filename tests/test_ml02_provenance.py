@@ -224,12 +224,19 @@ def test_the_harness_falls_back_to_an_in_run_baseline_when_the_registry_is_refus
                                                       baseline_run_id="2026-06-04-full56",
                                                       baseline_model="rf"))
     use, prov = EH._baseline_choice(spec, spec.acceptance_policy)
-    assert use is False and prov is not None and prov["violations"] == ["no_provenance"]
+    assert use is False and prov is not None and "no_provenance" in prov["violations"]
 
     monkeypatch.setattr(EH.baseline_guard, "check",
                         lambda rid, models, **k: {"ok": True, "reason": "ok", "violations": [],
                                                   "drift": [], "registry_run_id": rid})
+    # With provenance satisfied the registry is usable again — for a SINGLE-seed run. A multi-seed
+    # run has a second, independent gate (ML-01b: the registry holds one baseline seed, so there is
+    # nothing to pair seed-matched), which `test_ml01b_series_seeds.py` covers.
+    spec.model_seeds = [1]
     assert EH._baseline_choice(spec, spec.acceptance_policy)[0] is True
+    spec.model_seeds = [1, 2, 3]
+    use, prov = EH._baseline_choice(spec, spec.acceptance_policy)
+    assert use is False and prov["violations"] == ["model_seed_coverage"]
 
 
 def test_a_confounded_comparison_never_reaches_the_registry_at_all(monkeypatch):

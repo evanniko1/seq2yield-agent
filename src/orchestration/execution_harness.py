@@ -27,6 +27,7 @@ import pandas as pd  # noqa: E402
 
 from seq2yield.experiments import compare as compare_mod  # noqa: E402
 from seq2yield.experiments.run_spec import RunSpec, validate_runspec  # noqa: E402
+from seq2yield.experiments import runner as runner_mod  # noqa: E402
 from seq2yield.experiments.runner import per_series_r2, run_runspec  # noqa: E402
 from seq2yield.training.reproducibility import environment  # noqa: E402
 
@@ -118,7 +119,39 @@ def _baseline_choice(spec: RunSpec, pol) -> tuple[bool, dict | None]:
     if not (plain and spec.intervention_type in ("model_architecture", "data_efficiency")):
         return False, None
     prov = baseline_guard.check(pol.baseline_run_id, [spec.model_family, pol.baseline_model])
+    # 3. (audit ML-01b) a multi-seed candidate needs a multi-seed control. The stored registry held
+    # ONE R² per (series, size, model) from a single baseline seed, so pairing a 3-seed candidate
+    # against it would put the candidate's seed variance in the interval and the baseline's
+    # nowhere — and the baseline's is not zero, it is unmeasured. Same remedy as ML-02's: refuse
+    # the registry and train an in-run control at the SAME seeds, which is a correct comparison
+    # regardless of what the registry happens to contain.
+    seeds = runner_mod.model_seeds(spec)
+    if len(seeds) > 1:
+        ok_seeds, why = _registry_seed_coverage(pol.baseline_run_id, seeds)
+        if not ok_seeds:
+            prov = dict(prov)
+            prov["ok"] = False
+            prov["violations"] = list(prov.get("violations") or []) + ["model_seed_coverage"]
+            prov["reason"] = " | ".join(x for x in (prov.get("reason"), why) if x)
     return bool(prov["ok"]), prov
+
+
+def _registry_seed_coverage(baseline_run_id: str, seeds) -> tuple[bool, str]:
+    """Does the stored registry hold rows for every model-init seed this run uses?"""
+    csv = ROOT / "experiments/runs" / baseline_run_id / "metrics.csv"
+    if not csv.exists():
+        return False, f"registry metrics.csv not found: {csv}"
+    head = pd.read_csv(csv, nrows=1)
+    if "model_seed" not in head.columns:
+        return False, (f"registry '{baseline_run_id}' has no model_seed column: it was built from a "
+                       f"single baseline seed and cannot be paired seed-matched against "
+                       f"{len(set(seeds))} candidate seeds (audit ML-01b)")
+    have = set(pd.read_csv(csv, usecols=["model_seed"])["model_seed"].astype(int).unique())
+    missing = sorted(set(int(s) for s in seeds) - have)
+    if missing:
+        return False, (f"registry '{baseline_run_id}' is missing model_seed {missing} "
+                       f"(has {sorted(have)})")
+    return True, ""
 
 
 def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
@@ -205,13 +238,42 @@ def run(spec: RunSpec, *, changed_files=None, human_review: bool = False,
         if prov is not None:
             baseline_source = f"in_run (registry refused: {','.join(prov['violations'])})"
 
-    size = pol.comparison_train_size or max(
-        set(spec.train_sizes) & set(base_df["train_size"].unique()))
+    # int() is load-bearing: `base_df["train_size"].unique()` yields numpy int64, and a set
+    # intersection of Python ints with numpy ints can return either type, so this came out as an
+    # int64 that `audit_log.append` could not serialize — killing the run at the point where it
+    # writes its own trail.
+    size = int(pol.comparison_train_size or max(
+        set(spec.train_sizes) & set(base_df["train_size"].unique())))
     cand_ps = per_series_r2(result["metrics"], size, spec.model_family)
     base_ps = per_series_r2(base_df, size, pol.baseline_model)
-
-    cmp = compare_mod.compare(base_ps, cand_ps, pol, seed=spec.seed)
+    # ML-01b: the interval comes from the (series × seed) grid whenever both arms have one, so the
+    # model-init component is inside it. `*_ps` stays the seed-averaged point estimate, which is
+    # what the heterogeneity report wants.
+    cand_by = runner_mod.per_series_r2_by_seed(result["metrics"], size, spec.model_family)
+    base_by = runner_mod.per_series_r2_by_seed(base_df, size, pol.baseline_model)
+    if len(cand_by) > 1 and len(base_by) > 1:
+        cmp = compare_mod.compare_multiseed(base_by, cand_by, pol, seed=spec.seed)
+    else:
+        cmp = compare_mod.compare(base_ps, cand_ps, pol, seed=spec.seed)
+        cmp["n_seeds"] = {"candidate": len(cand_by), "baseline": len(base_by)}
+        cmp["reasons"] = cmp["reasons"] + [
+            f"single-seed arm (candidate {len(cand_by)} seed(s), baseline {len(base_by)}): the "
+            "model-init variance component is NOT in this interval (audit ML-01b)"]
     cmp["comparison_train_size"] = size
+    # `per_series_r2_by_seed` keys a frame with no `model_seed` column as -1 ("one seed, identity
+    # unknown"), which is right for the estimator and cryptic in a record. The candidate's seeds
+    # are known from the run; a pre-2026-11-02 registry's are not, and null says so.
+    cmp["model_seeds"] = {
+        "candidate": (result["model_seeds"] if sorted(cand_by) == [-1] else sorted(cand_by)),
+        "baseline": (None if sorted(base_by) == [-1] else sorted(base_by)),
+    }
+    # SA-2: the selection RULE travels with the claim, and so does how many series existed to
+    # choose from — "10 series" means something different when it is a sample than when it is the
+    # sorted first ten.
+    cmp["series_selection"] = result["series_selection"]
+    cmp["series_sample_seed"] = result["series_sample_seed"]
+    cmp["n_series_available"] = result["n_series_available"]
+    cmp["series_used"] = list(result["series"])
     cmp["baseline_model"] = pol.baseline_model
     cmp["candidate_model"] = spec.model_family
     cmp["baseline_source"] = baseline_source

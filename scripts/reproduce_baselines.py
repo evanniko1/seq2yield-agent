@@ -29,6 +29,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from seq2yield.data.cleaning import SEQ_COL, SERIES_COL, TARGET_COL  # noqa: E402
 from seq2yield.data.loaders import load_split_csv, series_subset  # noqa: E402
+from seq2yield.data.series_sample import select_series, series_sizes  # noqa: E402
 from seq2yield.data.splits import load_manifest  # noqa: E402
 from seq2yield.experiments.run_card import make_run_card, write_run_card  # noqa: E402
 from seq2yield.reporting.plots import data_size_curve_png, df_to_markdown  # noqa: E402
@@ -41,13 +42,46 @@ def parse_args():
     p.add_argument("--models", nargs="+", default=["rf", "mlp", "cnn"])
     p.add_argument("--train-sizes", nargs="+", type=int, default=[250, 500, 1000, 2000])
     p.add_argument("--iterations", nargs="+", type=int, default=[1, 2, 3])
-    p.add_argument("--n-series", type=int, default=8, help="use the first N series (sorted)")
+    p.add_argument("--n-series", type=int, default=8, help="use N of the 56 series")
+    p.add_argument("--series-selection", default="random",
+                   choices=["random", "stratified", "prefix"],
+                   help="HOW those N are chosen (audit SA-2). `prefix` is the historical "
+                        "first-N-sorted and is kept only to rebuild a stored bounded "
+                        "reproduction; it cannot carry a claim.")
     p.add_argument("--series", nargs="+", type=int, default=None, help="explicit series ids")
-    p.add_argument("--seed", type=int, default=1)
+    p.add_argument("--seed", type=int, default=1, help="subsample seed (held fixed across "
+                                                       "--model-seeds)")
+    p.add_argument("--model-seeds", nargs="+", type=int, default=[1],
+                   help="model-init seeds per (series, size, model) cell. The subsample is drawn "
+                        "ONCE and reused, so these vary initialisation only (audit ML-01b). "
+                        "Default [1] reproduces a pre-2026-11-02 registry to within the "
+                        "estimators' own run-to-run nondeterminism (~1e-16; rf uses n_jobs=-1, so "
+                        "tree accumulation is thread-order dependent). A registry used as the "
+                        "control for a multi-seed claim needs >=3.")
     p.add_argument("--tag", default="baseline")
     p.add_argument("--max-minutes", type=float, default=0,
                    help="if >0, checkpoint and exit for resume after this wall-clock budget")
     return p.parse_args()
+
+
+def _limitations(series_ids, iters, model_seeds, sample_seed: int) -> list[str]:
+    """What this registry cannot be used for, stated on every run-card it writes."""
+    out = []
+    full = len(series_ids) >= 56 and len(iters) >= 5
+    if not full:
+        out.append(f"Bounded subset: {len(series_ids)}/56 series, {len(iters)}/5 iterations.")
+    out.append(f"subsample seed {sample_seed}, held fixed across model-init seeds "
+               f"{model_seeds}: this registry varies initialisation, not the training draw")
+    if len(model_seeds) < 3:
+        out.append(f"{len(model_seeds)} model-init seed(s): the seed variance component is NOT "
+                   "estimable from these rows, so a comparison against them carries series "
+                   "variance only (audit ML-01b)")
+    else:
+        out.append(f"{len(model_seeds)} model-init seeds per cell, so a candidate can be compared "
+                   "seed-matched with both variance components")
+    if full:
+        out.append("5 MC-CV repeats provide split variance")
+    return out
 
 
 def main() -> int:
@@ -59,10 +93,19 @@ def main() -> int:
 
     iters = [f"iteration_{i}" for i in args.iterations]
     all_series = splits["iterations"][iters[0]]["series"]
-    series_ids = args.series or all_series[: args.n_series]
+    series_ids = args.series or select_series(all_series, args.n_series,
+                                             selection=args.series_selection, seed=args.seed,
+                                             sizes=None if args.series_selection != "stratified"
+                                             else series_sizes(splits, iters[0]))
+    model_seeds = sorted(set(args.model_seeds))
 
     print(f"[repro] models={args.models} sizes={args.train_sizes} iters={args.iterations} "
-          f"series={series_ids}")
+          f"series={series_ids} model_seeds={model_seeds}")
+    if len(series_ids) >= 56 and len(iters) >= 5 and len(model_seeds) < 3:
+        print("[repro] WARNING: building a FULL registry with "
+              f"{len(model_seeds)} model-init seed(s). A registry used as the control for a "
+              "claim needs >=3, or the harness will refuse it and train an in-run baseline "
+              "instead (audit ML-01b).")
 
     run_id = f"{datetime.now(timezone.utc):%Y-%m-%d}-{args.tag}"
     run_dir = ROOT / "experiments/runs" / run_id
@@ -91,16 +134,18 @@ def main() -> int:
             h_s = series_subset(held, sid)
             for size in args.train_sizes:
                 n = min(size, len(w_s))
-                sample = w_s.sample(n=n, random_state=args.seed)
+                sample = w_s.sample(n=n, random_state=args.seed)   # fixed across init seeds
                 for model in args.models:
-                    set_seed(args.seed)
-                    res = train_evaluate(model, sample, h_s,
-                                         feature_set="one_hot", length=96, seed=args.seed)
-                    rows.append({"iteration": it, "series": sid, "model": model,
-                                 "train_size": size, "n_train": res["n_train"],
-                                 "r2": res["r2"], "rmse": res["rmse"],
-                                 "pearson": res["pearson"], "spearman": res["spearman"],
-                                 "fit_seconds": res["fit_seconds"]})
+                    for init in model_seeds:
+                        set_seed(init)
+                        res = train_evaluate(model, sample, h_s,
+                                             feature_set="one_hot", length=96, seed=init)
+                        rows.append({"iteration": it, "series": sid, "model": model,
+                                     "train_size": size, "model_seed": init,
+                                     "n_train": res["n_train"],
+                                     "r2": res["r2"], "rmse": res["rmse"],
+                                     "pearson": res["pearson"], "spearman": res["spearman"],
+                                     "fit_seconds": res["fit_seconds"]})
             pd.DataFrame(rows).to_csv(run_dir / "metrics.csv", index=False)  # checkpoint
             done.add((it, sid))
             print(f"[repro]   {it} series={sid} done "
@@ -143,12 +188,9 @@ def main() -> int:
         card = make_run_card(
             run_id=f"{run_id}-{model}", kind="reproduction", dataset_hash=dataset_hash,
             split_hash=split_hash, model_family=model, feature_set="one_hot",
-            train_sizes=args.train_sizes, seeds=[args.seed], iterations=args.iterations,
+            train_sizes=args.train_sizes, seeds=model_seeds, iterations=args.iterations,
             series=series_ids, results=results, environment=env,
-            limitations=(["single training seed (sampling); 5 MC-CV repeats provide variance"]
-                         if (len(series_ids) >= 56 and len(iters) >= 5) else
-                         [f"Bounded subset: {len(series_ids)}/56 series, {len(iters)}/5 "
-                          f"iterations, single training seed."]))
+            limitations=_limitations(series_ids, iters, model_seeds, args.seed))
         write_run_card(card, run_dir / model)
 
     _write_report(report_dir / f"{run_id}_report.md", run_id, args, series_ids, agg, comp,
@@ -173,7 +215,8 @@ def _write_report(path, run_id, args, series_ids, agg, comp, curve_png, df,
         f"- dataset_hash: `{dataset_hash[:16]}...`  ·  split_hash: `{split_hash[:16]}...`",
         f"- models: {', '.join(args.models)}  ·  feature set: one-hot (96×4)",
         f"- series: {len(series_ids)} of 56 ({series_ids})",
-        f"- MC-CV repeats (iterations): {args.iterations}  ·  train seed: {args.seed}",
+        f"- MC-CV repeats (iterations): {args.iterations}  ·  subsample seed: {args.seed}  ·  "
+        f"model-init seeds: {sorted(set(args.model_seeds))}",
         f"- primary metric: R² on each series' fixed held-out set, averaged across series "
         f"then across repeats.", "",
         "## Data-size curve", "",
