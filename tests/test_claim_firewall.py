@@ -86,6 +86,7 @@ def test_neighborhood_scope_skips_pooled_and_non_neighborhood(monkeypatch):
 def test_provisional_run_does_not_advance_the_phase(monkeypatch):
     qs = [dissect.GeneratedQuestion(
         id="q", dataset="ecoli", kind="series_difficulty", observation="o", hypothesis="h",
+        difficulty_scale=dissect.SCALE_RMSE,       # undeclared => pre-rebuild => cannot steer
         suggested_intervention="dissect covariates / add a mechanistic feature", evidence={"series": [1]})]
     monkeypatch.setattr(phase.dissect, "hints_for_dataset", lambda d: ([], qs))
     # a PROVISIONAL run on the axis must NOT count as addressing it -> still neighborhood phase

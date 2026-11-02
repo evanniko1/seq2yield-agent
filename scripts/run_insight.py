@@ -79,12 +79,24 @@ def main() -> int:
         if ev.get("test") == "y_matched_random_partition":
             print(f"   test: y-matched random partition, {ev.get('n_draw')} draws, "
                   f"harder-than-null units {ev.get('series')}")
+        if ev.get("null_verdict"):               # the per-unit difficulty ranking's own test
+            v = ev["null_verdict"]
+            detail = (f"family-wise p={ev.get('null_p_max_t')}, established {ev.get('null_hard_all')}"
+                      if v == "established" else
+                      f"NOT established (smallest family-wise p > {ev.get('alpha')})"
+                      if v == "not_established" else f"UNTESTED: {ev.get('null_refusal')}")
+            print(f"   test: {ev.get('null_method')}, {ev.get('null_n_blocks')} blocks x "
+                  f"{ev.get('null_n_units')} units -> {detail}")
         if ev.get("cluster_fit"):
             print(f"   fit : clusters fitted on {ev['cluster_fit']}"
                   + ("  [CAVEAT: " + ev["cluster_fit_caveat"] + "]"
                      if ev.get("cluster_fit_caveat") else ""))
         print()
     hints = dissect.to_focus_hints(questions)
+    stale = len(questions) - len(dissect.steerable(questions))
+    if stale:
+        print(f"NOTE: {stale} of {len(questions)} question(s) predate the 2026-11-02 rebuild and "
+              "are excluded from the hints below (DECISIONS #71/#72).")
     print(f"data-driven focus hints for the PI: {hints or '(none)'}")
     try:                                                     # two-phase exploration state
         from agents import memory

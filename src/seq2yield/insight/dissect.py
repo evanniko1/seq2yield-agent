@@ -43,6 +43,8 @@ covariate correlations (why are the hard units hard?).
 from __future__ import annotations
 
 import hashlib
+import json
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
@@ -149,9 +151,18 @@ class GeneratedQuestion(BaseModel):
         return _INTERVENTION_TYPE.get(self.suggested_intervention)
 
     @property
-    def pre_rebuild(self) -> bool:
-        """True for a question loaded from a file written before the SA-6/ST-8/ML-10 rebuild: its
-        difficulty is raw R² and its covariate (if any) carries no family-wise p-value."""
+    def pre_rebuild(self) -> bool:  # noqa: D401
+        """True for a question whose difficulty is raw R² and whose covariate (if any) carries no
+        family-wise p-value — i.e. one the SA-6/ST-8/ML-10 rebuild withdrew. Such a question is
+        still readable; `steerable` is what stops it pointing the loop anywhere.
+
+        `load_questions` sets `evidence["pre_rebuild"]` from whether the stored line actually had a
+        `difficulty_scale` key, which is exact. Otherwise the default scale decides, and that is
+        deliberate for in-code construction too: "hard" means something different on every scale
+        (SA-6), so a question that does not declare its scale has not said what it measured and
+        must not steer."""
+        if "pre_rebuild" in self.evidence:
+            return bool(self.evidence["pre_rebuild"])
         return self.difficulty_scale == "r2_raw_legacy"
 
 
@@ -248,6 +259,94 @@ def _scale_phrase(scale: str) -> str:
     return f"scale: {scale} — {_SCALE_NOTE.get(scale, 'unspecified')}"
 
 
+def _replicate_difficulty(df: pd.DataFrame, train_size: int):
+    """Long frame `[series, block, value]` of difficulty per REPLICATE, plus the scale.
+
+    A `block` is one (iteration, model, model_seed) cell — a single measurement occasion that every
+    unit went through. `value` is on the same scale `_per_unit` resolves, oriented so higher is
+    harder. Returns (frame, scale, reason_if_unusable)."""
+    sub = df[df["train_size"] == train_size]
+    if sub.empty:
+        return None, SCALE_R2_RAW, "no rows at this train size"
+    keys = [c for c in ("iteration", "model", "model_seed") if c in sub.columns]
+    if not keys:
+        return None, SCALE_R2_RAW, "no replication columns (iteration / model / model_seed)"
+    if "rmse" in sub.columns and "rmse_noise" in sub.columns and (sub["rmse_noise"] > 0).all():
+        scale, value = SCALE_NOISE, sub["rmse"] / sub["rmse_noise"]
+    elif "rmse" in sub.columns:
+        scale, value = SCALE_RMSE, sub["rmse"]
+    elif "r2" in sub.columns:
+        scale, value = SCALE_R2_RAW, -sub["r2"]          # higher = harder
+    else:
+        return None, SCALE_R2_RAW, "no r2 or rmse column"
+    long = pd.DataFrame({"series": sub["series"].to_numpy(),
+                         "block": sub[keys].astype(str).agg("|".join, axis=1).to_numpy(),
+                         "value": pd.to_numeric(value, errors="coerce").to_numpy()})
+    long = long[np.isfinite(long["value"])]
+    counts = long.groupby("block")["series"].nunique()
+    n_units = long["series"].nunique()
+    if n_units < _MIN_SERIES:
+        return None, scale, f"{n_units} units < {_MIN_SERIES}"
+    # the permutation exchanges unit labels WITHIN a block, so every block must hold every unit
+    # exactly once; an unbalanced block would make the shuffle compare different unit sets
+    if not (counts == n_units).all() or len(long) != n_units * len(counts):
+        return None, scale, ("replication is unbalanced across units, so unit labels are not "
+                             "exchangeable within a measurement occasion")
+    return long, scale, None
+
+
+def series_difficulty_null(df: pd.DataFrame, train_size: int, *, n_perm: int = 1000,
+                           alpha: float = _ALPHA, seed: int = 0) -> dict:
+    """Which units are harder than the corpus median, with a FAMILY-WISE permutation p-value.
+
+    The 2026-11-02 rebuild gave the pooled cluster ranking a y-matched null and left the per-series
+    path with none, because `metrics.csv` stores aggregates rather than per-row predictions. It does
+    carry replication, though: 5 MC-CV iterations per (unit, size, model), and model-init seeds
+    since ML-01b. Under H0 "every unit is equally difficult" the values within one measurement
+    occasion are exchangeable ACROSS units, so permuting the unit labels inside each block is a
+    valid null — and it preserves the iteration effect (a hard split raises everyone) and the model
+    effect, which a flat shuffle of the whole column would destroy.
+
+    This matters because the rule it tests has no error rate at all. A top-quartile cut names a
+    quarter of the units whatever the data say: measured on the real E. coli registry over 400
+    label permutations, the old question fired in **100.0%** of them, reporting a difficulty gap of
+    +0.73 on average (p95 +0.95) where the real gap is +2.27. So the selection was untested — and
+    on this dataset the conclusion survives the test anyway, which is worth knowing separately.
+
+    Returns the `step_down_max_t` dict plus `hard` (every unit whose family-wise adjusted p ≤
+    alpha, most extreme first), `scale`, `n_blocks`, `n_units`, `observed`, and `refusal`.
+    """
+    from ..statistics import selection
+    long, scale, why = _replicate_difficulty(df, train_size)
+    base = {"scale": scale, "refusal": why, "hard": [], "selected": None, "p_max_t": None,
+            "adjusted": {}, "n_units": 0, "n_blocks": 0, "alpha": alpha}
+    if long is None:
+        return base
+    units = sorted(long["series"].unique().tolist())
+    blocks = sorted(long["block"].unique().tolist())
+    # (n_blocks, n_units) matrix, rows in block order, columns in unit order
+    M = (long.pivot_table(index="block", columns="series", values="value", aggfunc="mean")
+         .reindex(index=blocks, columns=units).to_numpy(dtype=float))
+    obs_mean = M.mean(axis=0)
+    observed = {str(u): float(v - np.median(obs_mean)) for u, v in zip(units, obs_mean)}
+    # All B draws at once. A Python loop over (draw, block) cost 12 s inside the council loop's
+    # "cheap, no training" path; this is the same computation, vectorised. `argsort` of uniforms
+    # gives an independent permutation of the unit columns per (draw, block), which is exactly the
+    # within-block relabelling the null calls for.
+    rng = np.random.default_rng(seed)
+    B, nb, nu = int(n_perm), len(blocks), len(units)
+    idx = np.argsort(rng.random((B, nb, nu)), axis=-1)
+    P = np.take_along_axis(np.broadcast_to(M, (B, nb, nu)), idx, axis=-1)
+    m = P.mean(axis=1)                                        # (B, n_units)
+    m = m - np.median(m, axis=1, keepdims=True)
+    draws = {str(u): m[:, i] for i, u in enumerate(units)}
+    out = base | selection.step_down_max_t(observed, draws, alpha=alpha)
+    out |= {"scale": scale, "n_units": len(units), "n_blocks": len(blocks),
+            "observed": {k: round(v, 4) for k, v in observed.items()}, "refusal": None,
+            "hard": [u for u in out["ordered"] if out["adjusted"][u] <= alpha]}
+    return out
+
+
 def _difficulty(df, dataset, size, k=3) -> list[GeneratedQuestion]:
     ps = _per_unit(df, size)
     if len(ps) < _MIN_SERIES:
@@ -257,29 +356,64 @@ def _difficulty(df, dataset, size, k=3) -> list[GeneratedQuestion]:
     hardest = ps[ps["difficulty"] >= q_hi].head(k)
     if hardest.empty:
         return []
-    ids = list(hardest.index)
+    ranked = list(hardest.index)
     gap = float(hardest["difficulty"].mean() - med)
-    ev = {"series": ids, "train_size": int(size), "difficulty_scale": scale,
+    # The ranking by itself has no error rate: a top-quartile cut names a quarter of the units
+    # whatever the data say (measured: it fires in 100.0% of null relabellings). So the ranking is
+    # TESTED against a permutation null and the question reports which of the three states it is in.
+    null = series_difficulty_null(df, size, alpha=_ALPHA)
+    ev = {"series": [], "ranked": ranked, "train_size": int(size), "difficulty_scale": scale,
           "difficulty_hard_mean": round(float(hardest["difficulty"].mean()), 4),
           "difficulty_median": round(float(med), 4),
-          "difficulty_gap": round(gap, 4)}
+          "difficulty_gap": round(gap, 4),
+          "null_method": "permute unit labels within each (iteration, model, seed) block",
+          "null_refusal": null.get("refusal"), "null_n_blocks": null.get("n_blocks"),
+          "null_n_units": null.get("n_units"), "alpha": _ALPHA}
     if scale == SCALE_R2_RAW:                 # keep the legacy keys readable on the legacy scale
         ev["r2_mean_hard"] = round(float(hardest["r2_mean"].mean()), 4)
         ev["r2_median"] = round(float(ps["r2_mean"].median()), 4)
     # a gap is only comparable to 1.0 on the R² scale; normalise it for the priority on error scales
     norm_gap = gap if scale == SCALE_R2_RAW else (gap / abs(med) if med else gap)
+    prio = min(1.0, 0.4 + min(0.6, abs(norm_gap)))
+
+    if null.get("refusal"):
+        verdict, hard_ids = "untested", ranked
+        obs = (f"Units [{_fmt(ranked)}] are the hardest RANKED at N={size} "
+               f"({_scale_phrase(scale)}): difficulty {hardest['difficulty'].mean():.3f} vs corpus "
+               f"median {med:.3f} (gap {gap:+.3f}). UNTESTED — no valid permutation null here "
+               f"({null['refusal']}), so this is a ranking, not an established difference.")
+    elif null["hard"]:
+        hard_ids = [int(u) for u in null["hard"][:k]]
+        verdict = "established"
+        p = null["adjusted"][null["hard"][0]]
+        obs = (f"Units [{_fmt(hard_ids)}] are harder than the corpus at N={size} "
+               f"({_scale_phrase(scale)}): difficulty {hardest['difficulty'].mean():.3f} vs median "
+               f"{med:.3f} (gap {gap:+.3f}), family-wise permutation p={p:.4f} over "
+               f"{null['n_units']} units and {null['n_blocks']} measurement blocks.")
+        ev["null_p_max_t"] = round(float(p), 5)
+        ev["null_hard_all"] = [int(u) for u in null["hard"]]
+    else:
+        hard_ids, verdict = [], "not_established"
+        prio = min(prio, 0.3)
+        obs = (f"NO unit is established as harder than the corpus at N={size} "
+               f"({_scale_phrase(scale)}). The hardest RANKED are [{_fmt(ranked)}] (gap "
+               f"{gap:+.3f}), but the smallest family-wise permutation p over "
+               f"{null['n_units']} units is {null['p_max_t']:.3f} > {_ALPHA}: the ranking is not "
+               "distinguishable from a relabelling of equally difficult units.")
+    ev["series"] = hard_ids
+    ev["null_verdict"] = verdict
     return [GeneratedQuestion(
-        id=_qid(dataset, "series_difficulty", _fmt(ids)),
+        id=_qid(dataset, "series_difficulty", _fmt(hard_ids or ranked)),
         dataset=dataset, kind="series_difficulty", difficulty_scale=scale,
-        observation=(f"Units [{_fmt(ids)}] are the hardest at N={size} ({_scale_phrase(scale)}): "
-                     f"difficulty {hardest['difficulty'].mean():.3f} vs corpus median {med:.3f} "
-                     f"(gap {gap:+.3f})."),
+        observation=obs,
         hypothesis=("A property shared by these units (sequence composition, within-unit sequence "
                     "diversity, distance from the training distribution, or unit size) caps "
-                    "predictability."),
+                    "predictability." if verdict != "not_established" else
+                    "There may be no per-unit difficulty structure at this size beyond measurement "
+                    "noise; the apparent spread is what a null relabelling produces."),
         suggested_intervention="dissect covariates / add a mechanistic feature",
         evidence=ev,
-        priority=min(1.0, 0.4 + min(0.6, abs(norm_gap))))]
+        priority=prio)]
 
 
 def _sensitivity_and_ceiling(df, dataset, size) -> list[GeneratedQuestion]:
@@ -556,6 +690,15 @@ def _covariate_frame(dataset: str):
 
 
 def _series_covariates(dataset: str):
+    """Cached per dataset (it reads the raw frame, ~7 s), returned as a COPY so a caller cannot
+    poison the cache. `hints_for_dataset` is the council loop's cheap path and called every
+    cycle, so paying that once per process rather than once per cycle is the point."""
+    out = _series_covariates_cached(dataset)
+    return None if out is None else out.copy()
+
+
+@lru_cache(maxsize=8)
+def _series_covariates_cached(dataset: str):
     """Per-series covariates keyed by the SAME series id as the baseline metrics — so
     `correlate_difficulty` can answer 'why are the hard series hard?'.
 
@@ -602,6 +745,24 @@ def dissect_dataset(dataset: str, metrics_csv, train_size: int | None = None) ->
     return sorted(qs, key=lambda q: q.priority, reverse=True)
 
 
+@lru_cache(maxsize=8)
+def _provenance_stamp(run_id: str) -> dict | None:
+    """`baseline_guard.check` for one registry, cached per process.
+
+    It hashes the value-deciding files AND the dataset/split files, which measures ~5 s here — and
+    `hints_for_dataset` is the council loop's CHEAP path, called every cycle. Adding that cost was a
+    regression introduced by the stamp itself (post-close audit, 2026-11-02). The verdict cannot
+    change inside one process without the code changing, so caching it is sound; a new process
+    re-checks."""
+    try:
+        from orchestration.baseline_guard import check
+        v = check(run_id, ["rf", "mlp", "cnn"])
+    except Exception:
+        return None
+    return {"registry_run_id": run_id, "provenance_ok": bool(v.get("ok")),
+            "violations": list(v.get("violations") or [])}
+
+
 def _stamp_baseline_provenance(questions: list[GeneratedQuestion], metrics_csv) -> None:
     """Record whether the registry these questions came from can prove it matches the code.
 
@@ -613,24 +774,44 @@ def _stamp_baseline_provenance(questions: list[GeneratedQuestion], metrics_csv) 
     drift. Found by the post-close audit of 2026-11-02; the layer is still exploratory and this
     changes no verdict."""
     try:
-        from orchestration.baseline_guard import check, registry_run_id
+        from orchestration.baseline_guard import registry_run_id
         rid = registry_run_id()
-        if not rid or Path(metrics_csv).parent.name != rid:
-            return
-        v = check(rid, ["rf", "mlp", "cnn"])
     except Exception:
         return
-    stamp = {"registry_run_id": rid, "provenance_ok": bool(v.get("ok")),
-             "violations": list(v.get("violations") or [])}
+    if not rid or Path(metrics_csv).parent.name != rid:
+        return
+    stamp = _provenance_stamp(rid)
+    if stamp is None:
+        return
     for q in questions:
         q.evidence["baseline_provenance"] = stamp
 
 
+def steerable(questions: list[GeneratedQuestion]) -> list[GeneratedQuestion]:
+    """The questions that may STEER the loop, as opposed to merely being readable.
+
+    A question written before the 2026-11-02 rebuild is excluded. The rebuild WITHDREW the claims
+    those questions carry: the E. coli "why" was R²'s denominator (SA-6), a pooled neighbourhood
+    ranking by R² carries almost no information about error magnitude (ML-10, Spearman +0.04 on
+    yeast), and any covariate came from a selector with no error rate (ST-8, 69% at 8 units). The
+    yeast file on disk is worse than stale — its numbers also predate the grouped-split retraction
+    (R-1), so they are withdrawn twice over.
+
+    They are still LOADED, because deleting the trail is not the remedy and a reader should be able
+    to see what the loop used to be told. What they may not do is keep pointing the loop at
+    neighbourhoods chosen by a rule the project has since retracted. Re-run
+    `scripts/run_insight.py` to replace them.
+    """
+    return [q for q in questions if not q.pre_rebuild]
+
+
 def to_focus_hints(questions: list[GeneratedQuestion]) -> list[str]:
     """Distinct harness intervention_types the questions point at — a data-driven prior the PI can
-    fold into its focus (so exploration follows the data, not just the uncovered grid)."""
+    fold into its focus (so exploration follows the data, not just the uncovered grid).
+
+    Only `steerable` questions contribute: a withdrawn question is not a prior."""
     seen, out = set(), []
-    for q in questions:
+    for q in steerable(questions):
         it = q.intervention_type
         if it and it not in seen:
             seen.add(it)
@@ -673,13 +854,19 @@ def load_questions(dataset: str) -> list[GeneratedQuestion]:
             continue
         try:
             q = GeneratedQuestion.model_validate_json(ln)
+            # EXACT staleness: did the stored line itself carry a scale? Inferring it from the
+            # deserialized default would also condemn a future question that happens to use the
+            # legacy scale deliberately.
+            stale = "difficulty_scale" not in json.loads(ln)
         except Exception:
             continue
-        if q.pre_rebuild:
-            q.evidence = {**q.evidence, "pre_rebuild": True,
-                          "pre_rebuild_note": ("written before the SA-6/ST-8/ML-10 rebuild: "
-                                               "difficulty is raw R², and any covariate is an "
-                                               "unpenalised max |r| with no family-wise p-value")}
+        q.evidence = {**q.evidence, "pre_rebuild": stale}
+        if stale:
+            q.evidence["pre_rebuild_note"] = ("written before the SA-6/ST-8/ML-10 rebuild: "
+                                              "difficulty is raw R², and any covariate is an "
+                                              "unpenalised max |r| with no family-wise p-value. "
+                                              "Loaded for the trail; it cannot steer the loop "
+                                              "(dissect.steerable). Re-run scripts/run_insight.py.")
         out.append(q)
     return out
 

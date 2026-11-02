@@ -208,7 +208,11 @@ from seq2yield.insight import phase  # noqa: E402
 
 
 def _mkq(sugg, series):
+    # `difficulty_scale` is declared on purpose: a question that does not say what scale it
+    # measured "hard" on is treated as pre-rebuild and may not steer the loop (SA-6 / #71's
+    # residual). These fixtures are testing the PHASE controller, not staleness.
     return dissect.GeneratedQuestion(id="q", dataset="ecoli", kind="series_difficulty",
+                                     difficulty_scale=dissect.SCALE_RMSE,
                                      observation="o", hypothesis="h",
                                      suggested_intervention=sugg, evidence={"series": series})
 

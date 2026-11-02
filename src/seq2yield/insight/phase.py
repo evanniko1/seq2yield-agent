@@ -24,11 +24,19 @@ FOCUS_ORDER = ["feature_representation", "model_architecture", "data_efficiency"
 def dataset_phase(dataset: str, records: list[dict]) -> dict:
     """Decide the exploration phase for one dataset. Returns
     {phase, reason, focus_hints, neighborhoods}."""
-    _, questions = dissect.hints_for_dataset(dataset)
+    _, loaded = dissect.hints_for_dataset(dataset)
+    # Only questions that may STEER count. A pre-rebuild question is loaded (the trail stays) but
+    # the 2026-11-02 rebuild withdrew the claim it carries, so it must not choose neighbourhoods.
+    questions = dissect.steerable(loaded)
     q_types = list(dict.fromkeys(q.intervention_type for q in questions if q.intervention_type))
     if not q_types:
-        return {"phase": "global", "reason": "no neighborhood questions yet",
-                "focus_hints": [], "neighborhoods": []}
+        stale = len(loaded) - len(questions)
+        return {"phase": "global",
+                "reason": (f"{stale} question(s) on disk, all written before the 2026-11-02 "
+                           "insight rebuild and therefore withdrawn — re-run "
+                           "scripts/run_insight.py to regenerate them" if stale
+                           else "no neighborhood questions yet"),
+                "focus_hints": [], "neighborhoods": [], "stale_questions": stale}
     # only DURABLE runs close a neighborhood axis; provisional (fast) runs don't advance the phase
     addressed = {r.get("intervention_type") for r in records
                  if r.get("dataset") == dataset and not r.get("provisional")}

@@ -102,7 +102,15 @@ def test_difficulty_uses_an_error_scale_and_every_question_names_it():
     qs = dissect.dissect_metrics(df, "t")
     assert qs and all(q.difficulty_scale == dissect.SCALE_RMSE for q in qs)
     hard = next(q for q in qs if q.kind == "series_difficulty")
-    assert 3 in hard.evidence["series"] and 1 not in hard.evidence["series"]
+    # `ranked` is the difficulty ORDER, which is what this test is about: series 3 has the largest
+    # error and series 1 the worst R2 with the smallest error, so an error scale must put 3 on the
+    # list and leave 1 off it. `series` is the subset the permutation null ESTABLISHES, and with
+    # 5 units in 2 blocks it cannot establish anything - which is itself correct (#71's residual,
+    # closed 2026-11-02: a ranking is not a result).
+    assert 3 in hard.evidence["ranked"] and 1 not in hard.evidence["ranked"]
+    assert hard.evidence["null_verdict"] in ("not_established", "established")
+    if hard.evidence["null_verdict"] == "established":
+        assert 3 in hard.evidence["series"]
     assert hard.evidence["difficulty_scale"] == dissect.SCALE_RMSE
     # the defective rule, on the same frame: lowest mean R² -> series 1
     per_r2 = df.groupby("series")["r2"].mean()

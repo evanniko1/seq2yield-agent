@@ -475,6 +475,78 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #72 — A difficulty ranking is not a result: the per-series path gets a null, and withdrawn questions stop steering
+- **Authorization.** Human approval in session ("keep going with the insight chain"). The
+  `approvals.decide` record is owed for the same host reason as #69–#71.
+- **Why.** #71 listed two things it did not cover, and both were load-bearing. The per-series path
+  — E. coli, the primary benchmark — had **no null model**: `series_difficulty` was a top-quartile
+  cut on RMSE with no p-value. And stored pre-rebuild questions still steered the loop: they were
+  flagged, but nothing refused to act on them.
+- **The ranking had no error rate at all, which is worse than a bad one.** A quantile cut names a
+  quarter of the units whatever the data say. Measured on the real E. coli registry over 400
+  permutations of the unit labels (within each measurement block, so the iteration and model
+  effects survive): the old question fired in **100.0%** of them, reporting a difficulty gap of
+  **+0.73** on average, p95 **+0.95**. This is ST-8's finding in a second place — an uncalibrated
+  threshold dressed as a selection.
+- **Decision: test it, using replication the registry already carries.** `metrics.csv` holds 5
+  MC-CV iterations per (unit, size, model), and model-init seeds since ML-01b — 15 measurement
+  blocks at size 2000. Under H0 "every unit is equally difficult" the values inside one block are
+  exchangeable **across units**, so `series_difficulty_null` permutes the unit labels within each
+  block and corrects across the 56 units with the same Westfall–Young step-down max-T machinery
+  #71 built. Permuting within the block is the point: a flat shuffle of the whole column would
+  destroy the occasion effect (a hard split raises everyone) and understate the null spread, making
+  everything look significant. A test pins that a pure occasion effect establishes nothing.
+- **Measured: 100.0% → 4.5%** under the null (nominal 5%), with a real per-unit spread still found
+  in 16+/20 synthetic trials. The null refuses rather than shuffling anyway when replication is
+  unbalanced across units (the exchangeability argument is then gone) or absent — which, checked
+  against the in-progress 3-seed rebuild, correctly refuses a **half-built** registry instead of
+  testing on it. When that registry lands the block set becomes (iteration × model × seed), 45
+  blocks rather than 15, so the test picks up ML-01b's seeds as extra replication without any
+  further change.
+- **The positive result, which is separable from the defect.** E. coli's hard series **survive the
+  test**: the real gap of +2.27 sits at the 100th percentile of the null gaps, 10 units clear
+  family-wise p ≤ 0.05, and the top three are at p=0.001 (the floor for 1,000 permutations).
+  A random-effects decomposition agrees — between-unit variance 2.05 against within-unit 0.32,
+  ICC **0.864**. So the old rule was uncalibrated *and* its conclusion here happens to hold; those
+  are two different statements and the question now reports which one it is making. The three
+  states are `established` (names the units the test supports, with the p-value),
+  `not_established` (reports the ranking, says the smallest family-wise p is above α, and empties
+  `evidence["series"]` so the loop cannot chase it) and `untested` (no valid null available, says
+  so).
+- **Withdrawn questions no longer steer.** `dissect.steerable` filters them out of
+  `to_focus_hints` and of `phase.dataset_phase`'s `neighborhoods`, so a question the rebuild
+  retracted can still be read but cannot point the loop anywhere; `dataset_phase` now reports
+  `stale_questions` and says the file is withdrawn rather than "no neighborhood questions yet",
+  which are different states. The concrete case: the stored yeast question names clusters 2 and 6
+  on a raw-R² ranking of 7 clusters — a ranking ML-10 measured as carrying almost no information
+  about error magnitude (Spearman +0.04) — and its numbers also predate the grouped-split
+  retraction (R-1), so they are withdrawn twice over. Staleness is detected from whether the
+  **stored line** carried a `difficulty_scale` key, which is exact; and an in-code question that
+  declares no scale is also non-steerable, deliberately, because "hard" means something different
+  on each scale (SA-6) and a question that has not said what it measured should not be acted on.
+- **A `p_value` of exactly 0, in the module the last audit pass had already visited.** The
+  measurement above surfaced `variance_components` returning **p = 0.0**: `f.sf` underflows once F
+  is large enough (F≈33 over 56 series), and 0 reads as infinite evidence rather than "below what
+  this computation can represent". The 2026-11-02 pass fixed the `msw == 0` branch here and missed
+  this one. Now floored at `eps` (2.2e-16) with `p_floor` and `p_underflow` on the record, and the
+  value is no longer rounded to 6 dp — which was independently turning every small p into 0.0 in
+  the stored record. The heterogeneity conclusion is unchanged.
+- **A performance regression of my own, found by timing rather than by reading.** The council
+  loop's cheap path (`hints_for_dataset`, documented as "no training") measured **12.3 s**. Two
+  causes: the new null ran a Python loop over (draw, block), now vectorised to one `argsort` and
+  one `take_along_axis` (7 s → 0.05 s); and the provenance stamp *this session's earlier audit
+  patch* added called `baseline_guard.check` every cycle, which hashes the value-deciding and data
+  files (~5 s). Both are now cached per process — `_series_covariates` too, which reads the raw
+  frame and was never cached. First call 5 s, every later call **0.09 s**. The covariate cache
+  returns a copy so a caller cannot poison it.
+- **What this still does not cover.** The other four `series_difficulty`-adjacent question kinds
+  (`model_sensitivity`, `model_agnostic_ceiling`, `data_efficiency`, and the spread rule) remain
+  threshold verdicts with hand-set cuts — only the difficulty ranking is tested. The noise-ceiling
+  scale is still inert. `k` for pooled clustering is still hand-chosen. And the per-unit null tests
+  "harder than the corpus median", not "harder than a model could do", which is the noise-ceiling
+  question and needs replicate structure no dataset here declares.
+- Tests: `tests/test_insight_residuals.py` (14).
+
 ## #71 — The insight layer's "why" no longer conditions on y: error scale, tested selection, matched null
 - **Authorization.** Human approval in session ("do ML-01b next, then SA-2, SA-6, ST-8, and
   ML-10"); `src/seq2yield/statistics/**` is conditionally protected and `selection.py` is new there.
