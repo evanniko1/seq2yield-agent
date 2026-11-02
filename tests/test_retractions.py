@@ -141,3 +141,52 @@ def test_new_claims_record_the_protocol_they_were_measured_under(tmp_path):
         comparison={"mean_delta": 0.03, "bootstrap_unit": "series"},
         claim_allowed="x", claims_dir=tmp_path)
     assert legacy["split_strategy"] is None        # a pre-fix record is identifiable as such
+
+
+# ------------------------------------------------- found while swapping the pointer (2026-11-02)
+def test_every_superseded_registry_report_says_so_in_its_head():
+    """Generalises the hardcoded June/Nov-01 pair below to the whole `superseded:` list.
+
+    ML-02's fix was ONE pointer in CODE, and `test_there_is_exactly_one_pointer_to_the_registry`
+    enforces it. Prose was never covered: when the pointer moved to `2026-11-02-full56-seeds`, the
+    predecessor's report still opened with "**The canonical registry**" and nothing failed. A report
+    that calls itself canonical while the config has superseded it is how a stale number gets
+    quoted — the exact mechanism R-2 is about.
+
+    Checking only "does the word 'superseded' appear" is too weak — a report may *mention* a
+    superseded predecessor and pass vacuously. The load-bearing assertion is the negative one: a
+    superseded report must not still call itself the canonical registry."""
+    from orchestration import baseline_guard
+    current = baseline_guard.registry_run_id()
+    missing_marker, self_claimed = [], []
+    for entry in baseline_guard.config().get("superseded") or []:
+        rid = entry["run_id"]
+        assert rid != current, f"`superseded:` lists the live pointer {rid!r}"
+        report = ROOT / "reports" / "static" / f"{rid}_report.md"
+        if not report.exists():
+            continue                                 # artifacts not in this checkout
+        head = report.read_text(encoding="utf-8")[:1800].lower()
+        opening = head[:420]                         # the banner's own first claim, not the body
+        if not any(w in opening for w in ("superseded", "replaced by", "retracted")):
+            missing_marker.append(report.name)
+        if "the canonical registry" in head and "superseded" not in opening:
+            self_claimed.append(report.name)
+        assert "retractions.md" in head, f"{report.name} does not point at the ledger"
+    assert not self_claimed, (
+        f"superseded registry reports that still call themselves canonical: {self_claimed}")
+    assert not missing_marker, (
+        f"superseded registry reports whose banner does not open by saying so: {missing_marker}")
+
+
+def test_the_ledgers_current_numbers_line_names_the_live_registry():
+    """The ledger tells the reader which report to quote. That sentence is a pointer in prose, and
+    a pointer in prose goes stale silently — this one named the previous registry for as long as it
+    took to grep for it. Dumb string matching, like the rest of this file, because so is the bug."""
+    from orchestration import baseline_guard
+    current = baseline_guard.registry_run_id()
+    lines = [ln for ln in LEDGER.read_text(encoding="utf-8").splitlines()
+             if ln.lower().startswith("current numbers:")]
+    assert lines, "the ledger no longer says which report carries the current numbers"
+    for ln in lines:
+        assert current in ln, (
+            f"the ledger's 'Current numbers:' line does not name the live registry {current!r}: {ln}")

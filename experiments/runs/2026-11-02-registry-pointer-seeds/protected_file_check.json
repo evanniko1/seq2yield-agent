@@ -1,0 +1,66 @@
+{
+  "passed": true,
+  "violations": [],
+  "by_path": {
+    "configs/baseline_registry.yaml": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/DECISIONS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/RETRACTIONS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "reports/static/2026-11-02-2026-11-02-full56_report.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "reports/static/2026-11-02-full56-seeds_report.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "reports/static/2026-11-02-full56-seeds_curve.png": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_retractions.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-11-02-full56-seeds/metrics.csv": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-11-02-full56-seeds/data_size_curve.csv": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-11-02-full56-seeds/cnn/run_card.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-11-02-full56-seeds/mlp/run_card.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-11-02-full56-seeds/rf/run_card.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    }
+  }
+}

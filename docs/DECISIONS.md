@@ -475,6 +475,45 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #73 — The seed-complete registry becomes canonical, and a pointer in prose is still a pointer
+- **Authorization.** Human approval in session ("do both, separate commits"). Record:
+  `experiments/runs/2026-11-02-registry-pointer-seeds/`.
+- **Why.** #69 left the baseline registry refused by its own guard and declared a `pending_rebuild`
+  to replace it. That rebuild (`2026-11-02-full56-seeds`) completed: 280/280 cells, exit 0, 6h47m,
+  10,080 rows = 3 models × 4 train sizes × **3 model-init seeds** × (5 iterations × 56 series), a
+  rectangular grid with no cell short and no NaN. The pointer moves to it and `pending_rebuild` is
+  deleted — not because the block expired, but because the guard now *accepts* the thing it points
+  at: `registry '2026-11-02-full56-seeds' matches this checkout (c9218952)`.
+- **The replacement changed no number, and that is measured, not assumed.** Seed 1 of the new
+  registry against all 3,360 rows of the old one: **cnn and mlp bit-identical** (1120/1120 each,
+  max |Δ| exactly 0), **rf max |Δ| 3.3e-16** (803/1120 bit-identical), nothing above 1e-9. The rf
+  residual is its own `n_jobs=-1` thread-accumulation nondeterminism — independently measured at
+  1.1e-16 over repeats (#64's corrected wording) — not an effect of ML-01b's builder change. So the
+  guard's refusal was **precautionary and correct by policy** (two value-deciding files genuinely
+  changed under that registry) while being numerically a no-op, which is the behaviour the per-file
+  manifest from #65 was built to make visible rather than fatal.
+- **What the three seeds buy.** (a) A candidate's three seeds can now be paired seed-matched against
+  the baseline instead of forcing an in-run control — the ML-01b defect, now a compute saving rather
+  than a correctness gap. (b) The per-series permutation null from #72 gets **45**
+  `(iteration, model, seed)` blocks instead of 15, automatically, with no code change. That
+  forward-compatibility was verified before the data existed; it now has the data.
+- **Found while swapping: ML-02's fix covered code, not prose.** `test_there_is_exactly_one_pointer_
+  to_the_registry` enforces one pointer in *code*, and it held. But `docs/RETRACTIONS.md` said
+  "Current numbers: `…2026-11-02-2026-11-02-full56_report.md`" and the predecessor's report still
+  opened "**The canonical registry**" — both silently false the instant the pointer moved, and both
+  found by grep, not by a test. That is precisely the R-2 mechanism (a stale number drifting back
+  into a summary) surviving in the one medium the ML-02 fix did not cover.
+- **So two invariants are now mechanical** (`tests/test_retractions.py`): the ledger's
+  `Current numbers:` line must name the live registry, and every id in `superseded:` whose report
+  exists must open by saying so and must not still call itself canonical. Both were checked against
+  the true pre-fix text and **fail on it** — the first draft of the banner test passed on the broken
+  state, because "mentions the word superseded" is satisfiable by a report merely *describing* its
+  predecessor; the load-bearing assertion is the negative one.
+- **Not changed.** #65's text still records the pointer move *of that day* and is left as written —
+  a dated entry is the record of what happened then. `test_ml01b_series_seeds.py` keeps naming the
+  old registry by literal id on purpose: it is the single-seed registry, and that is what the test
+  is about.
+
 ## #72 — A difficulty ranking is not a result: the per-series path gets a null, and withdrawn questions stop steering
 - **Authorization.** Human approval in session ("keep going with the insight chain"). Record:
   `experiments/runs/2026-11-02-insight-residuals/` (9 paths, `statistics/mixed_effects.py`

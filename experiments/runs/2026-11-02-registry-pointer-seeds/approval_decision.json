@@ -1,0 +1,50 @@
+{
+  "run_id": "2026-11-02-registry-pointer-seeds",
+  "granted": true,
+  "approver": "Evangelos (vm.nikolados@gmail.com)",
+  "paths": [
+    "configs/baseline_registry.yaml",
+    "docs/DECISIONS.md",
+    "docs/RETRACTIONS.md",
+    "reports/static/2026-11-02-2026-11-02-full56_report.md",
+    "reports/static/2026-11-02-full56-seeds_report.md",
+    "reports/static/2026-11-02-full56-seeds_curve.png",
+    "tests/test_retractions.py",
+    "experiments/runs/2026-11-02-full56-seeds/metrics.csv",
+    "experiments/runs/2026-11-02-full56-seeds/data_size_curve.csv",
+    "experiments/runs/2026-11-02-full56-seeds/cnn/run_card.json",
+    "experiments/runs/2026-11-02-full56-seeds/mlp/run_card.json",
+    "experiments/runs/2026-11-02-full56-seeds/rf/run_card.json"
+  ],
+  "path_classes": {
+    "configs/baseline_registry.yaml": "require_review",
+    "docs/DECISIONS.md": "require_review",
+    "docs/RETRACTIONS.md": "require_review",
+    "reports/static/2026-11-02-2026-11-02-full56_report.md": "require_review",
+    "reports/static/2026-11-02-full56-seeds_report.md": "require_review",
+    "reports/static/2026-11-02-full56-seeds_curve.png": "require_review",
+    "tests/test_retractions.py": "require_review",
+    "experiments/runs/2026-11-02-full56-seeds/metrics.csv": "require_review",
+    "experiments/runs/2026-11-02-full56-seeds/data_size_curve.csv": "require_review",
+    "experiments/runs/2026-11-02-full56-seeds/cnn/run_card.json": "require_review",
+    "experiments/runs/2026-11-02-full56-seeds/mlp/run_card.json": "require_review",
+    "experiments/runs/2026-11-02-full56-seeds/rf/run_card.json": "require_review"
+  },
+  "strict_paths": [],
+  "conditional_paths": [
+    "configs/baseline_registry.yaml",
+    "docs/DECISIONS.md",
+    "docs/RETRACTIONS.md",
+    "reports/static/2026-11-02-2026-11-02-full56_report.md",
+    "reports/static/2026-11-02-full56-seeds_report.md",
+    "reports/static/2026-11-02-full56-seeds_curve.png",
+    "tests/test_retractions.py",
+    "experiments/runs/2026-11-02-full56-seeds/metrics.csv",
+    "experiments/runs/2026-11-02-full56-seeds/data_size_curve.csv",
+    "experiments/runs/2026-11-02-full56-seeds/cnn/run_card.json",
+    "experiments/runs/2026-11-02-full56-seeds/mlp/run_card.json",
+    "experiments/runs/2026-11-02-full56-seeds/rf/run_card.json"
+  ],
+  "reason": "APPROVED by 'Evangelos (vm.nikolados@gmail.com)' for conditional-protected paths: ['configs/baseline_registry.yaml', 'docs/DECISIONS.md', 'docs/RETRACTIONS.md', 'reports/static/2026-11-02-2026-11-02-full56_report.md', 'reports/static/2026-11-02-full56-seeds_report.md', 'reports/static/2026-11-02-full56-seeds_curve.png', 'tests/test_retractions.py', 'experiments/runs/2026-11-02-full56-seeds/metrics.csv', 'experiments/runs/2026-11-02-full56-seeds/data_size_curve.csv', 'experiments/runs/2026-11-02-full56-seeds/cnn/run_card.json', 'experiments/runs/2026-11-02-full56-seeds/mlp/run_card.json', 'experiments/runs/2026-11-02-full56-seeds/rf/run_card.json'] | note: Registry pointer moved to the seed-complete rebuild (DECISIONS #73). `pending_rebuild` deleted because the guard now ACCEPTS the pointer's target (numerics fingerprint c92189526f4c7d8e, 27 files, matches this checkout); the predecessor is recorded under `superseded:` with its refusal reason. Measured, not assumed: seed 1 of the new registry reproduces all 3,360 values of the old one with cnn and mlp bit-identical (1120/1120 each) and rf to 3.3e-16, which is rf's own n_jobs=-1 thread-accumulation nondeterminism, so ML-01b's builder change was value-preserving and the guard's refusal was precautionary. Also closes AG-15, found while swapping: ML-02's one-pointer fix covered code but not prose, so the ledger's 'Current numbers:' line and the predecessor report's self-description were both silently falsified by the swap; two invariants are now mechanical in tests/test_retractions.py. Human approval in session: 'do both, separate commits'.",
+  "ts": "2026-11-02T17:29:51.658506+00:00"
+}

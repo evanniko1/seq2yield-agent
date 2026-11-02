@@ -245,8 +245,12 @@ correct for the code of that day. This entry is the one place that says the stan
 since changed. What is stamped instead are the live documents — the June registry report and
 DECISIONS #12's result line.
 
-Current numbers: `reports/static/2026-11-02-2026-11-02-full56_report.md` (which reproduces the
-2026-11-01 rebuild to 3.3e-16; the pointer moved for provenance reasons only, DECISIONS #65). The
+Current numbers: `reports/static/2026-11-02-full56-seeds_report.md` (DECISIONS #73). The pointer
+has moved twice for provenance reasons and neither move changed a number: the 2026-11-01 → -11-02
+rebuild reproduced to 3.3e-16 (#65), and the -11-02 → `full56-seeds` rebuild reproduces its
+predecessor's 3,360 values with **cnn and mlp bit-identical and rf to 3.3e-16** — rf's own
+`n_jobs=-1` nondeterminism, not an effect of the rebuild. That one moved so the baseline carries
+**three model-init seeds** and can be paired seed-matched against a candidate (ML-01b, #69). The
 stale June registry is now **refused as a control** by `orchestration/baseline_guard`
 (`no_provenance`), not merely annotated (DECISIONS #64).
 
