@@ -171,7 +171,8 @@
     "margin 0.02 is NOT established at any train size: three sizes are `superior_margin_unresolved` (better, by an amount the interval cannot pin under the bar) and train 2000 is `superior_but_below_margin` (better, and the gap is SHOWN to be under it)",
     "the cnn advantage SHRINKS with data (+0.0320 at 500 -> +0.0104 at 2000), so a claim quoted without its train size would be the misleading version of this result",
     "one dataset (ecoli) and one feature set (one-hot 96x4); no transfer claim is made",
-    "6 of 56 series carry the grouped structure the mixed-effects estimator handles (ICC 0.864); this comparison uses the series-unit interval, which is the project's primary metric but not the only defensible unit",
+    "the series-unit interval treats the 56 series as exchangeable units, which is the project's primary metric. E. coli declares NO family grouping and NO replicate columns (family_col, family_distance both None; replicate_cols empty), so the family-unit bootstrap (ST-7) has no grouping to use here and no noise ceiling is available to normalise difficulty by - the series unit is the only defensible one on this dataset, not merely the chosen one",
+    "CORRECTION 2026-11-02 (post-close audit of #74): the line above previously read '6 of 56 series carry the grouped structure the mixed-effects estimator handles (ICC 0.864)'. Both halves were wrong - E. coli declares no family grouping at all, and ICC 0.864 is #72's random-effects decomposition of per-series DIFFICULTY across (iteration, model, seed) blocks, an unrelated quantity; the count '6' had no source. It was written from memory into the one block whose job is to stop a number being misquoted. No part of the result depends on it.",
     "3 model-init seeds per arm - enough for the two-component interval the policy requires, not enough to describe the seed distribution's tails",
     "subsample seed 1 only: this varies initialisation and the MC-CV split, not the training draw"
   ],
@@ -185,8 +186,8 @@
     },
     "cuda": true,
     "code": {
-      "git_sha": "659b3aac8168931082694de423a68a45e4923094",
-      "git_sha_short": "659b3aac8168",
+      "git_sha": "3b49252929f75091747d467b04c8af4e3ba97bf9",
+      "git_sha_short": "3b49252929f7",
       "branch": "main",
       "dirty": true
     },

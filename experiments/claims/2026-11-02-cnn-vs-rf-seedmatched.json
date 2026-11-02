@@ -1,5 +1,5 @@
 {
-  "ts": "2026-11-02T17:34:37.316992+00:00",
+  "ts": "2026-11-02T17:45:47.481840+00:00",
   "run_id": "2026-11-02-cnn-vs-rf-seedmatched",
   "proposal_id": "manual-2026-11-02-pointer-swap",
   "status": "rejected",
@@ -24,15 +24,9 @@
     0.00470625669408467,
     0.016108236968182615
   ],
-  "baseline_source": {
-    "kind": "registry",
-    "run_id": "2026-11-02-full56-seeds",
-    "numerics_fingerprint": "c92189526f4c7d8e",
-    "seed_matched": true,
-    "note": "both arms are rows of ONE registry: same provided splits, same subsample seed 1, same 5 MC-CV iterations, same 3 model-init seeds. Fully paired on every axis except the model family."
-  },
+  "baseline_source": "registry:2026-11-02-full56-seeds (seed-matched, both arms)",
   "provenance": {
-    "git_sha": "659b3aac8168",
+    "git_sha": "3b49252929f7",
     "numerics": "c92189526f4c7d8e"
   },
   "dataset": "ecoli",

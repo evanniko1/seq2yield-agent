@@ -172,3 +172,107 @@ def test_the_run_card_names_its_baseline_and_that_baseline_is_the_live_registry(
     assert card["results"]["baseline_run_id"] == REGISTRY == baseline_guard.registry_run_id()
     stamp = (card.get("environment") or {}).get("numerics") or {}
     assert stamp.get("fingerprint"), "the run-card carries no numerics fingerprint"
+
+
+# ------------------------------------------------ found by the post-close audit of #74 (2026-11-02)
+def test_a_claim_record_cannot_blank_the_dashboard():
+    """Found by the full suite after #74 was committed, and it was MY regression.
+
+    `claim.baseline_source` is declared TEXT and had been null in all 22 preceding records, so the
+    column was never exercised. The first record to populate it carried a dict, `sqlite3` refused to
+    bind it, and that aborted `ingest_all` — taking every table and the whole dashboard with it, not
+    just the one row. `_put` now coerces structured values, by the same rule as `audit_log`'s
+    coercing `default=` (DECISIONS #69): the layer that records what happened must not be the layer
+    that fails."""
+    import sqlite3
+
+    from orchestration import store
+    con = sqlite3.connect(":memory:")
+    for stmt in store.SCHEMA:
+        con.execute(stmt)
+    # every JSON shape a record can legitimately arrive as
+    store._put(con, "claim", {
+        "run_id": "t-dict", "ts": "now", "candidate_model": "cnn", "baseline_model": "rf",
+        "baseline_source": {"kind": "registry", "run_id": "r"},   # the shape that broke it
+        "split_strategy": ["a", "b"], "ci_excludes_zero": True, "margin": 0.02})
+    row = con.execute("SELECT baseline_source, split_strategy, ci_excludes_zero FROM claim "
+                      "WHERE run_id='t-dict'").fetchone()
+    assert json.loads(row[0]) == {"kind": "registry", "run_id": "r"}, "the value must survive"
+    assert json.loads(row[1]) == ["a", "b"]
+    assert row[2] == 1, "a bool must store as an int, not raise"
+
+
+def test_baseline_source_is_a_string_in_every_ledger_row():
+    """The shape contract, which nothing enforced. `execution_harness` writes this field as a
+    string in all three of its branches ("registry:<id>" / "in_run" / "in_run (registry refused:
+    ...)"), and both `run_dashboard` and the loop report render it as text — so a structured value
+    is not corruption but it IS the only non-uniform row in the ledger, displayed as a JSON blob
+    where every other row shows a control id. #74's record carried a dict until this caught it."""
+    ledger = ROOT / "experiments" / "claims" / "registry.jsonl"
+    rows = [json.loads(ln) for ln in ledger.read_text(encoding="utf-8").splitlines() if ln.strip()]
+    bad = [(r["run_id"], type(r["baseline_source"]).__name__) for r in rows
+           if r.get("baseline_source") is not None and not isinstance(r["baseline_source"], str)]
+    assert not bad, f"baseline_source must be a string: {bad}"
+
+
+def test_the_run_cards_limitations_do_not_claim_a_grouping_ecoli_does_not_have():
+    """The audit's own finding, as a test. The limitations block previously said "6 of 56 series
+    carry the grouped structure the mixed-effects estimator handles (ICC 0.864)" — a count with no
+    source, and a statistic belonging to #72's per-series DIFFICULTY decomposition. Checked against
+    the DatasetSpec rather than remembered, which is the point."""
+    from seq2yield.data.datasets import spec
+    s = spec("ecoli")
+    assert s.family_col is None and s.family_distance is None and not s.replicate_cols, (
+        "E. coli now declares a grouping, so the limitations wording needs revisiting rather than "
+        "this assertion being relaxed")
+    text = " ".join(_card()["limitations"])
+    claim, correction = text.split("CORRECTION", 1) if "CORRECTION" in text else (text, "")
+    assert "0.864" not in claim, "the difficulty ICC is back in a limitation that is not about it"
+    assert "6 of 56" not in claim, "the unsourced count is back"
+
+
+def test_every_claim_column_the_store_maps_survives_a_round_trip():
+    """The generalisation of the bug above, which is the part worth keeping.
+
+    `baseline_source` was not specially unlucky: FIVE claim columns — baseline_source,
+    split_strategy, ci_method, margin_verdict, margin — were null in all 22 records preceding #74's,
+    because they were added to the contract by the audits of #64/#65/#66/#69 and no run had recorded
+    one since. The entire provenance-and-margin block reached the schema and the dashboard without a
+    single record exercising it, and the first one to try took the page down. This drives a full
+    record through `ingest_claims` so a column cannot be dead AND unproven at the same time."""
+    import sqlite3
+
+    from orchestration import store
+    con = sqlite3.connect(":memory:")
+    con.row_factory = sqlite3.Row          # as `store.connect` sets it; dict(row) needs it
+    for stmt in store.SCHEMA:
+        con.execute(stmt)
+
+    live = [json.loads(ln) for ln
+            in (ROOT / "experiments" / "claims" / "registry.jsonl").read_text(
+                encoding="utf-8").splitlines() if ln.strip()]
+    record = next(r for r in live if r["run_id"] == RUN_ID)
+
+    store._put(con, "claim", {
+        "run_id": record["run_id"], "ts": record["ts"],
+        "candidate_model": record["candidate_model"], "baseline_model": record["baseline_model"],
+        "mean_delta_r2": record["mean_delta_r2"],
+        "ci_excludes_zero": int(bool(record["ci_excludes_zero"])),
+        "p_value": record["p_value"], "bootstrap_unit": record["bootstrap_unit"],
+        "dataset": record["dataset"], "train_size": record["train_size"],
+        "status": record["status"], "claim": record["claim"],
+        "baseline_source": record["baseline_source"], "split_strategy": record["split_strategy"],
+        "code_sha": (record.get("provenance") or {}).get("git_sha"),
+        "ci_method": record["ci_method"], "margin_verdict": record["margin_verdict"],
+        "margin": record["margin"]})
+
+    row = con.execute("SELECT * FROM claim WHERE run_id=?", (RUN_ID,)).fetchone()
+    got = dict(row)
+    # the five that were dead before this run: each must be present AND non-null
+    for col in ("baseline_source", "split_strategy", "ci_method", "margin_verdict", "margin"):
+        assert got[col] is not None, f"{col} did not survive the round trip"
+    assert got["margin"] == 0.02
+    assert got["margin_verdict"] == "superior_but_below_margin"
+    assert got["ci_method"] == "t_two_component"
+    assert got["status"] == "rejected" and got["claim"] is None
+    assert str(got["baseline_source"]).startswith("registry:")

@@ -511,9 +511,49 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   imprecision lives, so more seeds is not where more precision would come from.
 - **Scope held deliberately.** The margin itself is not re-opened — 0.02 is the practical bar and
   moving it to fit a result is the one thing the ST-3 rule exists to prevent. One dataset, one
-  feature set, no transfer claim. The series-unit interval is used (the project's primary metric)
-  although 6 of 56 series carry grouped structure the mixed-effects estimator handles; that is named
-  in the limitations rather than silently chosen.
+  feature set, no transfer claim. The series-unit interval is used, and on E. coli it is the only
+  defensible unit rather than merely the chosen one: the dataset declares no family grouping and no
+  replicate columns (`family_col`/`family_distance` both `None`, `replicate_cols` empty), so ST-7's
+  family bootstrap has nothing to group on and no noise ceiling exists to normalise by.
+- **Correction, same day, found by the post-close audit of this entry.** The bullet above and the
+  run-card's limitations first said "6 of 56 series carry grouped structure the mixed-effects
+  estimator handles (ICC 0.864)". **Both halves were wrong.** E. coli declares no family grouping at
+  all — checked against the `DatasetSpec`, not remembered — and **ICC 0.864 is #72's random-effects
+  decomposition of per-series *difficulty*** across (iteration, model, seed) blocks, which is a
+  different quantity about a different thing; the count "6" had no source whatsoever. It was written
+  from memory into the one block whose job is to stop a number being misquoted, which is the worst
+  place for it. Corrected in both, with the correction kept visible in the run-card rather than
+  edited away. None of the result depends on it: the verdict, the interval and the claim decision
+  come from the series-unit estimator either way.
+- **The same audit's third finding, and it was a regression I introduced.** The full suite failed
+  after this was committed: `sqlite3.ProgrammingError: Error binding parameter 13: type 'dict' is
+  not supported`, from `store._put` on `claim.baseline_source` — and because it aborted
+  `ingest_all`, it took **every table and the whole dashboard** with it, not one row. Two fixes,
+  because there were two defects. (a) My record carried a dict where `execution_harness` writes a
+  string in all three of its branches (`registry:<id>` / `in_run` / `in_run (registry refused:…)`)
+  and where both `run_dashboard` and the loop report render text — so even without the crash it
+  would have been the only row displaying a JSON blob. Now `registry:2026-11-02-full56-seeds
+  (seed-matched, both arms)`, with the structure kept on the run-card where structure belongs.
+  (b) `store._put` now coerces structured values instead of aborting, by the same rule as
+  `audit_log`'s coercing `default=` (#69): **the layer that records what happened must not be the
+  layer that fails.**
+- **Why that column was unexercised is the generalisable part.** `baseline_source` was not specially
+  unlucky — **five** claim columns (`baseline_source`, `split_strategy`, `ci_method`,
+  `margin_verdict`, `margin`) were null in all 22 records preceding this one. The entire
+  provenance-and-margin block that #64/#65/#66/#69 added to the claim contract reached the schema
+  and the dashboard **without one record ever exercising it**, and the first record to populate any
+  of them broke the page. A round-trip test now drives a real record through every column
+  `ingest_claims` maps, so a column cannot be both dead and unproven. Logged as AG-18.
+- **Also learned, about correcting rather than measuring.** My first fix to the false limitation
+  edited `run_card.json` directly; re-running the recorder silently restored the wrong text. A
+  correction applied to a generated artifact instead of its generator is a correction that does not
+  survive regeneration — the fix belongs in the script, which is where it now is.
+- **One inference in #73 is now a measurement, from the same audit.** That entry attributed the
+  rf-only 3.3e-16 residual to `n_jobs=-1` thread-order accumulation, which was an inference from a
+  separately measured 1.1e-16. Tested directly: of 317 nonzero rf deviations, **161 are positive
+  and 156 negative (sign test p = 0.82)** — no systematic direction, where a code-induced change
+  would have one — and the nonzero count *falls* with train size (94/280 at 250 to 60/280 at 2000).
+  The attribution holds.
 - **Found while recording, and left alone on purpose.** `experiments/claims/registry.jsonl` carries
   an uncommitted line from a real 2026-07-16 loop run — `accepted`, `n_series: 10` (a sorted
   prefix), `p_value: 0.0`, and none of `margin_verdict` / `ci_method` / `series_selection`. It

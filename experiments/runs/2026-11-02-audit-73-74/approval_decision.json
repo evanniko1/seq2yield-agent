@@ -1,0 +1,32 @@
+{
+  "run_id": "2026-11-02-audit-73-74",
+  "granted": true,
+  "approver": "Evangelos (vm.nikolados@gmail.com)",
+  "paths": [
+    "src/orchestration/store.py",
+    "docs/DECISIONS.md",
+    "tests/test_cnn_vs_rf_seedmatched.py",
+    "experiments/claims/registry.jsonl",
+    "experiments/claims/2026-11-02-cnn-vs-rf-seedmatched.json",
+    "experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/run_card.json"
+  ],
+  "path_classes": {
+    "src/orchestration/store.py": "require_review",
+    "docs/DECISIONS.md": "require_review",
+    "tests/test_cnn_vs_rf_seedmatched.py": "require_review",
+    "experiments/claims/registry.jsonl": "require_review",
+    "experiments/claims/2026-11-02-cnn-vs-rf-seedmatched.json": "require_review",
+    "experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/run_card.json": "require_review"
+  },
+  "strict_paths": [],
+  "conditional_paths": [
+    "src/orchestration/store.py",
+    "docs/DECISIONS.md",
+    "tests/test_cnn_vs_rf_seedmatched.py",
+    "experiments/claims/registry.jsonl",
+    "experiments/claims/2026-11-02-cnn-vs-rf-seedmatched.json",
+    "experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/run_card.json"
+  ],
+  "reason": "APPROVED by 'Evangelos (vm.nikolados@gmail.com)' for conditional-protected paths: ['src/orchestration/store.py', 'docs/DECISIONS.md', 'tests/test_cnn_vs_rf_seedmatched.py', 'experiments/claims/registry.jsonl', 'experiments/claims/2026-11-02-cnn-vs-rf-seedmatched.json', 'experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/run_card.json'] | note: Post-close audit of DECISIONS #73/#74, under the standing close-out rule (close a batch, push, then audit the closed items for overclaims and patch). Three findings, all in my own work: (1) a FABRICATED limitation in the #74 run-card - '6 of 56 series carry the grouped structure the mixed-effects estimator handles (ICC 0.864)' - wrong on both halves, since ecoli declares no family grouping at all and ICC 0.864 is #72's per-series DIFFICULTY decomposition; corrected in the GENERATOR after an edit to the generated JSON was silently undone by a re-run. (2) AG-18: store._put bound a dict straight into sqlite, so the first claim record to populate baseline_source aborted ingest_all and blanked the whole dashboard - and five claim columns had been null in all 22 preceding records, so the provenance-and-margin block added by #64/#65/#66/#69 had never been exercised. (3) #73's attribution of the rf 3.3e-16 residual to n_jobs=-1 thread order was an inference and is now measured (161 positive vs 156 negative, sign test p=0.82). Human approval in session: 'do both, separate commits'.",
+  "ts": "2026-11-02T17:49:05.437877+00:00"
+}

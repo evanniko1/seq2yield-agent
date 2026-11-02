@@ -135,10 +135,26 @@ def connect(path: str | Path | None = None) -> sqlite3.Connection:
     return con
 
 
+def _bindable(v):
+    """Coerce a JSON-sourced value into something sqlite3 can bind.
+
+    The artifact streams are JSON, so any field can arrive as a dict or list; every such column is
+    declared TEXT, so the honest storage is the serialised value. Without this, ONE structured value
+    aborts `ingest_all` and the whole dashboard goes blank — which is what happened the first time a
+    record populated `claim.baseline_source`, a column that had been null in all 22 preceding rows
+    and so had never been exercised. Same rule as `audit_log`'s coercing `default=` (DECISIONS #69):
+    the layer that records what happened must not be the layer that fails."""
+    if isinstance(v, (dict, list, tuple)):
+        return json.dumps(v, default=str, sort_keys=True)
+    if isinstance(v, bool):
+        return int(v)
+    return v
+
+
 def _put(con, table: str, row: dict) -> None:
     cols = list(row)
     con.execute(f"INSERT OR REPLACE INTO {table} ({','.join(cols)}) "
-                f"VALUES ({','.join('?' for _ in cols)})", [row[c] for c in cols])
+                f"VALUES ({','.join('?' for _ in cols)})", [_bindable(row[c]) for c in cols])
 
 
 def _read_jsonl(path: Path):
