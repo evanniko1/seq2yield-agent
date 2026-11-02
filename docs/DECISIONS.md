@@ -475,6 +475,58 @@ precedence); `configs/provider_policy.yaml` stores only the env-var NAMES, never
   applicability, intake-audit) + updated embedding tests for explicit-dataset. 187 passing
   (1 pre-existing live-Ollama test flaky on the memory-loaded GPU — unrelated to K6).
 
+## #75 — AG-16: the July prefix claim is confirmed, not retracted — the record was the defect
+- **Authorization.** Human approval in session ("do AG-16 next"). Record:
+  `experiments/runs/2026-11-02-cnn-vs-mlp-ag16/`.
+- **The problem.** `experiments/claims/registry.jsonl` carried an uncommitted line from a real
+  2026-07-16 loop run: `status: accepted`, `n_series: 10` — the **sorted prefix**, which SA-2
+  established is not a sample — `p_value: 0.0` (the ST-2 underflow), one model-init seed, a baseline
+  read from `2026-06-04-full56` which `baseline_guard` refuses, and none of `margin_verdict` /
+  `ci_method` / `series_selection` / `split_strategy` / `provenance` / `baseline_source`. Four
+  independent defects, every one of them a thing an audit has already condemned.
+- **Measured before deciding, and the conclusion inverts the expectation.** The run's candidate was
+  the **default** cnn (`hyperparameters: {}`, `hyperparameters_source: default`), so it is
+  re-measurable from the registry rather than lost. Results:
+  - its 200 rows reproduce against today's registry at seed 1 with **max \|ΔR²\| exactly 0.0** — cnn
+    is deterministic, so these are literally the same numbers;
+  - its mlp baseline value was **correct despite the refused registry**: 0.636585 in June and today,
+    because mlp never drifted. R-5 *argued* this when defending the June council claims; this
+    **measures** it — and the measurement discriminates, which is what makes it worth having. On the
+    same ten series at train 2000, June→today moves mlp by **+0.000000**, rf by **−0.015792** and
+    cnn by **−0.032093**. So the defence is specific to the mlp arm and would not have transferred:
+    had this run been `cnn vs rf`, its control would have been wrong by 1.6 points of R²;
+  - on all 56 series at three seeds the comparison is **`accepted / superior_by_margin` at every
+    train size**: +0.1411 (250), +0.1416 (500), +0.1220 (1000), **+0.0690 (2000), one-sided
+    [+0.0631, +0.0749]**. The accept rule tests the one-sided **lower limit** against the margin, and
+    that limit exceeds 0.02 by **3.2× at train 2000 and 6.4× at train 250** (the point estimates
+    are 3.5× and 7.1×, which is not what the rule tests — a distinction worth keeping, since
+    conflating the two is the ST-3 defect in miniature).
+- **So: not retracted.** An `accepted` prefix claim with `p_value: 0.0` looks exactly like a
+  retraction waiting to happen, and measuring first is what showed it is not. Retracting it would
+  have been as wrong as leaving it uncommitted. What was unquotable was the **record**; the science
+  held.
+- **SA-2's mechanism is nonetheless reproduced on this very claim.** The prefix gives +0.0849 against
+  +0.0690 on all 56 — the **98.8th percentile** of 20,000 random 10-series subsets (spread +0.0416
+  to +0.0967). A ~23% inflation that changes nothing *here* only because the effect is far above the
+  margin; on an 0.025 effect the same luck would have decided the verdict. Under today's contract
+  the prefix form is **claim-withheld** by the SA-2 gate even while `accepted` — verified, along
+  with the fact that a *seeded random* 10 is not withheld, because that is the distinction the gate
+  is about.
+- **What was done, and what was deliberately not.** The finding is re-recorded on all 56 series at
+  three seeds with the full provenance block (`2026-11-02-cnn-vs-mlp-seedmatched`) and carries the
+  project's first claim text through a gate that could have withheld it. The July run's nine
+  artifacts and its loop report are **committed**, not dropped — 18 loop reports and another council
+  run folder were already tracked, so these had been missed rather than excluded — with a banner
+  naming the re-measurement. Its ledger line is committed **unchanged**: the null contract fields are
+  precisely what identify a pre-contract record, and rewriting an append-only ledger would be the
+  worse error.
+- **Scope kept honest.** This is a claim about **MLP**, not about RF. `cnn > rf` is
+  `rejected / superior_but_below_margin` (#74), so "CNN beats the classical models" is true of the
+  MLP and *not* established of the RF — stated in the claim text itself, not only the limitations.
+  The July run's `overfit` flag (train R² 0.8953 vs test 0.5908, gap 0.3045 against a 0.15
+  threshold) is about the CNN's own generalisation and is **not** addressed by re-measuring its
+  margin over the MLP; it stays an open concern and is named in the limitations.
+
 ## #74 — cnn > rf on E. coli, re-decided seed-matched: the direction is solid, the margin is not met
 - **Authorization.** Human approval in session ("do both, separate commits"). Record:
   `experiments/runs/2026-11-02-cnn-vs-rf-seedmatched/`.

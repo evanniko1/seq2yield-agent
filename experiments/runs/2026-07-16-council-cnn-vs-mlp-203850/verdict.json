@@ -1,0 +1,229 @@
+{
+  "run_id": "2026-07-16-council-cnn-vs-mlp-203850",
+  "status": "accepted",
+  "stage": "complete",
+  "comparison": {
+    "status": "accepted",
+    "baseline_mean": 0.6365848064547617,
+    "candidate_mean": 0.7214155996607762,
+    "mean_delta": 0.08483079320601458,
+    "paired_bootstrap_ci": [
+      0.06584303810737367,
+      0.1026247645273831
+    ],
+    "ci_excludes_zero": true,
+    "p_value": 0.0,
+    "n_series": 10,
+    "reasons": [],
+    "comparison_train_size": 2000,
+    "baseline_model": "mlp",
+    "candidate_model": "cnn",
+    "baseline_source": "registry:2026-06-04-full56",
+    "bootstrap_unit": "series",
+    "candidate_params": 264769,
+    "baseline_params": null,
+    "heterogeneity": {
+      "n_series": 10,
+      "candidate_wins": 10,
+      "candidate_losses": 0,
+      "ties": 0,
+      "win_rate": 1.0,
+      "tie_band": 0.005,
+      "delta_min": 0.0346,
+      "delta_median": 0.09,
+      "delta_max": 0.1271,
+      "best_series": {
+        "series": 33,
+        "delta": 0.1271
+      },
+      "worst_series": {
+        "series": 15,
+        "delta": 0.0346
+      }
+    },
+    "per_size": [
+      {
+        "status": "accepted",
+        "baseline_mean": 0.26830166341571854,
+        "candidate_mean": 0.4127945438628079,
+        "mean_delta": 0.14449288044708944,
+        "paired_bootstrap_ci": [
+          0.09993088854207094,
+          0.19838853751988203
+        ],
+        "ci_excludes_zero": true,
+        "p_value": 0.0,
+        "n_series": 10,
+        "reasons": [],
+        "train_size": 250
+      },
+      {
+        "status": "accepted",
+        "baseline_mean": 0.3905408030229375,
+        "candidate_mean": 0.5369224826417999,
+        "mean_delta": 0.14638167961886245,
+        "paired_bootstrap_ci": [
+          0.1160300477556953,
+          0.17971493108243403
+        ],
+        "ci_excludes_zero": true,
+        "p_value": 0.0,
+        "n_series": 10,
+        "reasons": [],
+        "train_size": 500
+      },
+      {
+        "status": "accepted",
+        "baseline_mean": 0.5002094220123592,
+        "candidate_mean": 0.6251140535177818,
+        "mean_delta": 0.12490463150542255,
+        "paired_bootstrap_ci": [
+          0.10256053286403957,
+          0.14630760100332585
+        ],
+        "ci_excludes_zero": true,
+        "p_value": 0.0,
+        "n_series": 10,
+        "reasons": [],
+        "train_size": 1000
+      },
+      {
+        "status": "accepted",
+        "baseline_mean": 0.6365848064547617,
+        "candidate_mean": 0.7214155996607762,
+        "mean_delta": 0.08483079320601458,
+        "paired_bootstrap_ci": [
+          0.06584303810737367,
+          0.1026247645273831
+        ],
+        "ci_excludes_zero": true,
+        "p_value": 0.0,
+        "n_series": 10,
+        "reasons": [],
+        "train_size": 2000
+      }
+    ],
+    "crossover": {
+      "superior_at": 250,
+      "parity_at": 250,
+      "trend": "widening",
+      "deltas_by_size": {
+        "250": 0.1445,
+        "500": 0.1464,
+        "1000": 0.1249,
+        "2000": 0.0848
+      }
+    },
+    "diagnostics": {
+      "generalization_gap": {
+        "train_r2": 0.8953,
+        "test_r2": 0.5908,
+        "gap": 0.3045
+      },
+      "calibration": {
+        "slope": 0.9289,
+        "intercept": 4.3465
+      },
+      "residuals": {
+        "mean_residual": 0.7338,
+        "residual_std": 16.2373,
+        "heteroscedasticity_corr": 0.0375
+      },
+      "representativeness": {
+        "mean_shift_std": 0.0012,
+        "std_ratio": 0.9922,
+        "ks": 0.0123
+      },
+      "leakage": {
+        "n_test": 4044,
+        "n_leaked": 0,
+        "leak_frac": 0.0
+      },
+      "coverage": {
+        "train_range": [
+          1.0,
+          100.0
+        ],
+        "extrapolated_frac": 0.0
+      },
+      "learning_curve": {
+        "still_improving": true,
+        "candidate_by_size": {
+          "250": 0.4128,
+          "500": 0.5369,
+          "1000": 0.6251,
+          "2000": 0.7214
+        },
+        "last_gain": 0.0963
+      },
+      "probe": {
+        "dataset": "ecoli",
+        "model_family": "cnn",
+        "comparison_train_size": 2000,
+        "n_diag_train": 6000,
+        "n_diag_test": 4044,
+        "note": "pooled representative probe (not the per-series models)"
+      }
+    },
+    "methodology_flags": [
+      {
+        "id": "overfit",
+        "severity": "medium",
+        "signal": "generalization_gap.gap",
+        "value": 0.3045,
+        "threshold": 0.15,
+        "blocking": false,
+        "description": "Large train-minus-test R\u00b2 gap: the model fits training structure that does not generalize.",
+        "suggested": "regularize via hyperparameter tuning, or add data",
+        "intervention_hint": "training_procedure"
+      },
+      {
+        "id": "data_limited",
+        "severity": "low",
+        "signal": "learning_curve.still_improving",
+        "value": true,
+        "threshold": null,
+        "blocking": false,
+        "description": "Candidate R\u00b2 is still rising at the largest train size: performance is data-limited and a single-size verdict understates the model.",
+        "suggested": "extend the data-efficiency sweep to larger training sizes",
+        "intervention_hint": "data_efficiency"
+      },
+      {
+        "id": "prediction_bias",
+        "severity": "low",
+        "signal": "residuals.mean_residual",
+        "value": 0.7338,
+        "threshold": 0.1,
+        "blocking": false,
+        "description": "Non-zero mean residual: systematic prediction bias (often a scaling/centering issue).",
+        "suggested": "check feature scaling / target centering",
+        "intervention_hint": "feature_scaling"
+      }
+    ],
+    "flag_summary": {
+      "n_flags": 3,
+      "by_severity": {
+        "high": 0,
+        "medium": 1,
+        "low": 2
+      },
+      "ids": [
+        "overfit",
+        "data_limited",
+        "prediction_bias"
+      ],
+      "max_severity": "medium"
+    }
+  },
+  "environment": {
+    "python": "3.12.8",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "packages": {
+      "numpy": "1.26.4",
+      "scikit-learn": "1.6.1",
+      "torch": "2.5.1+cu121"
+    },
+    "cuda": true
+  },
+  "warnings": []
+}

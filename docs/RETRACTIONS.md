@@ -290,6 +290,41 @@ stale June registry is now **refused as a control** by `orchestration/baseline_g
 
 ## UNAFFECTED — checked, not retracted
 
+- **`cnn > mlp` on E. coli (`2026-07-16-council-cnn-vs-mlp`) — RE-MEASURED 2026-11-02 and
+  CONFIRMED** (audit AG-16, DECISIONS #75). This one looked like a retraction waiting to happen:
+  `status: accepted` on the **sorted first 10 of 56 series**, a percentile interval, `p_value: 0.0`,
+  a single model-init seed, and a baseline read from the refused `2026-06-04-full56`. Measured
+  rather than assumed, all four defects turn out to be about the **record**, not the science:
+
+  | | July record | today, same 10-series prefix | today, all 56 series |
+  |---|---|---|---|
+  | ΔR² @2000 | +0.0848 | +0.0849 | **+0.0690** |
+  | interval | [+0.0658, +0.1026] percentile | one-sided [+0.0689, +0.1009] | one-sided [+0.0631, +0.0749] |
+  | seeds/arm | 1 | 3 | 3 |
+  | verdict | `accepted` (old rule) | `accepted / superior_by_margin` | **`accepted / superior_by_margin`** |
+
+  The candidate reproduces against the current registry **exactly** — max \|ΔR²\| 0.0 over all 200
+  rows, the CNN family being deterministic — and its MLP baseline value was **correct despite the
+  refused registry**: 0.636585 in both June and today, because MLP never drifted. That is precisely
+  what R-5 argued in defending the June council claims, and it is now measured rather than reasoned.
+  `accepted / superior_by_margin` holds at **every** train size, with the one-sided lower limit —
+  which is what the rule tests — exceeding the 0.02 margin by **3.2× at train 2000 and 6.4× at
+  train 250**.
+
+  **The prefix was genuinely lucky, and SA-2's mechanism is reproduced on this claim**: +0.0849 on
+  the first ten against +0.0690 on all 56, the **98.8th percentile** of 20,000 random 10-series
+  subsets (spread +0.0416 to +0.0967). A ~23% inflation, which changes nothing here only because
+  the effect sits far above the margin — had it been an 0.025 effect, the same luck would have
+  decided the verdict. Under today's contract the prefix form would have been **claim-withheld**
+  by the SA-2 gate even while `accepted`; the all-56 form is what carries the claim.
+
+  Quotable version: `experiments/runs/2026-11-02-cnn-vs-mlp-seedmatched/`. **And it is not a
+  statement about RF** — `cnn > rf` is `rejected / superior_but_below_margin` (#74), so "CNN beats
+  the classical models" is true of the MLP and *not* established of the RF. The July loop report is
+  left as written with a banner, under the standing rule that a loop report records what a run did
+  on the day; its ledger line is committed unchanged, because the null contract fields are what
+  identify a pre-contract record and rewriting an append-only ledger is the worse error.
+
 - **E. coli (the primary benchmark) — the split and the bootstrap unit.** It uses the deposit's
   *provided* per-series splits (hash-pinned, strict-protected) and a **series-unit** bootstrap,
   which was already a cluster unit, so neither 2026-11-01 fix changes it. Its *stored numbers* are

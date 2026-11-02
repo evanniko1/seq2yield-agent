@@ -1,0 +1,25 @@
+{
+  "run_id": "2026-11-02-cnn-vs-mlp-seedmatched",
+  "state": "POSTMORTEM_COMPLETE",
+  "outcome": "accepted",
+  "margin_verdict": "superior_by_margin",
+  "supersedes": "2026-07-16-council-cnn-vs-mlp-203850",
+  "what_was_asked": "AG-16: decide the fate of the uncommitted 2026-07-16 council claim - an `accepted` status on a sorted 10-series prefix with p_value 0.0 and none of today's contract fields",
+  "what_was_found": [
+    "the FINDING is confirmed, not retracted: accepted / superior_by_margin at all four train sizes on all 56 series, clearing the 0.02 margin by 3x at 2000 and 7x at 250",
+    "the July candidate reproduces EXACTLY against today's registry at seed 1 (max |delta| 0.0 over 200 rows) - cnn is deterministic, so it is literally the same numbers",
+    "its mlp baseline value was correct despite coming from the refused June registry: 0.636585 in both, because mlp never drifted. R-5 argued this; it is now measured",
+    "the prefix WAS lucky: +0.0849 on the first 10 against +0.0690 on all 56, the 98.8th percentile of 20,000 random 10-subsets (spread +0.0416 to +0.0967). SA-2's finding reproduced on this specific claim - a 23% inflation that happens not to change the conclusion because the effect is far above the margin"
+  ],
+  "why_it_matters": "an `accepted` prefix claim with p_value 0.0 looks like a retraction waiting to happen, and measuring first is what showed it is not. The record was unquotable for four independent reasons while the science held. Retracting it would have been as wrong as leaving it uncommitted.",
+  "what_was_done": [
+    "re-recorded on all 56 series at 3 seeds with the full provenance block: this run",
+    "the July run's artifacts and loop report are COMMITTED rather than dropped - a loop report is the record of what a run did on the day - with a banner naming this re-measurement",
+    "its ledger line is committed unchanged: the null contract fields are what identify a pre-contract record, and rewriting an append-only ledger would be the worse error"
+  ],
+  "claim_registry_entry": {
+    "status": "accepted",
+    "claim": "On E. coli (Nikolados 2022, provided per-series splits), the default CNN outperforms the MLP by a practically meaningful margin at every train size tested: dR2 +0.0690 at train 2000 (one-sided 95% lower limit +0.0631), rising to +0.1411 at train 250, over all 56 series with three model-init seeds per arm. The accept rule tests the one-sided LOWER LIMIT against the 0.02 margin, and that limit exceeds it by 3.2x at train 2000 and 6.4x at train 250 (the point estimates are 3.5x and 7.1x, which is not what the rule tests). NOT transferable to other organisms (R-2) and NOT a statement about CNN vs RF, which is a separate comparison that does NOT clear the margin (DECISIONS #74).",
+    "claim_withheld": null
+  }
+}

@@ -1,0 +1,13 @@
+........................................................................ [ 18%]
+........................................................................ [ 37%]
+........................................................................ [ 56%]
+....................s................................................... [ 75%]
+........................................................................ [ 94%]
+.....................                                                    [100%]
+============================== warnings summary ===============================
+tests/test_scaling.py::test_recommend_scaler_is_data_tailored_and_sound
+  C:\Users\vmnik\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\preprocessing\_data.py:2829: UserWarning: n_quantiles (100) is greater than the total number of samples (60). n_quantiles is set to n_samples.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+380 passed, 1 skipped, 1 warning in 256.46s (0:04:16)

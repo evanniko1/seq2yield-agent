@@ -1,0 +1,177 @@
+{
+  "comparison": "ecoli cnn vs mlp, per-series R2, seed-matched",
+  "supersedes": {
+    "run_id": "2026-07-16-council-cnn-vs-mlp-203850",
+    "why": "same comparison, measured on a sorted 10-series prefix with a percentile interval, one model-init seed, and a baseline read from the June registry that `baseline_guard` now refuses. The FINDING reproduces; the record was not quotable."
+  },
+  "estimator": "bootstrap.paired_series_multiseed - two-component (series x model-init seed) random-effects interval, Welch-Satterthwaite df, exact sign-flip p",
+  "acceptance_rule": "compare._decide - one-sided lower limit vs margin (audit ST-3)",
+  "margin": 0.02,
+  "primary_train_size": 2000,
+  "july_record_comparison": {
+    "july_delta_on_prefix": 0.08483079320601458,
+    "today_delta_on_same_prefix": 0.0849,
+    "today_delta_on_all_56": 0.069,
+    "prefix_percentile_among_20000_random_10_subsets": 98.8,
+    "candidate_reproduces_exactly": true,
+    "note": "the July candidate's 200 rows reproduce against today's registry at seed 1 with max |delta| exactly 0.0 (cnn is deterministic), and the mlp baseline value is identical in the June and current registries (0.636585), so the stale control did not bias this particular comparison - which is what R-5 argued and this measures."
+  },
+  "per_size": [
+    {
+      "status": "accepted",
+      "baseline_mean": 0.256635580919327,
+      "candidate_mean": 0.39773694933540005,
+      "mean_delta": 0.14110136841607301,
+      "paired_bootstrap_ci": [
+        0.12442409643836387,
+        0.15777864039378214
+      ],
+      "ci_excludes_zero": true,
+      "p_value": 0.000244081034903588,
+      "n_series": 56,
+      "ci_method": "t_two_component",
+      "p_method": "sign_flip_mc",
+      "p_floor": 0.000244081034903588,
+      "ci_one_sided": [
+        0.12717613154301402,
+        0.155026605289132
+      ],
+      "margin": 0.02,
+      "margin_verdict": "superior_by_margin",
+      "reasons": [],
+      "n_seeds": 3,
+      "seed_design": "paired",
+      "seed_deltas": [
+        0.14003715350372614,
+        0.1389270767881603,
+        0.14433987495633263
+      ],
+      "seed_spread": 0.005412798168172334,
+      "seed_signs_agree": true,
+      "se_unit": 0.00816305721017363,
+      "se_seed": 0.0016506575494923787,
+      "se_total": 0.008328275533522164,
+      "df": 56.97038496327683,
+      "train_size": 250,
+      "series_selection": "all",
+      "n_series_available": 56
+    },
+    {
+      "status": "accepted",
+      "baseline_mean": 0.36445227396790053,
+      "candidate_mean": 0.5060580781462205,
+      "mean_delta": 0.14160580417831986,
+      "paired_bootstrap_ci": [
+        0.1243622018797719,
+        0.15884940647686782
+      ],
+      "ci_excludes_zero": true,
+      "p_value": 0.000244081034903588,
+      "n_series": 56,
+      "ci_method": "t_two_component",
+      "p_method": "sign_flip_mc",
+      "p_floor": 0.000244081034903588,
+      "ci_one_sided": [
+        0.12744506147316237,
+        0.15576654688347735
+      ],
+      "margin": 0.02,
+      "margin_verdict": "superior_by_margin",
+      "reasons": [],
+      "n_seeds": 3,
+      "seed_design": "paired",
+      "seed_deltas": [
+        0.1414041428701057,
+        0.15003054211738137,
+        0.13338272754747246
+      ],
+      "seed_spread": 0.01664781456990891,
+      "seed_signs_agree": true,
+      "se_unit": 0.0064451228238350915,
+      "se_seed": 0.004806867758771153,
+      "se_total": 0.008040247873332863,
+      "df": 14.008783380175224,
+      "train_size": 500,
+      "series_selection": "all",
+      "n_series_available": 56
+    },
+    {
+      "status": "accepted",
+      "baseline_mean": 0.4859124952622683,
+      "candidate_mean": 0.6078916514665276,
+      "mean_delta": 0.12197915620425913,
+      "paired_bootstrap_ci": [
+        0.10973615250289095,
+        0.1342221599056273
+      ],
+      "ci_excludes_zero": true,
+      "p_value": 0.000244081034903588,
+      "n_series": 56,
+      "ci_method": "t_two_component",
+      "p_method": "sign_flip_mc",
+      "p_floor": 0.000244081034903588,
+      "ci_one_sided": [
+        0.11194279527891844,
+        0.13201551712959983
+      ],
+      "margin": 0.02,
+      "margin_verdict": "superior_by_margin",
+      "reasons": [],
+      "n_seeds": 3,
+      "seed_design": "paired",
+      "seed_deltas": [
+        0.12711338786858714,
+        0.11538615124746424,
+        0.12343792949672605
+      ],
+      "seed_spread": 0.011727236621122905,
+      "seed_signs_agree": true,
+      "se_unit": 0.004486819539908203,
+      "se_seed": 0.003463044630141835,
+      "se_total": 0.005667823894058129,
+      "df": 13.016581360830068,
+      "train_size": 1000,
+      "series_selection": "all",
+      "n_series_available": 56
+    },
+    {
+      "status": "accepted",
+      "baseline_mean": 0.637889227144545,
+      "candidate_mean": 0.7068976335375488,
+      "mean_delta": 0.06900840639300385,
+      "paired_bootstrap_ci": [
+        0.061902115735886026,
+        0.07611469705012167
+      ],
+      "ci_excludes_zero": true,
+      "p_value": 0.000244081034903588,
+      "n_series": 56,
+      "ci_method": "t_two_component",
+      "p_method": "sign_flip_mc",
+      "p_floor": 0.000244081034903588,
+      "ci_one_sided": [
+        0.06307944742332106,
+        0.07493736536268664
+      ],
+      "margin": 0.02,
+      "margin_verdict": "superior_by_margin",
+      "reasons": [],
+      "n_seeds": 3,
+      "seed_design": "paired",
+      "seed_deltas": [
+        0.07093030652467207,
+        0.06693025588838367,
+        0.06916465676595578
+      ],
+      "seed_spread": 0.004000050636288402,
+      "seed_signs_agree": true,
+      "se_unit": 0.0033422913632048,
+      "se_seed": 0.0011573550171984867,
+      "se_total": 0.003537001864911568,
+      "df": 49.434721732539586,
+      "train_size": 2000,
+      "series_selection": "all",
+      "n_series_available": 56
+    }
+  ]
+}

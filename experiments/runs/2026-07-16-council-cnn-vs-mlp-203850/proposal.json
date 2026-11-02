@@ -1,0 +1,29 @@
+{
+  "proposal_id": "tier_0",
+  "title": "Model Architecture Comparison: CNN vs MLP",
+  "maturity_tier": "tier_0",
+  "intervention_type": "model_architecture",
+  "dataset": "ecoli",
+  "scientific_hypothesis": "CNN outperforms MLP on ecoli 96nt dataset.",
+  "model_family": "cnn",
+  "comparator_model": "mlp",
+  "feature_set": "one_hot",
+  "sampling_policy": "random",
+  "feature_scaling": "none",
+  "train_sizes": [
+    250,
+    500,
+    1000,
+    2000
+  ],
+  "scope": "global",
+  "subregion": "all",
+  "required_controls": [
+    "fixed per-series held-out sets for R\u00b2 calculation",
+    "5 MC-CV repeats for robustness"
+  ],
+  "expected_failure_modes": [
+    "Overfitting to the training set at small N",
+    "Lack of generalizability across series"
+  ]
+}

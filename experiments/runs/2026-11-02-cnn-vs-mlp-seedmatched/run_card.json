@@ -1,0 +1,381 @@
+{
+  "run_id": "2026-11-02-cnn-vs-mlp-seedmatched",
+  "kind": "comparison",
+  "dataset_hash": "e15d854d7a6482734e260297545f50d7543c5c6755910ec95dac5b86532f90ba",
+  "split_hash": "c20f19717f3b0f38aef378ada087231d3ed0517b3936ee22eb2586738020d557",
+  "model_family": "cnn",
+  "feature_set": "one_hot",
+  "train_sizes": [
+    250,
+    500,
+    1000,
+    2000
+  ],
+  "seeds": [
+    1,
+    2,
+    3
+  ],
+  "iterations": [
+    "iteration_1",
+    "iteration_2",
+    "iteration_3",
+    "iteration_4",
+    "iteration_5"
+  ],
+  "n_series": 56,
+  "primary_metric": "r2",
+  "results": {
+    "track": "performance",
+    "baseline_model": "mlp",
+    "candidate_model": "cnn",
+    "baseline_run_id": "2026-11-02-full56-seeds",
+    "primary_train_size": 2000,
+    "supersedes_run_id": "2026-07-16-council-cnn-vs-mlp-203850",
+    "primary": {
+      "status": "accepted",
+      "margin_verdict": "superior_by_margin",
+      "mean_delta": 0.06900840639300385,
+      "paired_bootstrap_ci": [
+        0.061902115735886026,
+        0.07611469705012167
+      ],
+      "ci_one_sided": [
+        0.06307944742332106,
+        0.07493736536268664
+      ],
+      "ci_excludes_zero": true,
+      "p_value": 0.000244081034903588,
+      "p_method": "sign_flip_mc",
+      "ci_method": "t_two_component",
+      "margin": 0.02,
+      "n_series": 56,
+      "n_seeds": 3,
+      "se_unit": 0.0033422913632048,
+      "se_seed": 0.0011573550171984867,
+      "se_total": 0.003537001864911568,
+      "df": 49.434721732539586,
+      "seed_signs_agree": true,
+      "seed_deltas": [
+        0.07093030652467207,
+        0.06693025588838367,
+        0.06916465676595578
+      ],
+      "seed_design": "paired",
+      "reasons": []
+    },
+    "data_size_curve": {
+      "250": {
+        "candidate_mean_r2": 0.397737,
+        "baseline_mean_r2": 0.256636,
+        "mean_delta_r2": 0.141101,
+        "ci_one_sided": [
+          0.12717613154301402,
+          0.155026605289132
+        ],
+        "ci_95": [
+          0.12442409643836387,
+          0.15777864039378214
+        ],
+        "p_value": 0.000244081034903588,
+        "se_unit": 0.008163,
+        "se_seed": 0.001651,
+        "se_seed_over_se_unit": 0.202,
+        "seed_deltas": [
+          0.140037,
+          0.138927,
+          0.14434
+        ],
+        "status": "accepted",
+        "margin_verdict": "superior_by_margin"
+      },
+      "500": {
+        "candidate_mean_r2": 0.506058,
+        "baseline_mean_r2": 0.364452,
+        "mean_delta_r2": 0.141606,
+        "ci_one_sided": [
+          0.12744506147316237,
+          0.15576654688347735
+        ],
+        "ci_95": [
+          0.1243622018797719,
+          0.15884940647686782
+        ],
+        "p_value": 0.000244081034903588,
+        "se_unit": 0.006445,
+        "se_seed": 0.004807,
+        "se_seed_over_se_unit": 0.746,
+        "seed_deltas": [
+          0.141404,
+          0.150031,
+          0.133383
+        ],
+        "status": "accepted",
+        "margin_verdict": "superior_by_margin"
+      },
+      "1000": {
+        "candidate_mean_r2": 0.607892,
+        "baseline_mean_r2": 0.485912,
+        "mean_delta_r2": 0.121979,
+        "ci_one_sided": [
+          0.11194279527891844,
+          0.13201551712959983
+        ],
+        "ci_95": [
+          0.10973615250289095,
+          0.1342221599056273
+        ],
+        "p_value": 0.000244081034903588,
+        "se_unit": 0.004487,
+        "se_seed": 0.003463,
+        "se_seed_over_se_unit": 0.772,
+        "seed_deltas": [
+          0.127113,
+          0.115386,
+          0.123438
+        ],
+        "status": "accepted",
+        "margin_verdict": "superior_by_margin"
+      },
+      "2000": {
+        "candidate_mean_r2": 0.706898,
+        "baseline_mean_r2": 0.637889,
+        "mean_delta_r2": 0.069008,
+        "ci_one_sided": [
+          0.06307944742332106,
+          0.07493736536268664
+        ],
+        "ci_95": [
+          0.061902115735886026,
+          0.07611469705012167
+        ],
+        "p_value": 0.000244081034903588,
+        "se_unit": 0.003342,
+        "se_seed": 0.001157,
+        "se_seed_over_se_unit": 0.346,
+        "seed_deltas": [
+          0.07093,
+          0.06693,
+          0.069165
+        ],
+        "status": "accepted",
+        "margin_verdict": "superior_by_margin"
+      }
+    },
+    "claim_allowed": "On E. coli (Nikolados 2022, provided per-series splits), the default CNN outperforms the MLP by a practically meaningful margin at every train size tested: dR2 +0.0690 at train 2000 (one-sided 95% lower limit +0.0631), rising to +0.1411 at train 250, over all 56 series with three model-init seeds per arm. The accept rule tests the one-sided LOWER LIMIT against the 0.02 margin, and that limit exceeds it by 3.2x at train 2000 and 6.4x at train 250 (the point estimates are 3.5x and 7.1x, which is not what the rule tests). NOT transferable to other organisms (R-2) and NOT a statement about CNN vs RF, which is a separate comparison that does NOT clear the margin (DECISIONS #74)."
+  },
+  "status": "accepted",
+  "limitations": [
+    "the delta is strongly train-size dependent (+0.1411 at 250 down to +0.0690 at 2000), so the claim is quoted with its train size or not at all",
+    "one dataset (ecoli) and one feature set (one-hot 96x4). The cross-organism ranking-transfer claim was withdrawn (R-2) and nothing here reinstates it",
+    "this says nothing about CNN vs RF: that comparison is `rejected / superior_but_below_margin` at train 2000 (DECISIONS #74). 'CNN beats the classical models' is true of the MLP and NOT established of the RF",
+    "the series-unit interval treats the 56 series as exchangeable units. E. coli declares no family grouping and no replicate columns, so this is the only defensible unit here",
+    "3 model-init seeds per arm: enough for the two-component interval the policy requires, not enough to describe the seed distribution's tails",
+    "the July run that first reported this carried three methodology flags, none blocking, of which `overfit` (train R2 0.8953 vs test 0.5908, gap 0.3045 against a 0.15 threshold) is about the CNN's absolute fit quality and is NOT addressed by this re-measurement - the margin over the MLP is established; the CNN's own generalisation gap remains a separate open concern"
+  ],
+  "environment": {
+    "python": "3.12.8",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "packages": {
+      "numpy": "1.26.4",
+      "scikit-learn": "1.6.1",
+      "torch": "2.5.1+cu121"
+    },
+    "cuda": true,
+    "code": {
+      "git_sha": "84a02acf13045d7e0eafd0bee0566cc8c4b7b291",
+      "git_sha_short": "84a02acf1304",
+      "branch": "main",
+      "dirty": true
+    },
+    "numerics": {
+      "fingerprint": "c92189526f4c7d8e",
+      "n_files": 27,
+      "files": {
+        "scripts/reproduce_baselines.py": "9ed6dd84feb2c2d19521dd58f60884dbcf62645a541d6da36c6e2ed471e7b0eb",
+        "src/seq2yield/data/cleaning.py": "4c7f6225926dd528b079d1168e02aae01ce7139f43a2018b4a9531eb041e9d74",
+        "src/seq2yield/data/families.py": "2c7a5ed28d64dcb453d048079636b36919641438d829b6ca7a18a02c9c23d6b7",
+        "src/seq2yield/data/loaders.py": "5608b61d5e9bae50dd66b0505e6716b25e826080cc871879fbaf3cd45e055ae7",
+        "src/seq2yield/data/sampling.py": "a2706e93f4c1e80a9c244ba407552d6a6da915e7fc83f1c09154c0677876fc11",
+        "src/seq2yield/data/series_sample.py": "8578e634aa2904da065bd6de36a569f9e38488c65dec2d46483bb743049e77f6",
+        "src/seq2yield/data/splits.py": "44496e129664d7b5fe7f2b4a673868ecff797d32c8d4bba8b8d467b380703962",
+        "src/seq2yield/experiments/pooled_runner.py": "c51773b3d7802c2ed07a78a789c96f015551ef73243d87e231333b93ce30c27f",
+        "src/seq2yield/experiments/runner.py": "7965ee6dc7f0cbe310b859b8c0e76519c3083b9e5bf73a926a0c8b7787399f76",
+        "src/seq2yield/features/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "src/seq2yield/features/embeddings.py": "670f3dc5b4500e6a90777e5db033ac91aed152bfa6adeecc23b40be9e3944647",
+        "src/seq2yield/features/kmer.py": "45198261205773cbe16cb060f8de343db338314c4db95dca23f6893d2312883f",
+        "src/seq2yield/features/mechanistic.py": "8b9f718dbaaf0c1295103c94eebc15798ab5b83d636fe76b237e1457573aeb91",
+        "src/seq2yield/features/mixed.py": "6a51b7026e04ca0fda981fdde6c56eced451e1450c2f7b877a1c140105b8a78c",
+        "src/seq2yield/features/one_hot.py": "b0dead729995b1938418bc8c548ac2617186e0fa48e60b21a0a982d43cb31c4e",
+        "src/seq2yield/features/registry.py": "3202b63e1b9ce623fb899956e99297c564bd8ce90a54079ca04293f0ab05c733",
+        "src/seq2yield/features/scaling.py": "fe6f2070b5b850c1c621c37e0ce96db53326253b3c12d4d80ec162f5024b0b59",
+        "src/seq2yield/models/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "src/seq2yield/models/_torch_train.py": "1c1b19c15ecc02aeaaa0bc320c1bcb0664ba30e8095a472673a08dcb62762f17",
+        "src/seq2yield/models/classical.py": "05e259fc0ce413dd8754d550e9a0ed37e5dcd233c3c555fdeef8aa3aeaa85daa",
+        "src/seq2yield/models/cnn.py": "e3360bba654bfd1d33fc70c5be14900918e7f80ad22cad6cb2045a3ec9140d91",
+        "src/seq2yield/models/mlp.py": "6531ed4fb28a9599b5ac8beb35664209d51f30b7dbd3181d82e69dc1c036d06a",
+        "src/seq2yield/models/registry.py": "3bd5f7515bc8436d02f4950ad6279488fe6b1a8c8cf1d5fd80f5ddee40801388",
+        "src/seq2yield/models/transformer.py": "afa2a8ad7cc7c9d1c1e277eb21a93ecf1c66f60a46e7fc3ba6a22715a23d297d",
+        "src/seq2yield/training/metrics.py": "d97cdb66a41d20384632716eeaac031dd30021397b1cff8028f8cea052fc6d99",
+        "src/seq2yield/training/reproducibility.py": "869aa39e5d2dd4da20c2841077bc1c5ef3fc7fb0525ed869a9b805ec2b4ab2f0",
+        "src/seq2yield/training/train.py": "2d3962d2e375f36572d98ccdef72fea34c813d962816a51ca9a021dedbcb551f"
+      },
+      "version": 3
+    },
+    "inference": {
+      "fingerprint": "53d7302c272f2a65",
+      "n_files": 7,
+      "files": {
+        "src/seq2yield/experiments/compare.py": "7ffe580846f7e93136154670b937457a9716ff1bd69bcf2039c0dfa575582a8a",
+        "src/seq2yield/statistics/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "src/seq2yield/statistics/bootstrap.py": "93d9ad8803521277f4165ff6f0190122c8239de0eb9d13e8f0b4b9e80fbb6036",
+        "src/seq2yield/statistics/calibration.py": "e537ccdda82079d9a1c2de673d7f53584da3adb9561c8497256c750e29e1087d",
+        "src/seq2yield/statistics/mixed_effects.py": "91ff966e3f5011bab906172960b36f6ce92f881cac4ee7c18a0b4255e5f1616f",
+        "src/seq2yield/statistics/multiple_comparisons.py": "9bf69a73db900d74f633e202e1101311bbe1da8d99a6a9775683e1978cc7b565",
+        "src/seq2yield/statistics/selection.py": "be965d5585e44d7661895213f39ca7466008bcb7b8d5bebcfe9c4305f9d7adf3"
+      },
+      "version": 3
+    },
+    "model_defaults": {
+      "rf": {
+        "hash": "499229be79c6",
+        "params": {
+          "bootstrap": true,
+          "ccp_alpha": 0.0,
+          "criterion": "squared_error",
+          "max_depth": null,
+          "max_features": "sqrt",
+          "max_leaf_nodes": null,
+          "max_samples": null,
+          "min_impurity_decrease": 0.0,
+          "min_samples_leaf": 1,
+          "min_samples_split": 2,
+          "min_weight_fraction_leaf": 0.0,
+          "monotonic_cst": null,
+          "n_estimators": 100,
+          "oob_score": false,
+          "warm_start": false
+        }
+      },
+      "mlp": {
+        "hash": "fefe6da02bab",
+        "params": {
+          "activation": "relu",
+          "alpha": 0.0001,
+          "batch_size": 64,
+          "beta_1": 0.9,
+          "beta_2": 0.999,
+          "early_stopping": true,
+          "epsilon": 1e-08,
+          "hidden_layer_sizes": [
+            256,
+            128,
+            64
+          ],
+          "learning_rate": "constant",
+          "learning_rate_init": 0.001,
+          "max_fun": 15000,
+          "max_iter": 300,
+          "momentum": 0.9,
+          "n_iter_no_change": 15,
+          "nesterovs_momentum": true,
+          "power_t": 0.5,
+          "shuffle": true,
+          "solver": "adam",
+          "tol": 0.0001,
+          "validation_fraction": 0.1,
+          "warm_start": false
+        }
+      },
+      "cnn": {
+        "hash": "a4d752bebc6e",
+        "params": {
+          "activation": "relu",
+          "batch_size": 64,
+          "batchnorm": false,
+          "dense_sizes": [
+            256,
+            128,
+            64
+          ],
+          "device": "cuda",
+          "dilations": null,
+          "dropout": 0.3,
+          "early_stop_patience": 8,
+          "epochs": 60,
+          "global_pool": 4,
+          "grad_clip": 0.0,
+          "kernel_sizes": [
+            7,
+            5,
+            3
+          ],
+          "length": 96,
+          "lr": 0.001,
+          "lr_schedule": "none",
+          "n_filters": [
+            64,
+            128,
+            128
+          ],
+          "optimizer": "adam",
+          "pool_sizes": null,
+          "pool_type": "max",
+          "warmup": 0,
+          "weight_decay": 0.0
+        }
+      },
+      "ridge": {
+        "hash": "ee022052a551",
+        "params": {
+          "alpha": 1.0,
+          "copy_X": true,
+          "fit_intercept": true,
+          "max_iter": null,
+          "positive": false,
+          "solver": "auto",
+          "tol": 0.0001
+        }
+      },
+      "svr": {
+        "hash": "ae33e38c4425",
+        "params": {
+          "C": 1.0,
+          "cache_size": 200,
+          "coef0": 0.0,
+          "degree": 3,
+          "epsilon": 0.1,
+          "gamma": "scale",
+          "kernel": "rbf",
+          "max_iter": -1,
+          "shrinking": true,
+          "tol": 0.001
+        }
+      },
+      "transformer": {
+        "hash": "30262fa5c56a",
+        "params": {
+          "attn_dropout": 0.1,
+          "batch_size": 64,
+          "d_model": 64,
+          "device": "cuda",
+          "dropout": 0.1,
+          "early_stop_patience": 8,
+          "epochs": 60,
+          "ff": 128,
+          "grad_clip": 0.0,
+          "layers": 2,
+          "length": 96,
+          "lr": 0.001,
+          "lr_schedule": "none",
+          "nhead": 4,
+          "optimizer": "adam",
+          "pool": "mean",
+          "pos_encoding": "learned",
+          "warmup": 0,
+          "weight_decay": 0.0
+        }
+      }
+    }
+  }
+}

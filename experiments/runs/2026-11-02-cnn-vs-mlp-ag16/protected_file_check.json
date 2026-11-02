@@ -1,0 +1,96 @@
+{
+  "passed": true,
+  "violations": [],
+  "by_path": {
+    "docs/DECISIONS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "docs/RETRACTIONS.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "tests/test_ag16_july_claim.py": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/claims/registry.jsonl": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/claims/2026-11-02-cnn-vs-mlp-seedmatched.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "reports/static/2026-07-16-council-cnn-vs-mlp-203850_loop_report.md": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-11-02-cnn-vs-mlp-seedmatched/run_card.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-11-02-cnn-vs-mlp-seedmatched/statistical_tests.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-11-02-cnn-vs-mlp-seedmatched/postmortem.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-07-16-council-cnn-vs-mlp-203850/audit_log.jsonl": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-07-16-council-cnn-vs-mlp-203850/methodology_critique.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-07-16-council-cnn-vs-mlp-203850/metrics.csv": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-07-16-council-cnn-vs-mlp-203850/postmortem.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-07-16-council-cnn-vs-mlp-203850/proposal.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-07-16-council-cnn-vs-mlp-203850/protected_file_check.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-07-16-council-cnn-vs-mlp-203850/run_spec.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-07-16-council-cnn-vs-mlp-203850/test_log.txt": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    },
+    "experiments/runs/2026-07-16-council-cnn-vs-mlp-203850/verdict.json": {
+      "class": "require_review",
+      "ok": true,
+      "reason": null
+    }
+  }
+}

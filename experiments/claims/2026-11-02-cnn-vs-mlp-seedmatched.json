@@ -1,0 +1,41 @@
+{
+  "ts": "2026-11-02T18:34:52.162804+00:00",
+  "run_id": "2026-11-02-cnn-vs-mlp-seedmatched",
+  "proposal_id": "ag16-remeasure-of-2026-07-16-council-cnn-vs-mlp-203850",
+  "status": "accepted",
+  "candidate_model": "cnn",
+  "baseline_model": "mlp",
+  "mean_delta_r2": 0.06900840639300385,
+  "bootstrap_ci_95": [
+    0.061902115735886026,
+    0.07611469705012167
+  ],
+  "ci_excludes_zero": true,
+  "p_value": 0.000244081034903588,
+  "bootstrap_unit": "series",
+  "split_strategy": "provided_per_series_fixed_holdout",
+  "n_bootstrap_units": 56,
+  "ci_method": "t_two_component",
+  "p_method": "sign_flip_mc",
+  "p_floor": 0.000244081034903588,
+  "margin_verdict": "superior_by_margin",
+  "margin": 0.02,
+  "ci_one_sided": [
+    0.06307944742332106,
+    0.07493736536268664
+  ],
+  "baseline_source": "registry:2026-11-02-full56-seeds (seed-matched, both arms)",
+  "provenance": {
+    "git_sha": "84a02acf1304",
+    "numerics": "c92189526f4c7d8e"
+  },
+  "dataset": "ecoli",
+  "transfer": null,
+  "n_series": 56,
+  "train_size": 2000,
+  "series_selection": "all",
+  "n_series_available": 56,
+  "series_used": null,
+  "claim_withheld": null,
+  "claim": "On E. coli (Nikolados 2022, provided per-series splits), the default CNN outperforms the MLP by a practically meaningful margin at every train size tested: dR2 +0.0690 at train 2000 (one-sided 95% lower limit +0.0631), rising to +0.1411 at train 250, over all 56 series with three model-init seeds per arm. The accept rule tests the one-sided LOWER LIMIT against the 0.02 margin, and that limit exceeds it by 3.2x at train 2000 and 6.4x at train 250 (the point estimates are 3.5x and 7.1x, which is not what the rule tests). NOT transferable to other organisms (R-2) and NOT a statement about CNN vs RF, which is a separate comparison that does NOT clear the margin (DECISIONS #74)."
+}
